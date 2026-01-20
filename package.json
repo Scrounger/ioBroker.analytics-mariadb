@@ -42,6 +42,7 @@
     "ts-node": "^10.9.2",
     "typescript": "~5.9.3"
   },
+  "type": "module",
   "main": "build/main.js",
   "files": [
     "admin{,/!(src)/**}/!(tsconfig|tsconfig.*|.eslintrc).{json,json5}",
@@ -53,7 +54,7 @@
   ],
   "scripts": {
     "prebuild": "rimraf build",
-    "build": "build-adapter ts",
+    "build": "tsc",
     "watch": "build-adapter ts --watch",
     "prebuild:ts": "rimraf build",
     "build:ts": "build-adapter ts",

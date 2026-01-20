@@ -79,13 +79,17 @@
         ],
         "globalDependencies": [
             {
-                "admin": ">=7.0.23"
+                "admin": ">=7.5.3"
+            },
+            {
+                "sql": ">=3.0.1"
             }
         ]
     },
     "native": {
-        "option1": true,
-        "option2": "42"
+        "sqlInstance": "",
+        "datapointsList": [],
+        "datapointsSqlPresetsList": []
     },
     "objects": [],
     "instanceObjects": []
