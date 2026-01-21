@@ -6,6 +6,7 @@
 // you need to create an adapter
 import * as utils from '@iobroker/adapter-core';
 import url from 'node:url';
+import moment from 'moment';
 
 // Load your modules here, e.g.:
 // import * as fs from 'fs';
@@ -13,16 +14,20 @@ import * as objectHandler from './lib/objectHandler.js';
 
 class AnalyticsMariadb extends utils.Adapter {
 
-    sourceToTarget: Record<string, string> = {};
+    sourceToTarget: Record<string, ioBroker.AdapterConfigTypes.DatapointsList> = {};
+
+    idTotal = 'total';
+    idOld = 'old';
 
     public constructor(options: Partial<utils.AdapterOptions> = {}) {
         super({
             ...options,
             name: 'analytics-mariadb',
+            useFormatDate: true
         });
         this.on('ready', this.onReady.bind(this));
         this.on('stateChange', this.onStateChange.bind(this));
-        // this.on('objectChange', this.onObjectChange.bind(this));
+        this.on('objectChange', this.onObjectChange.bind(this));
         this.on('message', this.onMessage.bind(this));
         this.on('unload', this.onUnload.bind(this));
     }
@@ -34,10 +39,12 @@ class AnalyticsMariadb extends utils.Adapter {
         const logPrefix = '[onReady]:';
 
         try {
-
             if (this.config.sqlInstance) {
+                moment.locale(this.language);
+                await utils.I18n.init(`${utils.getAbsoluteDefaultDataDir().replace('iobroker-data/', '')}node_modules/iobroker.${this.name}/admin`, this);
 
                 await this.createDatapointsTotal();
+
 
             } else {
                 this.log.error(`${logPrefix} No SQL instance configured in adapter configuration!`);
@@ -73,15 +80,30 @@ class AnalyticsMariadb extends utils.Adapter {
     // /**
     //  * Is called if a subscribed object changes
     //  */
-    // private onObjectChange(id: string, obj: ioBroker.Object | null | undefined): void {
-    //     if (obj) {
-    //         // The object was changed
-    //         this.log.info(`object ${id} changed: ${JSON.stringify(obj)}`);
-    //     } else {
-    //         // The object was deleted
-    //         this.log.info(`object ${id} deleted`);
-    //     }
-    // }
+    private async onObjectChange(id: string, obj: ioBroker.Object | null | undefined): Promise<void> {
+        const logPrefix = '[onObjectChange]:';
+
+        try {
+            if (obj && !obj.from.includes(this.namespace)) {
+                // if objects changed outside of this adapter
+
+                if (id.endsWith(`.${this.idTotal}`) || id.endsWith(`.${this.idOld}`)) {
+                    this.log.error(`${logPrefix} changing object '${id}' is not allowed, please use the adapter configuration! Changes will be undone !`);
+
+                    const idChannel = id.replace(`${this.namespace}.`, '').replace(`.${this.idTotal}`, '').replace(`.${this.idOld}`, '');
+                    const item = this.config.datapointsList.find(i => i.idChannelTarget === idChannel);
+
+                    await this.createDatapointsTotalSingle(idChannel, item);
+
+                } else {
+                    // The object was changed
+                    this.log.warn(`object ${id} changed: ${JSON.stringify(obj)}`);
+                }
+            }
+        } catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
+    }
 
     /**
      * Is called if a subscribed state changes
@@ -139,7 +161,7 @@ class AnalyticsMariadb extends utils.Adapter {
 
             if (this.config.datapointsList && this.config.datapointsList.length > 0) {
                 for (const item of this.config.datapointsList) {
-                    const structure = item.idTarget.split('.');
+                    const structure = item.idChannelTarget.split('.');
 
                     let idChannel = '';
                     for (const id of structure) {
@@ -154,21 +176,43 @@ class AnalyticsMariadb extends utils.Adapter {
                         } else {
                             await objectHandler.createChannel(this, idChannel, item.name || id);
                         }
-
                     }
 
-                    const sourceObj = await this.getForeignObjectAsync(item.idSource);
-                    const sourceState = await this.getForeignStateAsync(item.idSource);
-
-                    await objectHandler.createOrUpdateState(this, `${idChannel}.total`, sourceState.val, sourceObj?.common as ioBroker.StateCommon, item, true, false);
-                    await objectHandler.createOrUpdateState(this, `${idChannel}.old`, sourceState.val, sourceObj?.common as ioBroker.StateCommon, item, false, true);
-
-                    if (item.enable) {
-                        this.sourceToTarget[item.idSource] = `${idChannel}.total`;
-                        await this.subscribeForeignStatesAsync(item.idSource);
-                    }
+                    await this.createDatapointsTotalSingle(idChannel, item);
                 }
             }
+        } catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
+    }
+
+    private async createDatapointsTotalSingle(idChannel: string, item: ioBroker.AdapterConfigTypes.DatapointsList) {
+        const logPrefix = '[createDatapointsTotalSingle]:';
+
+        try {
+            if (await this.foreignObjectExists(item.idSource)) {
+                const sourceObj = await this.getForeignObjectAsync(item.idSource);
+                const sourceState = await this.getForeignStateAsync(item.idSource);
+
+                await objectHandler.createOrUpdateState(this, utils, `${idChannel}.${this, this.idTotal}`, 'cumulative total value', sourceState.val, sourceObj?.common as ioBroker.StateCommon, item, true, false);
+
+                // old must have the same value as total at state creation
+                const totalState = await this.getStateAsync(`${idChannel}.${this, this.idTotal}`);
+                await objectHandler.createOrUpdateState(this, utils, `${idChannel}.${this, this.idOld}`, 'old cumulative total value', totalState.val, sourceObj?.common as ioBroker.StateCommon, item, false, true);
+
+                if (item.enable) {
+                    this.sourceToTarget[item.idSource] = item;
+
+                    await this.subscribeForeignStatesAsync(item.idSource);
+
+                    await this.subscribeObjectsAsync(`${idChannel}.${this, this.idTotal}`);
+                    await this.subscribeObjectsAsync(`${idChannel}.${this, this.idOld}`);
+                }
+            } else {
+                this.log.warn(`${logPrefix} source state '${item.idSource}' does not exist, cannot processing functions for '${item.name}' ('${idChannel}')`);
+                item.enable = false;
+            }
+
         } catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }

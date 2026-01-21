@@ -30,5 +30,8 @@
     "Datapoints": "Datapoints",
     "Datapoints Sql Presets": "Datapoints SQL Presets",
     "General": "General",
-    "log changes interval(s)": "Record the same values (seconds)"
+    "log changes interval(s)": "Record the same values (seconds)",
+    "target channel id": "target channel id",
+    "cumulative total value": "cumulative total value",
+    "old cumulative total value": "old cumulative total value"
 }

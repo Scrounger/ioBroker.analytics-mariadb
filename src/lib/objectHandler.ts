@@ -17,12 +17,18 @@ export async function createChannel(adapter: ioBroker.Adapter, idChannel: string
     }
 }
 
-export async function createOrUpdateState(adapter: ioBroker.Adapter, id: string, initVal: ioBroker.StateValue, sourceCommon: ioBroker.StateCommon, datapointsList: ioBroker.AdapterConfigTypes.DatapointsList, sql: boolean = false, expert: boolean = false): Promise<void> {
+export async function createOrUpdateState(adapter: ioBroker.Adapter, utils: typeof import("@iobroker/adapter-core"), id: string, name: string | ioBroker.Translated, initVal: ioBroker.StateValue, sourceCommon: ioBroker.StateCommon, datapointsList: ioBroker.AdapterConfigTypes.DatapointsList, sql: boolean = false, expert: boolean = false): Promise<void> {
     const logPrefix = '[objectHandler.createOrUpdateState]:';
 
     try {
+
+        if (typeof name === 'string') {
+            const translation = utils.I18n.getTranslatedObject(name);
+            name = translation && Object.keys(translation).length > 1 ? translation : name
+        }
+
         const common: ioBroker.StateCommon = {
-            name: id.split('.').pop(),
+            name: name,
             type: sourceCommon.type,
             role: sourceCommon.role,
             read: true,

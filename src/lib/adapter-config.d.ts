@@ -13,7 +13,7 @@ declare global {
             interface DatapointsList {
                 enable: boolean;
                 idSource: string;
-                idTarget: string;
+                idChannelTarget: string;
                 name: string;
                 idPreset: string;
                 maxDelta: number;

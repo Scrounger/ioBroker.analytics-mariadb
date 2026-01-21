@@ -22,15 +22,18 @@
     "You like the adapter? Then support me.": "Вам подобається адаптер? Тоді підтримай мене.",
     "You must first save your entries before you can use them in the datapoints tab": "Ви повинні спочатку зберегти свої записи, перш ніж використовувати їх на вкладці точок даних",
     "analytics-mariadb adapter settings": "Налаштування адаптера для analytics-mariadb",
+    "cumulative total value": "сукупна загальна вартість",
     "ignore reset": "ігнорувати скидання",
     "keep forever": "зберігати назавжди",
     "log changes interval(s)": "Запишіть однакові значення (секунд)",
     "log changes minimal delta": "Мінімальна різниця з останнім значенням",
     "max. delta": "макс. дельта",
+    "old cumulative total value": "стара кумулятивна загальна вартість",
     "option1": "варіант1",
     "option2": "варіант2",
     "retention": "Зберігання",
     "source id": "ідентифікатор джерела",
     "sql preset": "SQL Preset",
+    "target channel id": "ідентифікатор цільового каналу",
     "target id": "цільовий ідентифікатор"
 }

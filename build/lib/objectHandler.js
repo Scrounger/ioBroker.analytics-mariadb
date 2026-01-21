@@ -14,11 +14,15 @@ export async function createChannel(adapter, idChannel, name) {
         adapter.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
     }
 }
-export async function createOrUpdateState(adapter, id, initVal, sourceCommon, datapointsList, sql = false, expert = false) {
+export async function createOrUpdateState(adapter, utils, id, name, initVal, sourceCommon, datapointsList, sql = false, expert = false) {
     const logPrefix = '[objectHandler.createOrUpdateState]:';
     try {
+        if (typeof name === 'string') {
+            const translation = utils.I18n.getTranslatedObject(name);
+            name = translation && Object.keys(translation).length > 1 ? translation : name;
+        }
         const common = {
-            name: id.split('.').pop(),
+            name: name,
             type: sourceCommon.type,
             role: sourceCommon.role,
             read: true,

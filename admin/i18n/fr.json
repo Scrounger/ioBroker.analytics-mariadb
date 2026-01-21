@@ -22,15 +22,18 @@
     "You like the adapter? Then support me.": "Vous aimez l'adaptateur ? Alors soutenez-moi.",
     "You must first save your entries before you can use them in the datapoints tab": "Vous devez d'abord enregistrer vos entrées avant de pouvoir les utiliser dans l'onglet Points de données",
     "analytics-mariadb adapter settings": "Paramètres d'adaptateur pour analytics-mariadb",
+    "cumulative total value": "valeur totale cumulée",
     "ignore reset": "ignorer les réinitialisations",
     "keep forever": "garder pour toujours",
     "log changes interval(s)": "Enregistrez les mêmes valeurs (secondes)",
     "log changes minimal delta": "Différence minimale par rapport à la dernière valeur",
     "max. delta": "maximum. delta",
+    "old cumulative total value": "ancienne valeur totale cumulée",
     "option1": "option1",
     "option2": "option2",
     "retention": "Rétention de stockage",
     "source id": "identifiant de la source",
     "sql preset": "Préréglage SQL",
+    "target channel id": "identifiant de la chaîne cible",
     "target id": "identifiant de la cible"
 }
