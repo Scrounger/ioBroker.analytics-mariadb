@@ -9,8 +9,12 @@ import url from 'node:url';
 
 // Load your modules here, e.g.:
 // import * as fs from 'fs';
+import * as objectHandler from './lib/objectHandler.js';
 
 class AnalyticsMariadb extends utils.Adapter {
+
+    sourceToTarget: Record<string, string> = {};
+
     public constructor(options: Partial<utils.AdapterOptions> = {}) {
         super({
             ...options,
@@ -19,7 +23,7 @@ class AnalyticsMariadb extends utils.Adapter {
         this.on('ready', this.onReady.bind(this));
         this.on('stateChange', this.onStateChange.bind(this));
         // this.on('objectChange', this.onObjectChange.bind(this));
-        // this.on('message', this.onMessage.bind(this));
+        this.on('message', this.onMessage.bind(this));
         this.on('unload', this.onUnload.bind(this));
     }
 
@@ -27,61 +31,21 @@ class AnalyticsMariadb extends utils.Adapter {
      * Is called when databases are connected and adapter received configuration.
      */
     private async onReady(): Promise<void> {
-        // // Initialize your adapter here
+        const logPrefix = '[onReady]:';
 
-        // // The adapters config (in the instance object everything under the attribute "native") is accessible via
-        // // this.config:
-        // this.log.debug('config option1: ${this.config.option1}');
-        // this.log.debug('config option2: ${this.config.option2}');
+        try {
 
-        // /*
-        // For every state in the system there has to be also an object of type state
-        // Here a simple template for a boolean variable named "testVariable"
-        // Because every adapter instance uses its own unique namespace variable names can't collide with other adapters variables
+            if (this.config.sqlInstance) {
 
-        // IMPORTANT: State roles should be chosen carefully based on the state's purpose.
-        //            Please refer to the state roles documentation for guidance:
-        //            https://www.iobroker.net/#en/documentation/dev/stateroles.md
-        // */
-        // await this.setObjectNotExistsAsync('testVariable', {
-        //     type: 'state',
-        //     common: {
-        //         name: 'testVariable',
-        //         type: 'boolean',
-        //         role: 'indicator',
-        //         read: true,
-        //         write: true,
-        //     },
-        //     native: {},
-        // });
+                await this.createDatapointsTotal();
 
-        // // In order to get state updates, you need to subscribe to them. The following line adds a subscription for our variable we have created above.
-        // this.subscribeStates('testVariable');
-        // // You can also add a subscription for multiple states. The following line watches all states starting with "lights."
-        // // this.subscribeStates('lights.*');
-        // // Or, if you really must, you can also watch all states. Don't do this if you don't need to. Otherwise this will cause a lot of unnecessary load on the system:
-        // // this.subscribeStates('*');
+            } else {
+                this.log.error(`${logPrefix} No SQL instance configured in adapter configuration!`);
+            }
 
-        // /*
-        //     setState examples
-        //     you will notice that each setState will cause the stateChange event to fire (because of above subscribeStates cmd)
-        // */
-        // // the variable testVariable is set to true as command (ack=false)
-        // await this.setState('testVariable', true);
-
-        // // same thing, but the value is flagged "ack"
-        // // ack should be always set to true if the value is received from or acknowledged from the target system
-        // await this.setState('testVariable', { val: true, ack: true });
-
-        // // same thing, but the state is deleted after 30s (getState will return null afterwards)
-        // await this.setState('testVariable', { val: true, ack: true, expire: 30 });
-
-        // // examples for the checkPassword/checkGroup functions
-        // const pwdResult = await this.checkPasswordAsync('admin', 'iobroker');
-        // this.log.info(`check user admin pw iobroker: ${JSON.stringify(pwdResult)}`);
-
-        // const groupResult = await this.checkGroupAsync('admin', 'admin');
-        // this.log.info(`check group user admin group admin: ${JSON.stringify(groupResult)}`);
+        } catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
     }
 
     /**
@@ -142,22 +106,72 @@ class AnalyticsMariadb extends utils.Adapter {
             this.log.info(`state ${id} deleted`);
         }
     }
+
     // If you need to accept messages in your adapter, uncomment the following block and the corresponding line in the constructor.
     // /**
     //  * Some message was sent to this instance over message box. Used by email, pushover, text2speech, ...
     //  * Using this method requires "common.messagebox" property to be set to true in io-package.json
     //  */
     //
-    // private onMessage(obj: ioBroker.Message): void {
-    //     if (typeof obj === 'object' && obj.message) {
-    //         if (obj.command === 'send') {
-    //             // e.g. send email or pushover or whatever
-    //             this.log.info('send command');
-    //             // Send response in callback if required
-    //             if (obj.callback) this.sendTo(obj.from, obj.command, 'Message received', obj.callback);
-    //         }
-    //     }
-    // }
+    private onMessage(obj: ioBroker.Message): void {
+        const logPrefix = '[onMessage]:';
+
+        try {
+            if (typeof obj === 'object') {
+                if (obj.command === 'getDatapointsSqlPresetsList') {
+                    const result = this.config.datapointsSqlPresetsList.map(item => item.name);
+
+                    if (obj.callback) this.sendTo(obj.from, obj.command, result, obj.callback);
+                } else {
+                    this.log.warn(`${logPrefix} Unknown command: ${JSON.stringify(obj)}`);
+                }
+            }
+
+        } catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
+    }
+
+    private async createDatapointsTotal() {
+        const logPrefix = '[createDatapointsTotal]:';
+
+        try {
+
+            if (this.config.datapointsList && this.config.datapointsList.length > 0) {
+                for (const item of this.config.datapointsList) {
+                    const structure = item.idTarget.split('.');
+
+                    let idChannel = '';
+                    for (const id of structure) {
+                        if (!idChannel) {
+                            idChannel = id;
+                        } else {
+                            idChannel = `${idChannel}.${id}`;
+                        }
+
+                        if (structure.indexOf(id) !== structure.length - 1) {
+                            await objectHandler.createChannel(this, idChannel, id);
+                        } else {
+                            await objectHandler.createChannel(this, idChannel, item.name || id);
+                        }
+
+                    }
+
+                    const sourceObj = await this.getForeignObjectAsync(item.idSource);
+                    const sourceState = await this.getForeignStateAsync(item.idSource);
+
+                    await objectHandler.createOrUpdateState(this, `${idChannel}.total`, sourceObj?.common?.type as ioBroker.CommonType, sourceObj?.common?.role, sourceState.val, sourceObj?.common?.unit);
+                    await objectHandler.createOrUpdateState(this, `${idChannel}.old`, sourceObj?.common?.type as ioBroker.CommonType, sourceObj?.common?.role, sourceState.val, sourceObj?.common?.unit, false, true);
+
+                    this.sourceToTarget[item.idSource] = `${idChannel}.total`;
+
+                    await this.subscribeForeignStatesAsync(item.idSource);
+                }
+            }
+        } catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
+    }
 }
 
 // replace only needed for dev system

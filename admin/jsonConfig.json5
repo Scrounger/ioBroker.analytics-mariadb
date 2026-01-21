@@ -1,0 +1,18 @@
+{
+    i18n: true,
+    type: 'tabs',
+    items: {
+        tab_general: {
+            type: 'panel',
+            '#include': 'general.jsonConfig.json5',
+        },
+        tab_datapoints: {
+            type: 'panel',
+            '#include': 'datapoints.jsonConfig.json5',
+        },
+        tab_datapoints_sql_presets: {
+            type: 'panel',
+            '#include': 'datapoints.sql.presets.jsonConfig.json5',
+        },
+    },
+}

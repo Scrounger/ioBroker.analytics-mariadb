@@ -1,0 +1,115 @@
+{
+    label: 'Datapoints Sql Presets',
+    hidden: '!data.sqlInstance',
+    expertMode: true,
+    items: {
+        donation_link: {
+            type: 'staticLink',
+            text: 'You like the adapter? Then support me.',
+            button: true,
+            newLine: true,
+            href: 'https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=VWAXSTS634G88&source=url',
+            style: {
+                justifyContent: 'flex-start !important',
+            },
+            xl: 12,
+            lg: 12,
+            md: 12,
+            sm: 12,
+            xs: 12,
+        },
+        dividerDatapointsSqlPresets: {
+            newLine: true,
+            type: 'header',
+            text: 'Preset Datapoints for SQL',
+            size: 2,
+        },
+        dividerDatapointsSqlInfo: {
+            newLine: true,
+            type: 'staticText',
+            label: 'You must first save your entries before you can use them in the datapoints tab',
+            style: {
+                color: 'red',
+                'font-size': '14px',
+            },
+        },
+        datapointsSqlPresetsList: {
+            newLine: true,
+            type: 'table',
+            xl: 12,
+            lg: 12,
+            md: 12,
+            sm: 12,
+            xs: 12,
+            uniqueColumns: ['name'],
+            items: [
+                {
+                    attr: 'name',
+                    type: 'text',
+                    title: 'Name',
+                    sort: true,
+                    filter: true,
+                    default: '',
+                    validator: '!!data.name',
+                    validatorNoSaveOnError: true,
+                    validatorErrorText: 'mandatory input',
+                },
+                {
+                    attr: 'debounceTime',
+                    type: 'number',
+                    title: 'De-bounce time',
+                    sort: true,
+                    min: 0,
+                    max: 86400000,
+                    step: 1,
+                    default: 1000,
+                },
+                {
+                    attr: 'changesMinDelta',
+                    type: 'number',
+                    title: 'log changes minimal delta',
+                    sort: true,
+                    min: 0,
+                    default: 0,
+                },
+                {
+                    attr: 'retention',
+                    type: 'select',
+                    title: 'retention',
+                    sort: true,
+                    options: [
+                        {
+                            value: 0,
+                            label: 'keep forever',
+                        },
+                        {
+                            value: 157680000,
+                            label: '5 years',
+                        },
+                        {
+                            value: 126144000,
+                            label: '4 years',
+                        },
+                        {
+                            value: 94608000,
+                            label: '3 years',
+                        },
+                        {
+                            value: 63072000,
+                            label: '2 years',
+                        },
+                        {
+                            value: 31536000,
+                            label: '1 year',
+                        },
+                        {
+                            value: 15811200,
+                            label: '6 months',
+                        },
+                    ],
+                    default: 0,
+                },
+            ],
+        },
+    },
+}
