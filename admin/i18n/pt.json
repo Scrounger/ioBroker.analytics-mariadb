@@ -24,6 +24,7 @@
     "analytics-mariadb adapter settings": "Configurações do adaptador para analytics-mariadb",
     "ignore reset": "ignorar redefinições",
     "keep forever": "manter para sempre",
+    "log changes interval(s)": "Grave os mesmos valores (segundos)",
     "log changes minimal delta": "Diferença mínima do último valor",
     "max. delta": "máx. delta",
     "option1": "opção1",

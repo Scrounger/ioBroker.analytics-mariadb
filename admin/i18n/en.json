@@ -29,5 +29,6 @@
     "You must first save your entries before you can use them in the datapoints tab": "You must first save your entries before you can use them in the datapoints tab",
     "Datapoints": "Datapoints",
     "Datapoints Sql Presets": "Datapoints SQL Presets",
-    "General": "General"
+    "General": "General",
+    "log changes interval(s)": "Record the same values (seconds)"
 }

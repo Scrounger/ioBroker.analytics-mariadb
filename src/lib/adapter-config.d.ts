@@ -5,17 +5,11 @@ declare global {
     namespace ioBroker {
         interface AdapterConfig {
             sqlInstance: string;
-            datapointsList: AdapterTypes.DatapointsList[];
-            datapointsSqlPresetsList: {
-                idPreset: string;
-                name: string;
-                debounceTime: number;
-                changesMinDelta: number;
-                retention: number;
-            }[];
+            datapointsList: AdapterConfigTypes.DatapointsList[];
+            datapointsSqlPresetsList: AdapterConfigTypes.DatapointsSqlPresetsList[];
         }
 
-        namespace AdapterTypes {
+        namespace AdapterConfigTypes {
             interface DatapointsList {
                 enable: boolean;
                 idSource: string;
@@ -25,6 +19,15 @@ declare global {
                 maxDelta: number;
                 unit: string;
                 ignoreReset: boolean;
+            }
+
+            interface DatapointsSqlPresetsList {
+                idPreset: string;
+                name: string;
+                debounceTime: number;
+                changesRelogInterval: number;
+                changesMinDelta: number;
+                retention: number;
             }
         }
     }

@@ -92,38 +92,44 @@
         "datapointsList": [],
         "datapointsSqlPresetsList": [
             {
-                "name": "Energy (big, forever)",
+                "idPreset": "Energy (big, forever)",
                 "debounceTime": 1000,
+                "changesRelogInterval": 0,
                 "changesMinDelta": 0.5,
                 "retention": 0
             },
             {
-                "name": "Energy (big, 5 years)",
+                "idPreset": "Energy (big, 5 years)",
                 "debounceTime": 1000,
+                "changesRelogInterval": 0,
                 "changesMinDelta": 0.5,
                 "retention": 157680000
             },
             {
-                "name": "Energy (big, 2 years)",
+                "idPreset": "Energy (big, 2 years)",
                 "debounceTime": 1000,
+                "changesRelogInterval": 0,
                 "changesMinDelta": 0.5,
                 "retention": 63072000
             },
             {
-                "name": "Energy (small, forever)",
+                "idPreset": "Energy (small, forever)",
                 "debounceTime": 1000,
+                "changesRelogInterval": 0,
                 "changesMinDelta": 0.1,
                 "retention": 0
             },
             {
-                "name": "Energy (small, 5 years)",
+                "idPreset": "Energy (small, 5 years)",
                 "debounceTime": 1000,
+                "changesRelogInterval": 0,
                 "changesMinDelta": 0.1,
                 "retention": 157680000
             },
             {
-                "name": "Energy (small, 2 years)",
+                "idPreset": "Energy (small, 2 years)",
                 "debounceTime": 1000,
+                "changesRelogInterval": 0,
                 "changesMinDelta": 0.1,
                 "retention": 63072000
             }

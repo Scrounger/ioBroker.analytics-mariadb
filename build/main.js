@@ -104,7 +104,7 @@ class AnalyticsMariadb extends utils.Adapter {
         try {
             if (typeof obj === 'object') {
                 if (obj.command === 'getDatapointsSqlPresetsList') {
-                    const result = this.config.datapointsSqlPresetsList.map(item => item.name);
+                    const result = this.config.datapointsSqlPresetsList.map(item => item.idPreset);
                     if (obj.callback)
                         this.sendTo(obj.from, obj.command, result, obj.callback);
                 }
@@ -140,10 +140,12 @@ class AnalyticsMariadb extends utils.Adapter {
                     }
                     const sourceObj = await this.getForeignObjectAsync(item.idSource);
                     const sourceState = await this.getForeignStateAsync(item.idSource);
-                    await objectHandler.createOrUpdateState(this, `${idChannel}.total`, sourceObj?.common?.type, sourceObj?.common?.role, sourceState.val, sourceObj?.common?.unit);
-                    await objectHandler.createOrUpdateState(this, `${idChannel}.old`, sourceObj?.common?.type, sourceObj?.common?.role, sourceState.val, sourceObj?.common?.unit, false, true);
-                    this.sourceToTarget[item.idSource] = `${idChannel}.total`;
-                    await this.subscribeForeignStatesAsync(item.idSource);
+                    await objectHandler.createOrUpdateState(this, `${idChannel}.total`, sourceState.val, sourceObj?.common, item, true, false);
+                    await objectHandler.createOrUpdateState(this, `${idChannel}.old`, sourceState.val, sourceObj?.common, item, false, true);
+                    if (item.enable) {
+                        this.sourceToTarget[item.idSource] = `${idChannel}.total`;
+                        await this.subscribeForeignStatesAsync(item.idSource);
+                    }
                 }
             }
         }
