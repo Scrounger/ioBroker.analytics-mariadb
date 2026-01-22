@@ -33,5 +33,6 @@
     "log changes interval(s)": "Record the same values (seconds)",
     "target channel id": "target channel id",
     "cumulative total value": "cumulative total value",
-    "old cumulative total value": "old cumulative total value"
+    "old cumulative total value": "old cumulative total value",
+    "De-bounce time of cumulative total value": "De-bounce time of cumulative total value"
 }

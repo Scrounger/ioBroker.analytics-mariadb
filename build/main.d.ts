@@ -2,7 +2,8 @@ import * as utils from '@iobroker/adapter-core';
 declare class AnalyticsMariadb extends utils.Adapter {
     sourceToTarget: Record<string, ioBroker.AdapterConfigTypes.DatapointsList>;
     idTotal: string;
-    idOld: string;
+    idOldValue: string;
+    idStorageValue: string;
     constructor(options?: Partial<utils.AdapterOptions>);
     /**
      * Is called when databases are connected and adapter received configuration.
@@ -25,6 +26,7 @@ declare class AnalyticsMariadb extends utils.Adapter {
     private onMessage;
     private createDatapointsTotal;
     private createDatapointsTotalSingle;
+    private handleTotalChanges;
 }
 export default function startAdapter(options: Partial<utils.AdapterOptions> | undefined): AnalyticsMariadb;
 export {};

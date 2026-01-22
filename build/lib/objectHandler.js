@@ -55,7 +55,7 @@ export async function createOrUpdateState(adapter, utils, id, name, initVal, sou
             await adapter.setState(id, { val: initVal, ack: true });
         }
         else {
-            let obj = await adapter.getObjectAsync(id);
+            const obj = await adapter.getObjectAsync(id);
             if (!isStateCommonEqual(obj.common, common, sql, adapter)) {
                 adapter.log.debug(`${logPrefix} Updating common properties of state '${id}' (updated properties: ${JSON.stringify(deepDiffBetweenObjects(common, obj.common, adapter))})`);
                 await adapter.extendObject(id, { common: common });

@@ -1,9 +1,10 @@
 // ioBroker eslint template configuration file for js and ts files
 // Please note that esm or react based modules need additional modules loaded.
-import config from '@iobroker/eslint-config';
+import config, { esmConfig } from '@iobroker/eslint-config';
 
 export default [
     ...config,
+
     {
         // specify files to exclude from linting here
         ignores: [
@@ -13,23 +14,37 @@ export default [
             'test/**/*.js',
             '*.config.mjs',
             'build',
-            'dist',
+            'admin/build',
             'admin/words.js',
             'admin/admin.d.ts',
-            'admin/blockly.js',
             '**/adapter-config.d.ts',
-            'widgets/**/*.js'
+            'admin/i18n',
+            'node_modules',
+            'www',
+            './lib/protect-api-playback-stream.ts',
+            'src-www/src/assets/lib/conn.js',
+            'test'
         ],
     },
+
     {
         // you may disable some 'jsdoc' warnings - but using jsdoc is highly recommended
-        // as this improves maintainability. jsdoc warnings will not block build process.
+        // as this improves maintainability. jsdoc warnings will not block buiuld process.
         rules: {
-            // 'jsdoc/require-jsdoc': 'off',
-            // 'jsdoc/require-param': 'off',
-            // 'jsdoc/require-param-description': 'off',
-            // 'jsdoc/require-returns-description': 'off',
-            // 'jsdoc/require-returns-check': 'off',
+            '@typescript-eslint/no-unused-vars': 'off',
+            'jsdoc/require-jsdoc': 'off',
+            'jsdoc/require-param-description': 'off',
+            'jsdoc/require-returns-description': 'off',
+            'jsdoc/check-alignment': 'off',
+            'quote-props': 'off',
+            '@typescript-eslint/no-namespace': 'off',
+            '@typescript-eslint/ban-ts-comment': 'off',
+            '@typescript-eslint/no-redundant-type-constituents': 'off',
+            'prettier/prettier': 0,
+            'no-else-return': 'off',
+            '@typescript-eslint/consistent-type-imports': 'off',
         },
     },
+
+    ...esmConfig,
 ];

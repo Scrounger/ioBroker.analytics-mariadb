@@ -5,6 +5,7 @@ declare global {
     namespace ioBroker {
         interface AdapterConfig {
             sqlInstance: string;
+            totalDebounceTime: number;
             datapointsList: AdapterConfigTypes.DatapointsList[];
             datapointsSqlPresetsList: AdapterConfigTypes.DatapointsSqlPresetsList[];
         }

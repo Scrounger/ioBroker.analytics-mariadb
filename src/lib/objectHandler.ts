@@ -66,7 +66,7 @@ export async function createOrUpdateState(adapter: ioBroker.Adapter, utils: type
 
             await adapter.setState(id, { val: initVal, ack: true });
         } else {
-            let obj = await adapter.getObjectAsync(id);
+            const obj = await adapter.getObjectAsync(id);
 
             if (!isStateCommonEqual(obj.common as ioBroker.StateCommon, common, sql, adapter)) {
                 adapter.log.debug(`${logPrefix} Updating common properties of state '${id}' (updated properties: ${JSON.stringify(deepDiffBetweenObjects(common, obj.common, adapter))})`);
@@ -162,7 +162,7 @@ function deepDiffBetweenObjects(object: any, base: any, adapter: ioBroker.Adapte
     return object;
 };
 
-function getSqlPreset(idPreset: string, adapter: ioBroker.Adapter) {
+function getSqlPreset(idPreset: string, adapter: ioBroker.Adapter): { enabled: boolean; storageType: string; counter: boolean; aliasId: string; debounceTime: number; blockTime: number; changesOnly: boolean; changesRelogInterval: number; changesMinDelta: number; ignoreBelowNumber: string; disableSkippedValueLogging: boolean; retention: number; customRetentionDuration: number; maxLength: number; enableDebugLogs: boolean; debounce: number; ignoreZero: boolean; } {
     const logPrefix = '[objectHandler.getSqlPreset]:';
 
     try {
