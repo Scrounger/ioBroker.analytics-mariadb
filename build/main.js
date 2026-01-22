@@ -146,6 +146,17 @@ class AnalyticsMariadb extends utils.Adapter {
                         this.sendTo(obj.from, obj.command, result, obj.callback);
                     }
                 }
+                else if (obj.command === 'getDatapointsList') {
+                    const result = this.config.datapointsList.map(item => {
+                        return {
+                            value: `${item.idChannelTarget}.${this.idTotal}`,
+                            label: item.name || item.idChannelTarget
+                        };
+                    });
+                    if (obj.callback) {
+                        this.sendTo(obj.from, obj.command, result, obj.callback);
+                    }
+                }
                 else {
                     this.log.warn(`${logPrefix} Unknown command: ${JSON.stringify(obj)}`);
                 }

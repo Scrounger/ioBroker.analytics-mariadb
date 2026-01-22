@@ -14,5 +14,9 @@
             type: 'panel',
             '#include': 'datapoints.sql.presets.jsonConfig.json5',
         },
+        tab_history: {
+            type: 'panel',
+            '#include': 'history.jsonConfig.json5',
+        },
     },
 }

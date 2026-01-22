@@ -1,6 +1,6 @@
 import * as utils from '@iobroker/adapter-core';
 declare class AnalyticsMariadb extends utils.Adapter {
-    sourceToTarget: Record<string, ioBroker.AdapterConfigTypes.DatapointsList>;
+    sourceToTarget: Record<string, ioBroker.AdapterConfigTypes.DatapointsItem>;
     idTotal: string;
     idOldValue: string;
     idStorageValue: string;

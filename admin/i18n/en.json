@@ -41,5 +41,8 @@
     "years": "years",
     "old meter reading": "old meter reading",
     "helper cumulative total value": "helper cumulative total value",
-    "debug": "Debug"
+    "debug": "Debug",
+    "History": "History",
+    "Datapoints presets for SQL": "Datapoints presets for SQL",
+    "decimals": "decimals"
 }

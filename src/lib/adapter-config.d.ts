@@ -10,12 +10,13 @@ declare global {
             historyDefaultWeeks: number;
             historyDefaultMonths: number;
             historyDefaultYears: number;
-            datapointsList: AdapterConfigTypes.DatapointsList[];
-            datapointsSqlPresetsList: AdapterConfigTypes.DatapointsSqlPresetsList[];
+            datapointsList: AdapterConfigTypes.DatapointsItem[];
+            datapointsSqlPresetsList: AdapterConfigTypes.DatapointsSqlPresetsItem[];
+            historyList: AdapterConfigTypes.HistoryItem[];
         }
 
         namespace AdapterConfigTypes {
-            interface DatapointsList {
+            interface DatapointsItem {
                 enable: boolean;
                 idSource: string;
                 idChannelTarget: string;
@@ -27,13 +28,22 @@ declare global {
                 debug: boolean;
             }
 
-            interface DatapointsSqlPresetsList {
+            interface DatapointsSqlPresetsItem {
                 idPreset: string;
                 name: string;
                 debounceTime: number;
                 changesRelogInterval: number;
                 changesMinDelta: number;
                 retention: number;
+            }
+
+            interface HistoryItem {
+                id: string;
+                decimals: number;
+                days: number;
+                weeks: number;
+                months: number;
+                years: number;
             }
         }
     }

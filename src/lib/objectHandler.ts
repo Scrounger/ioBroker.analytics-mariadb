@@ -17,7 +17,7 @@ export async function createChannel(adapter: ioBroker.Adapter, idChannel: string
     }
 }
 
-export async function createOrUpdateState(adapter: ioBroker.Adapter, utils: typeof import("@iobroker/adapter-core"), id: string, name: string | ioBroker.Translated, initVal: ioBroker.StateValue, sourceCommon: ioBroker.StateCommon, datapointsList: ioBroker.AdapterConfigTypes.DatapointsList, sql: boolean = false, expert: boolean = false): Promise<void> {
+export async function createOrUpdateState(adapter: ioBroker.Adapter, utils: typeof import("@iobroker/adapter-core"), id: string, name: string | ioBroker.Translated, initVal: ioBroker.StateValue, sourceCommon: ioBroker.StateCommon, datapointsList: ioBroker.AdapterConfigTypes.DatapointsItem, sql: boolean = false, expert: boolean = false): Promise<void> {
     const logPrefix = '[objectHandler.createOrUpdateState]:';
 
     try {
@@ -166,7 +166,7 @@ function getSqlPreset(idPreset: string, adapter: ioBroker.Adapter): { enabled: b
     const logPrefix = '[objectHandler.getSqlPreset]:';
 
     try {
-        const preset: ioBroker.AdapterConfigTypes.DatapointsSqlPresetsList = adapter.config.datapointsSqlPresetsList.find(p => p.idPreset === idPreset);
+        const preset: ioBroker.AdapterConfigTypes.DatapointsSqlPresetsItem = adapter.config.datapointsSqlPresetsList.find(p => p.idPreset === idPreset);
 
         if (preset) {
             return {

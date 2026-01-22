@@ -21,7 +21,7 @@
         dividerDatapointsSqlPresets: {
             newLine: true,
             type: 'header',
-            text: 'Preset Datapoints for SQL',
+            text: 'Datapoints Sql Presets',
             size: 2,
         },
         dividerDatapointsSqlInfo: {

@@ -15,7 +15,7 @@ import * as objectHandler from './lib/objectHandler.js';
 
 class AnalyticsMariadb extends utils.Adapter {
 
-    sourceToTarget: Record<string, ioBroker.AdapterConfigTypes.DatapointsList> = {};
+    sourceToTarget: Record<string, ioBroker.AdapterConfigTypes.DatapointsItem> = {};
 
     idTotal = 'total';
     idOldValue = 'oldValue';
@@ -169,6 +169,17 @@ class AnalyticsMariadb extends utils.Adapter {
                     if (obj.callback) {
                         this.sendTo(obj.from, obj.command, result, obj.callback);
                     }
+                } else if (obj.command === 'getDatapointsList') {
+                    const result = this.config.datapointsList.map(item => {
+                        return {
+                            value: `${item.idChannelTarget}.${this.idTotal}`,
+                            label: item.name || item.idChannelTarget
+                        }
+                    });
+
+                    if (obj.callback) {
+                        this.sendTo(obj.from, obj.command, result, obj.callback);
+                    }
                 } else {
                     this.log.warn(`${logPrefix} Unknown command: ${JSON.stringify(obj)}`);
                 }
@@ -211,7 +222,7 @@ class AnalyticsMariadb extends utils.Adapter {
         }
     }
 
-    private async createDatapointsTotalSingle(idChannel: string, item: ioBroker.AdapterConfigTypes.DatapointsList, isAdapterStart: boolean): Promise<void> {
+    private async createDatapointsTotalSingle(idChannel: string, item: ioBroker.AdapterConfigTypes.DatapointsItem, isAdapterStart: boolean): Promise<void> {
         const logPrefix = '[createDatapointsTotalSingle]:';
 
         try {
@@ -251,7 +262,7 @@ class AnalyticsMariadb extends utils.Adapter {
         }
     }
 
-    private async totalChanges(item: ioBroker.AdapterConfigTypes.DatapointsList, idState: string, state: ioBroker.State): Promise<void> {
+    private async totalChanges(item: ioBroker.AdapterConfigTypes.DatapointsItem, idState: string, state: ioBroker.State): Promise<void> {
         const logPrefix = `[totalChanges] '${idState}': `;
 
         try {
@@ -318,7 +329,7 @@ class AnalyticsMariadb extends utils.Adapter {
         }
     }
 
-    private debug(item: ioBroker.AdapterConfigTypes.DatapointsList, message: string): void {
+    private debug(item: ioBroker.AdapterConfigTypes.DatapointsItem, message: string): void {
         if (item.debug) {
             this.log.debug(message);
         }
