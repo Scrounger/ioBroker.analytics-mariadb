@@ -26,7 +26,8 @@ declare class AnalyticsMariadb extends utils.Adapter {
     private onMessage;
     private createDatapointsTotal;
     private createDatapointsTotalSingle;
-    private handleTotalChanges;
+    private totalChanges;
+    private debug;
 }
 export default function startAdapter(options: Partial<utils.AdapterOptions> | undefined): AnalyticsMariadb;
 export {};

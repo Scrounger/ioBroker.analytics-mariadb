@@ -34,5 +34,12 @@
     "target channel id": "target channel id",
     "cumulative total value": "cumulative total value",
     "old cumulative total value": "old cumulative total value",
-    "De-bounce time of cumulative total value": "De-bounce time of cumulative total value"
+    "De-bounce time of cumulative total value": "De-bounce time of cumulative total value",
+    "days": "days",
+    "weeks": "weeks",
+    "months": "months",
+    "years": "years",
+    "old meter reading": "old meter reading",
+    "helper cumulative total value": "helper cumulative total value",
+    "debug": "Debug"
 }

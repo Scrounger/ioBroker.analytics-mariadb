@@ -25,15 +25,22 @@
     "analytics-mariadb adapter settings": "Adaptereinstellungen für analytics-mariadb",
     "cumulative total value": "kumulierter Gesamtwert",
     "cumulative total value De-bounce time": "kumulativer Gesamtwert Entprellzeit",
+    "days": "Tage",
+    "debug": "Debuggen",
+    "helper cumulative total value": "Kumulierter Gesamtwert des Helfers",
     "ignore reset": "Resets ignorieren",
     "keep forever": "keine automatische Löschung",
     "log changes interval(s)": "trotzdem gleiche Werte aufzeichnen (Sekunden)",
     "log changes minimal delta": "Minimale Differenz zum letzten Wert",
     "max. delta": "max. Delta",
+    "months": "Monate",
     "old cumulative total value": "alter kumulierter Gesamtwert",
+    "old meter reading": "alter Zählerstand",
     "retention": "Aufbewahrungsdauer",
     "source id": "Quell-ID",
     "sql preset": "SQL-Voreinstellung",
     "target channel id": "Kanal Ziel-ID",
-    "target id": "Ziel-ID"
+    "target id": "Ziel-ID",
+    "weeks": "Wochen",
+    "years": "Jahre"
 }

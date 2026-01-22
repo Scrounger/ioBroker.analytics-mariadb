@@ -105,7 +105,7 @@ class AnalyticsMariadb extends utils.Adapter {
                     // if state changed outside of this adapter
                     const item = this.sourceToTarget[id];
                     if (item) {
-                        await this.handleTotalChanges(item, id, state);
+                        await this.totalChanges(item, id, state);
                         await this.setStateChangedAsync(`${item.idChannelTarget}.${this.idOldValue}`, state);
                     }
                     else {
@@ -193,7 +193,7 @@ class AnalyticsMariadb extends utils.Adapter {
                 await objectHandler.createOrUpdateState(this, utils, `${idChannel}.${this, this.idTotal}`, 'cumulative total value', sourceState.val, sourceObj?.common, item, true, false);
                 // oldValue & storageValue must have the same value as total at state creation
                 const totalState = await this.getStateAsync(`${idChannel}.${this, this.idTotal}`);
-                await objectHandler.createOrUpdateState(this, utils, `${idChannel}.${this, this.idOldValue}`, 'old cumulative total value', totalState.val, sourceObj?.common, item, false, true);
+                await objectHandler.createOrUpdateState(this, utils, `${idChannel}.${this, this.idOldValue}`, 'old meter reading', totalState.val, sourceObj?.common, item, false, true);
                 await objectHandler.createOrUpdateState(this, utils, `${idChannel}.${this, this.idStorageValue}`, 'helper cumulative total value', totalState.val, sourceObj?.common, item, false, true);
                 if (item.enable) {
                     this.sourceToTarget[item.idSource] = item;
@@ -202,7 +202,7 @@ class AnalyticsMariadb extends utils.Adapter {
                     await this.subscribeObjectsAsync(`${idChannel}.${this, this.idOldValue}`);
                     if (isAdapterStart) {
                         // beim Start des Adapter's die Werte aktualisieren
-                        await this.handleTotalChanges(item, item.idSource, sourceState);
+                        await this.totalChanges(item, item.idSource, sourceState);
                         await this.setStateChangedAsync(`${item.idChannelTarget}.${this.idOldValue}`, sourceState);
                     }
                 }
@@ -216,8 +216,8 @@ class AnalyticsMariadb extends utils.Adapter {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
     }
-    async handleTotalChanges(item, idState, state) {
-        const logPrefix = `[handleTotalChanges] '${idState}': `;
+    async totalChanges(item, idState, state) {
+        const logPrefix = `[totalChanges] '${idState}': `;
         try {
             if (item.enable) {
                 const total = await this.getStateAsync(`${item.idChannelTarget}.${this.idTotal}`);
@@ -230,21 +230,25 @@ class AnalyticsMariadb extends utils.Adapter {
                         // entprellen
                         const storageState = await this.getStateAsync(`${item.idChannelTarget}.${this.idStorageValue}`);
                         storageState.val = storageState.val;
-                        let delta = (state.val - oldState.val);
+                        let delta = 0;
                         if ((oldState.val > storageState.val)) {
                             // Rückfalllösung, wenn z.B. Skript oder LXC beendet wurde / crasht
                             delta = (state.val - storageState.val);
-                            this.log.debug(`${logPrefix} old val taken from storage (oldVal: ${oldState.val}, storageVal: ${storageState.val})`);
+                            this.debug(item, `${logPrefix} calculated delta from storage: (val: ${state.val} - storageVal: ${storageState.val}) = ${mathjs.round(delta, 5)}`);
+                        }
+                        else {
+                            delta = (state.val - oldState.val);
+                            this.debug(item, `${logPrefix} calculated delta: (val: ${state.val} - oldVal: ${oldState.val}) = ${mathjs.round(delta, 5)}`);
                         }
                         if (delta >= item.maxDelta && item.maxDelta !== 0) {
                             // wenn delta > maxDelta ist, wird ignoriert (kann z.B. bei springenden Scale Faktoren passieren)
-                            this.log.warn(`${logPrefix} delta ${delta} is bigger than configured max. delta ${item.maxDelta} (val: ${state.val} oldVal: ${oldState.val} storageVal: ${storageState.val}) -> ignore on this run`);
+                            this.log.warn(`${logPrefix} delta ${mathjs.round(delta, 5)} is bigger than configured max. delta ${item.maxDelta} (val: ${state.val} oldVal: ${oldState.val} storageVal: ${storageState.val}) -> ignore on this run`);
                             return;
                         }
                         if (item.ignoreReset) {
                             if (delta <= 0) {
                                 // delta ist kleiner 0, d.h. Wert liegt unter altem Wert
-                                this.log.warn(`${logPrefix} delta ${delta} is <= 0 and ignore reset is active (val: ${state.val} oldVal: ${oldState.val} storageVal: ${storageState.val}) -> ignore on this run`);
+                                this.log.warn(`${logPrefix} delta ${mathjs.round(delta, 5)} is <= 0 and ignore reset is active (val: ${state.val} oldVal: ${oldState.val} storageVal: ${storageState.val}) -> ignore on this run`);
                                 return;
                             }
                             else if (oldState.val < storageState.val) {
@@ -256,9 +260,10 @@ class AnalyticsMariadb extends utils.Adapter {
                         const sum = mathjs.round((total.val + delta), 3);
                         if (sum >= total.val) {
                             await this.setState(`${item.idChannelTarget}.${this.idTotal}`, sum, true);
+                            this.debug(item, `${logPrefix} set new total value: (old total: ${total.val} + delta: ${mathjs.round(delta, 5)}) = ${sum}`);
                         }
                         else {
-                            this.log.warn(`${logPrefix} calculated sum ${sum} is lower than oldVal ${oldState.val} (val: ${state.val} oldVal: ${oldState.val} storageVal: ${storageState.val}, delta: ${delta}) -> got a reset`);
+                            this.log.warn(`${logPrefix} calculated new total value ${sum} is lower than oldVal ${oldState.val} (val: ${state.val} oldVal: ${oldState.val} storageVal: ${storageState.val}, delta: ${mathjs.round(delta, 5)}) -> got a reset`);
                         }
                         await this.setState(`${item.idChannelTarget}.${this.idStorageValue}`, sum, true);
                     }
@@ -270,6 +275,11 @@ class AnalyticsMariadb extends utils.Adapter {
         }
         catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
+    }
+    debug(item, message) {
+        if (item.debug) {
+            this.log.debug(message);
         }
     }
 }

@@ -6,6 +6,10 @@ declare global {
         interface AdapterConfig {
             sqlInstance: string;
             totalDebounceTime: number;
+            historyDefaultDays: number;
+            historyDefaultWeeks: number;
+            historyDefaultMonths: number;
+            historyDefaultYears: number;
             datapointsList: AdapterConfigTypes.DatapointsList[];
             datapointsSqlPresetsList: AdapterConfigTypes.DatapointsSqlPresetsList[];
         }
@@ -20,6 +24,7 @@ declare global {
                 maxDelta: number;
                 unit: string;
                 ignoreReset: boolean;
+                debug: boolean;
             }
 
             interface DatapointsSqlPresetsList {

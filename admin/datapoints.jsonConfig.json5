@@ -109,6 +109,13 @@
                     default: false,
                     width: 0,
                 },
+                {
+                    attr: 'debug',
+                    type: 'checkbox',
+                    title: 'debug',
+                    default: false,
+                    width: 0,
+                },
             ],
         },
     },
