@@ -1,5 +1,5 @@
 {
-    label: 'History',
+    label: 'History calculated',
     hidden: '!data.sqlInstance',
     items: {
         donation_link: {
@@ -20,10 +20,10 @@
         dividerHistories: {
             newLine: true,
             type: 'header',
-            text: 'History',
+            text: 'History calculated',
             size: 2,
         },
-        historyList: {
+        historyCalcList: {
             newLine: true,
             type: 'table',
             xl: 12,
@@ -43,7 +43,7 @@
             items: [
                 {
                     attr: 'id',
-                    type: 'autocompleteSendTo',
+                    type: 'selectSendTo',
                     title: 'Datapoints',
                     sort: true,
                     filter: true,
@@ -51,6 +51,16 @@
                     jsonData: '{}', // ToDo: sollte irgendwann mal der Bug mit globalData und JSON.stringify behoben sein, dann hier anpassen
                     command: 'getDatapointsList',
                     validator: '!!data.id',
+                    validatorNoSaveOnError: true,
+                    validatorErrorText: 'mandatory input',
+                    multiple: true,
+                    width: 300,
+                },
+                {
+                    attr: 'formula',
+                    type: 'text',
+                    title: 'calculation formula',
+                    validator: '!!data.formula',
                     validatorNoSaveOnError: true,
                     validatorErrorText: 'mandatory input',
                 },

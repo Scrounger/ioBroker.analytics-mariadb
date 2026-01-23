@@ -170,7 +170,8 @@
                 "retention": 63072000
             }
         ],
-        "historyList": []
+        "historyList": [],
+        "historyCalcList": []
     },
     "objects": [],
     "instanceObjects": []

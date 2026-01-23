@@ -14,6 +14,7 @@ declare global {
             datapointsBooleanList: AdapterConfigTypes.DatapointsItem[];
             datapointsSqlPresetsList: AdapterConfigTypes.DatapointsSqlPresetsItem[];
             historyList: AdapterConfigTypes.HistoryItem[];
+            historyCalcList: AdapterConfigTypes.HistoryItem[];
         }
 
         namespace AdapterConfigTypes {
@@ -41,11 +42,13 @@ declare global {
 
             interface HistoryItem {
                 id: string;
+                formula?: string;
                 decimals: number;
                 days: number;
                 weeks: number;
                 months: number;
                 years: number;
+                debug: boolean;
             }
         }
     }

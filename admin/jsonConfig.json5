@@ -22,5 +22,9 @@
             type: 'panel',
             '#include': 'history.jsonConfig.json5',
         },
+        tab_history_calculation: {
+            type: 'panel',
+            '#include': 'history.calculation.jsonConfig.json5',
+        },
     },
 }
