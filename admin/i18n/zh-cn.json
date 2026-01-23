@@ -14,6 +14,8 @@
     "6 months": "6个月",
     "Attention!": "注意力！",
     "Datapoints": "数据点",
+    "Datapoints (boolean)": "数据点（布尔值）",
+    "Datapoints (number)": "数据点（数量）",
     "Datapoints Sql Presets": "数据点 SQL 预设",
     "Datapoints presets for SQL": "SQL 的数据点预设",
     "De-bounce time": "去抖时间",

@@ -14,6 +14,8 @@
     "6 months": "6 mesi",
     "Attention!": "Attenzione!",
     "Datapoints": "Punti dati",
+    "Datapoints (boolean)": "Punti dati (booleani)",
+    "Datapoints (number)": "Punti dati (numero)",
     "Datapoints Sql Presets": "Preimpostazioni SQL dei datapoint",
     "Datapoints presets for SQL": "Preimpostazioni dei punti dati per SQL",
     "De-bounce time": "Tempo di rimbalzo",

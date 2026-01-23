@@ -55,6 +55,19 @@
                     validatorErrorText: 'mandatory input',
                 },
                 {
+                    attr: 'type',
+                    type: 'select',
+                    title: 'type',
+                    sort: true,
+                    options: [
+                        { label: 'number', value: 'number' },
+                        { label: 'boolean', value: 'boolean' },
+                    ],
+                    validator: '!!data.type',
+                    validatorNoSaveOnError: true,
+                    validatorErrorText: 'mandatory input',
+                },
+                {
                     attr: 'debounceTime',
                     type: 'number',
                     title: 'De-bounce time',
@@ -71,6 +84,7 @@
                     sort: true,
                     min: 0,
                     max: 86400000,
+                    default: 0,
                 },
                 {
                     attr: 'changesMinDelta',
@@ -79,6 +93,7 @@
                     sort: true,
                     min: 0,
                     default: 0,
+                    disabled: 'data.type !== "number"',
                 },
                 {
                     attr: 'retention',

@@ -14,6 +14,8 @@
     "6 months": "6 maanden",
     "Attention!": "Aandacht!",
     "Datapoints": "Datapunten",
+    "Datapoints (boolean)": "Gegevenspunten (boolean)",
+    "Datapoints (number)": "Datapunten (aantal)",
     "Datapoints Sql Presets": "Datapunten SQL-voorinstellingen",
     "Datapoints presets for SQL": "Voorinstellingen voor gegevenspunten voor SQL",
     "De-bounce time": "Debounce-tijd",

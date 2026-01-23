@@ -14,7 +14,7 @@ export async function createChannel(adapter, idChannel, name) {
         adapter.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
     }
 }
-export async function createOrUpdateState(adapter, utils, id, name, initVal, sourceCommon, datapointsList, sql = false, expert = false) {
+export async function createOrUpdateState(adapter, utils, id, name, initVal, sourceCommon, item, sql = false, expert = false) {
     const logPrefix = '[objectHandler.createOrUpdateState]:';
     try {
         if (typeof name === 'string') {
@@ -35,13 +35,13 @@ export async function createOrUpdateState(adapter, utils, id, name, initVal, sou
             common.expert = true;
         }
         if (sql) {
-            const sqlPreset = getSqlPreset(datapointsList.idPreset, adapter);
+            const sqlPreset = getSqlPreset(item.idPreset, item.type, adapter);
             if (sqlPreset) {
                 common.custom = common.custom || {};
                 common.custom[adapter.config.sqlInstance] = sqlPreset;
             }
             else {
-                adapter.log.error(`${logPrefix} SQL preset with '${datapointsList.idPreset}' not found for state '${id}' -> abort creating state`);
+                adapter.log.error(`${logPrefix} SQL preset with '${item.idPreset}' not found for state '${id}' -> abort creating state`);
                 return;
             }
         }
@@ -145,7 +145,7 @@ function deepDiffBetweenObjects(object, base, adapter, allowedKeys = undefined, 
     return object;
 }
 ;
-function getSqlPreset(idPreset, adapter) {
+function getSqlPreset(idPreset, type, adapter) {
     const logPrefix = '[objectHandler.getSqlPreset]:';
     try {
         const preset = adapter.config.datapointsSqlPresetsList.find(p => p.idPreset === idPreset);
@@ -159,7 +159,7 @@ function getSqlPreset(idPreset, adapter) {
                 blockTime: 0,
                 changesOnly: true,
                 changesRelogInterval: preset.changesRelogInterval,
-                changesMinDelta: preset.changesMinDelta,
+                changesMinDelta: type === 'number' ? preset.changesMinDelta : 0,
                 ignoreBelowNumber: "",
                 disableSkippedValueLogging: true,
                 retention: preset.retention,

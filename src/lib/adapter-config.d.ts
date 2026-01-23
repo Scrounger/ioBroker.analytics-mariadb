@@ -10,7 +10,8 @@ declare global {
             historyDefaultWeeks: number;
             historyDefaultMonths: number;
             historyDefaultYears: number;
-            datapointsList: AdapterConfigTypes.DatapointsItem[];
+            datapointsNumberList: AdapterConfigTypes.DatapointsItem[];
+            datapointsBooleanList: AdapterConfigTypes.DatapointsItem[];
             datapointsSqlPresetsList: AdapterConfigTypes.DatapointsSqlPresetsItem[];
             historyList: AdapterConfigTypes.HistoryItem[];
         }
@@ -22,14 +23,15 @@ declare global {
                 idChannelTarget: string;
                 name: string;
                 idPreset: string;
-                maxDelta: number;
-                unit: string;
-                ignoreReset: boolean;
+                maxDelta?: number;
+                ignoreReset?: boolean;
                 debug: boolean;
+                type?: 'number' | 'boolean';        // not used in AdapterConfig
             }
 
             interface DatapointsSqlPresetsItem {
                 idPreset: string;
+                type: 'number' | 'boolean';
                 name: string;
                 debounceTime: number;
                 changesRelogInterval: number;

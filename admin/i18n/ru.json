@@ -14,6 +14,8 @@
     "6 months": "6 месяцев",
     "Attention!": "Внимание!",
     "Datapoints": "Точки данных",
+    "Datapoints (boolean)": "Точки данных (логическое значение)",
+    "Datapoints (number)": "Точки данных (число)",
     "Datapoints Sql Presets": "Предварительные настройки SQL для точек данных",
     "Datapoints presets for SQL": "Предварительные настройки точек данных для SQL",
     "De-bounce time": "Время устранения дребезга",

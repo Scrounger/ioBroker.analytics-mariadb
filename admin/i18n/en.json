@@ -27,7 +27,7 @@
     "This selection is only possible with a running instance!": "This selection is only possible with a running instance!",
     "Got it!": "Got it!",
     "You must first save your entries before you can use them in the datapoints tab": "You must first save your entries before you can use them in the datapoints tab",
-    "Datapoints": "Datapoints",
+    "Datapoints (number)": "Datapoints (number)",
     "Datapoints Sql Presets": "Datapoints SQL Presets",
     "General": "General",
     "log changes interval(s)": "Record the same values (seconds)",
@@ -44,5 +44,6 @@
     "debug": "Debug",
     "History": "History",
     "Datapoints presets for SQL": "Datapoints presets for SQL",
-    "decimals": "decimals"
+    "decimals": "decimals",
+    "Datapoints (boolean)": "Datapoints (boolean)"
 }

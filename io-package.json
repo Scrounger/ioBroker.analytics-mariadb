@@ -94,10 +94,12 @@
         "historyDefaultWeeks": 4,
         "historyDefaultMonths": 14,
         "historyDefaultYears": 5,
-        "datapointsList": [],
+        "datapointsNumberList": [],
+        "datapointsBooleanList": [],
         "datapointsSqlPresetsList": [
             {
                 "idPreset": "Energy (big, forever)",
+                "type": "number",
                 "debounceTime": 1000,
                 "changesRelogInterval": 0,
                 "changesMinDelta": 0.5,
@@ -105,6 +107,7 @@
             },
             {
                 "idPreset": "Energy (big, 5 years)",
+                "type": "number",
                 "debounceTime": 1000,
                 "changesRelogInterval": 0,
                 "changesMinDelta": 0.5,
@@ -112,6 +115,7 @@
             },
             {
                 "idPreset": "Energy (big, 2 years)",
+                "type": "number",
                 "debounceTime": 1000,
                 "changesRelogInterval": 0,
                 "changesMinDelta": 0.5,
@@ -119,6 +123,7 @@
             },
             {
                 "idPreset": "Energy (small, forever)",
+                "type": "number",
                 "debounceTime": 1000,
                 "changesRelogInterval": 0,
                 "changesMinDelta": 0.1,
@@ -126,6 +131,7 @@
             },
             {
                 "idPreset": "Energy (small, 5 years)",
+                "type": "number",
                 "debounceTime": 1000,
                 "changesRelogInterval": 0,
                 "changesMinDelta": 0.1,
@@ -133,12 +139,38 @@
             },
             {
                 "idPreset": "Energy (small, 2 years)",
+                "type": "number",
                 "debounceTime": 1000,
                 "changesRelogInterval": 0,
                 "changesMinDelta": 0.1,
                 "retention": 63072000
+            },
+            {
+                "idPreset": "Counter (forever)",
+                "type": "boolean",
+                "debounceTime": 1000,
+                "changesRelogInterval": 0,
+                "changesMinDelta": 0,
+                "retention": 0
+            },
+            {
+                "idPreset": "Counter (5 years)",
+                "type": "boolean",
+                "debounceTime": 1000,
+                "changesRelogInterval": 0,
+                "changesMinDelta": 0,
+                "retention": 157680000
+            },
+            {
+                "idPreset": "Counter (2 years)",
+                "type": "boolean",
+                "debounceTime": 1000,
+                "changesRelogInterval": 0,
+                "changesMinDelta": 0,
+                "retention": 63072000
             }
-        ]
+        ],
+        "historyList": []
     },
     "objects": [],
     "instanceObjects": []

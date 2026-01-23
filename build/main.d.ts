@@ -4,6 +4,7 @@ declare class AnalyticsMariadb extends utils.Adapter {
     idTotal: string;
     idOldValue: string;
     idStorageValue: string;
+    idBooleanValue: string;
     constructor(options?: Partial<utils.AdapterOptions>);
     /**
      * Is called when databases are connected and adapter received configuration.

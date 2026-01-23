@@ -17,7 +17,7 @@ export async function createChannel(adapter: ioBroker.Adapter, idChannel: string
     }
 }
 
-export async function createOrUpdateState(adapter: ioBroker.Adapter, utils: typeof import("@iobroker/adapter-core"), id: string, name: string | ioBroker.Translated, initVal: ioBroker.StateValue, sourceCommon: ioBroker.StateCommon, datapointsList: ioBroker.AdapterConfigTypes.DatapointsItem, sql: boolean = false, expert: boolean = false): Promise<void> {
+export async function createOrUpdateState(adapter: ioBroker.Adapter, utils: typeof import("@iobroker/adapter-core"), id: string, name: string | ioBroker.Translated, initVal: ioBroker.StateValue, sourceCommon: ioBroker.StateCommon, item: ioBroker.AdapterConfigTypes.DatapointsItem, sql: boolean = false, expert: boolean = false): Promise<void> {
     const logPrefix = '[objectHandler.createOrUpdateState]:';
 
     try {
@@ -44,13 +44,13 @@ export async function createOrUpdateState(adapter: ioBroker.Adapter, utils: type
         }
 
         if (sql) {
-            const sqlPreset = getSqlPreset(datapointsList.idPreset, adapter);
+            const sqlPreset = getSqlPreset(item.idPreset, item.type, adapter);
 
             if (sqlPreset) {
                 common.custom = common.custom || {};
                 common.custom[adapter.config.sqlInstance] = sqlPreset;
             } else {
-                adapter.log.error(`${logPrefix} SQL preset with '${datapointsList.idPreset}' not found for state '${id}' -> abort creating state`);
+                adapter.log.error(`${logPrefix} SQL preset with '${item.idPreset}' not found for state '${id}' -> abort creating state`);
                 return;
             }
         }
@@ -162,7 +162,7 @@ function deepDiffBetweenObjects(object: any, base: any, adapter: ioBroker.Adapte
     return object;
 };
 
-function getSqlPreset(idPreset: string, adapter: ioBroker.Adapter): { enabled: boolean; storageType: string; counter: boolean; aliasId: string; debounceTime: number; blockTime: number; changesOnly: boolean; changesRelogInterval: number; changesMinDelta: number; ignoreBelowNumber: string; disableSkippedValueLogging: boolean; retention: number; customRetentionDuration: number; maxLength: number; enableDebugLogs: boolean; debounce: number; ignoreZero: boolean; } {
+function getSqlPreset(idPreset: string, type: 'number' | 'boolean', adapter: ioBroker.Adapter): { enabled: boolean; storageType: string; counter: boolean; aliasId: string; debounceTime: number; blockTime: number; changesOnly: boolean; changesRelogInterval: number; changesMinDelta: number; ignoreBelowNumber: string; disableSkippedValueLogging: boolean; retention: number; customRetentionDuration: number; maxLength: number; enableDebugLogs: boolean; debounce: number; ignoreZero: boolean; } {
     const logPrefix = '[objectHandler.getSqlPreset]:';
 
     try {
@@ -178,7 +178,7 @@ function getSqlPreset(idPreset: string, adapter: ioBroker.Adapter): { enabled: b
                 blockTime: 0,
                 changesOnly: true,
                 changesRelogInterval: preset.changesRelogInterval,
-                changesMinDelta: preset.changesMinDelta,
+                changesMinDelta: type === 'number' ? preset.changesMinDelta : 0,
                 ignoreBelowNumber: "",
                 disableSkippedValueLogging: true,
                 retention: preset.retention,

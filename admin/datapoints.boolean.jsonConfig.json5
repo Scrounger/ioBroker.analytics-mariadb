@@ -1,5 +1,5 @@
 {
-    label: 'Datapoints',
+    label: 'Datapoints (boolean)',
     hidden: '!data.sqlInstance',
     items: {
         donation_link: {
@@ -20,10 +20,10 @@
         dividerDatapoints: {
             newLine: true,
             type: 'header',
-            text: 'Datapoints',
+            text: 'Datapoints (boolean)',
             size: 2,
         },
-        datapointsList: {
+        datapointsBooleanList: {
             newLine: true,
             type: 'table',
             xl: 12,
@@ -57,7 +57,7 @@
                     validator: '!!data.idSource',
                     validatorNoSaveOnError: true,
                     validatorErrorText: 'mandatory input',
-                    customFilter: { common: { type: ['number', 'boolean'] } },
+                    customFilter: { common: { type: ['boolean'] } },
                 },
                 {
                     attr: 'idChannelTarget',
@@ -86,28 +86,11 @@
                     filter: true,
                     noMultiEdit: true,
                     jsonData: '{}', // ToDo: sollte irgendwann mal der Bug mit globalData und JSON.stringify behoben sein, dann hier anpassen
-                    command: 'getDatapointsSqlPresetsList',
+                    command: 'getDatapointsBooleanSqlPresetsList',
                     validator: '!!data.idPreset',
                     validatorNoSaveOnError: true,
                     validatorErrorText: 'mandatory input',
                     width: 280,
-                },
-                {
-                    attr: 'maxDelta',
-                    type: 'number',
-                    title: 'max. delta',
-                    default: 0,
-                    min: 0,
-                    max: 1000,
-                    step: 1,
-                    width: 100,
-                },
-                {
-                    attr: 'ignoreReset',
-                    type: 'checkbox',
-                    title: 'ignore reset',
-                    default: false,
-                    width: 0,
                 },
                 {
                     attr: 'debug',

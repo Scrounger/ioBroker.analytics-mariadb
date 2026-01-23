@@ -15,6 +15,7 @@ class AnalyticsMariadb extends utils.Adapter {
     idTotal = 'total';
     idOldValue = 'oldValue';
     idStorageValue = 'storageValue';
+    idBooleanValue = 'value';
     constructor(options = {}) {
         super({
             ...options,
@@ -78,7 +79,7 @@ class AnalyticsMariadb extends utils.Adapter {
                 if (id.endsWith(`.${this.idTotal}`) || id.endsWith(`.${this.idOldValue}`)) {
                     this.log.error(`${logPrefix} changing object '${id}' is not allowed, please use the adapter configuration! Changes will be undone !`);
                     const idChannel = id.replace(`${this.namespace}.`, '').replace(`.${this.idTotal}`, '').replace(`.${this.idOldValue}`, '');
-                    const item = this.config.datapointsList.find(i => i.idChannelTarget === idChannel);
+                    const item = this.config.datapointsNumberList.find(i => i.idChannelTarget === idChannel);
                     await this.createDatapointsTotalSingle(idChannel, item, false);
                 }
                 else {
@@ -105,8 +106,13 @@ class AnalyticsMariadb extends utils.Adapter {
                     // if state changed outside of this adapter
                     const item = this.sourceToTarget[id];
                     if (item) {
-                        await this.totalChanges(item, id, state);
-                        await this.setStateChangedAsync(`${item.idChannelTarget}.${this.idOldValue}`, state);
+                        if (item.type === 'number') {
+                            await this.totalChanges(item, id, state);
+                            await this.setStateChangedAsync(`${item.idChannelTarget}.${this.idOldValue}`, state);
+                        }
+                        else if (item.type === 'boolean') {
+                            // currently no processing for boolean values
+                        }
                     }
                     else {
                         this.log.warn(`${logPrefix} state '${id}' changed but is not in configured source list, ignoring change.`);
@@ -133,26 +139,39 @@ class AnalyticsMariadb extends utils.Adapter {
     // If you need to accept messages in your adapter, uncomment the following block and the corresponding line in the constructor.
     // /**
     //  * Some message was sent to this instance over message box. Used by email, pushover, text2speech, ...
-    //  * Using this method requires "common.messagebox" property to be set to true in io-package.json
+    //  * Using this method requires 'common.messagebox' property to be set to true in io-package.json
     //  */
     //
     onMessage(obj) {
         const logPrefix = '[onMessage]:';
         try {
             if (typeof obj === 'object') {
-                if (obj.command === 'getDatapointsSqlPresetsList') {
-                    const result = this.config.datapointsSqlPresetsList.map(item => item.idPreset);
+                if (obj.command === 'getDatapointsNumberSqlPresetsList') {
+                    const result = this.config.datapointsSqlPresetsList.filter(p => p.type === 'number').map(p => p.idPreset);
+                    if (obj.callback) {
+                        this.sendTo(obj.from, obj.command, result, obj.callback);
+                    }
+                }
+                else if (obj.command === 'getDatapointsBooleanSqlPresetsList') {
+                    const result = this.config.datapointsSqlPresetsList.filter(p => p.type === 'boolean').map(p => p.idPreset);
                     if (obj.callback) {
                         this.sendTo(obj.from, obj.command, result, obj.callback);
                     }
                 }
                 else if (obj.command === 'getDatapointsList') {
-                    const result = this.config.datapointsList.map(item => {
+                    const numberLists = this.config.datapointsNumberList.map(item => {
                         return {
                             value: `${item.idChannelTarget}.${this.idTotal}`,
-                            label: item.name || item.idChannelTarget
+                            label: item.name ? `${item.name} (${item.idChannelTarget}.${this.idTotal})` : `${item.idChannelTarget}.${this.idTotal}`
                         };
                     });
+                    const booleanLists = this.config.datapointsBooleanList.map(item => {
+                        return {
+                            value: `${item.idChannelTarget}.${this.idBooleanValue}`,
+                            label: item.name ? `${item.name} (${item.idChannelTarget}.${this.idBooleanValue})` : `${item.idChannelTarget}.${this.idBooleanValue}`
+                        };
+                    });
+                    const result = [...numberLists, ...booleanLists];
                     if (obj.callback) {
                         this.sendTo(obj.from, obj.command, result, obj.callback);
                     }
@@ -169,8 +188,8 @@ class AnalyticsMariadb extends utils.Adapter {
     async createDatapointsTotal(isAdapterStart) {
         const logPrefix = '[createDatapointsTotal]:';
         try {
-            if (this.config.datapointsList && this.config.datapointsList.length > 0) {
-                for (const item of this.config.datapointsList) {
+            if (this.config.datapointsNumberList && this.config.datapointsNumberList.length > 0) {
+                for (const item of this.config.datapointsNumberList) {
                     const structure = item.idChannelTarget.split('.');
                     let idChannel = '';
                     for (const id of structure) {
@@ -189,6 +208,7 @@ class AnalyticsMariadb extends utils.Adapter {
                     }
                     await this.createDatapointsTotalSingle(idChannel, item, isAdapterStart);
                 }
+                this.log.debug(`${logPrefix} finished creating datapoints for configured sources: ${JSON.stringify(this.sourceToTarget)}`);
             }
         }
         catch (error) {
@@ -196,7 +216,7 @@ class AnalyticsMariadb extends utils.Adapter {
         }
     }
     async createDatapointsTotalSingle(idChannel, item, isAdapterStart) {
-        const logPrefix = '[createDatapointsTotalSingle]:';
+        const logPrefix = `[createDatapointsTotalSingle] - ${idChannel}:`;
         try {
             if (await this.foreignObjectExists(item.idSource)) {
                 const sourceObj = await this.getForeignObjectAsync(item.idSource);
@@ -208,6 +228,7 @@ class AnalyticsMariadb extends utils.Adapter {
                 await objectHandler.createOrUpdateState(this, utils, `${idChannel}.${this, this.idStorageValue}`, 'helper cumulative total value', totalState.val, sourceObj?.common, item, false, true);
                 if (item.enable) {
                     this.sourceToTarget[item.idSource] = item;
+                    this.sourceToTarget[item.idSource].type = sourceObj?.common.type;
                     await this.subscribeForeignStatesAsync(item.idSource);
                     await this.subscribeObjectsAsync(`${idChannel}.${this, this.idTotal}`);
                     await this.subscribeObjectsAsync(`${idChannel}.${this, this.idOldValue}`);
