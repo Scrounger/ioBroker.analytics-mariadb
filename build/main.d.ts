@@ -1,10 +1,12 @@
 import * as utils from '@iobroker/adapter-core';
+import { SqlInterface } from './lib/sqlInterface.js';
 declare class AnalyticsMariadb extends utils.Adapter {
     sourceToTarget: Record<string, ioBroker.AdapterConfigTypes.DatapointsItem>;
     idTotal: string;
     idOldValue: string;
     idStorageValue: string;
     idBooleanValue: string;
+    sql: SqlInterface;
     constructor(options?: Partial<utils.AdapterOptions>);
     /**
      * Is called when databases are connected and adapter received configuration.
@@ -28,7 +30,7 @@ declare class AnalyticsMariadb extends utils.Adapter {
     private createDatapointsTotal;
     private createDatapointsTotalSingle;
     private totalChanges;
-    private debug;
+    itemDebug(item: ioBroker.AdapterConfigTypes.DatapointsItem, message: string): void;
 }
 export default function startAdapter(options: Partial<utils.AdapterOptions> | undefined): AnalyticsMariadb;
 export {};

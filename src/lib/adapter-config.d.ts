@@ -1,4 +1,5 @@
 // This file extends the AdapterConfig type from "@iobroker/types"
+import { Interval, SqlInterface } from './sqlInterface.js';
 
 // Augment the globally declared type ioBroker.AdapterConfig
 declare global {
@@ -22,6 +23,7 @@ declare global {
                 enable: boolean;
                 idSource: string;
                 idChannelTarget: string;
+                idSql: string;
                 name: string;
                 idPreset: string;
                 maxDelta?: number;
@@ -50,6 +52,12 @@ declare global {
                 years: number;
                 debug: boolean;
             }
+        }
+
+        interface myAdapter extends ioBroker.Adapter {
+            sql: SqlInterface;
+
+            itemDebug(item: ioBroker.AdapterConfigTypes.DatapointsItem, message: string): void
         }
     }
 }

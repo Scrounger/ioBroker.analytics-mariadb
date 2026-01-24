@@ -52,7 +52,7 @@ export async function createOrUpdateState(adapter, utils, id, name, initVal, sou
                 common: common,
                 native: {},
             });
-            await adapter.setState(id, { val: initVal, ack: true });
+            await adapter.setStateChangedAsync(id, { val: initVal, ack: true });
         }
         else {
             const obj = await adapter.getObjectAsync(id);
@@ -74,7 +74,7 @@ export async function createOrUpdateState(adapter, utils, id, name, initVal, sou
  * @returns
  */
 function isStateCommonEqual(objCommon, myCommon, sql, adapter) {
-    return _.isEqual(objCommon.name, myCommon.name) && _.isEqual(objCommon.role, myCommon.role) && _.isEqual(objCommon.unit, myCommon.unit) && (!sql || (objCommon.custom && objCommon.custom[adapter.config.sqlInstance] && _.isEqual(objCommon.custom[adapter.config.sqlInstance], myCommon.custom[adapter.config.sqlInstance])));
+    return _.isEqual(objCommon.name, myCommon.name) && _.isEqual(objCommon.role, myCommon.role) && _.isEqual(objCommon.unit, myCommon.unit) && _.isEqual(objCommon.expert, myCommon.expert) && (!sql || (objCommon.custom && objCommon.custom[adapter.config.sqlInstance] && _.isEqual(objCommon.custom[adapter.config.sqlInstance], myCommon.custom[adapter.config.sqlInstance])));
 }
 /**
      * Compare two objects and return properties that are diffrent

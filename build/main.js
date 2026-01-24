@@ -10,12 +10,14 @@ import * as mathjs from 'mathjs';
 // Load your modules here, e.g.:
 // import * as fs from 'fs';
 import * as objectHandler from './lib/objectHandler.js';
+import { Interval, SqlInterface } from './lib/sqlInterface.js';
 class AnalyticsMariadb extends utils.Adapter {
     sourceToTarget = {};
     idTotal = 'total';
     idOldValue = 'oldValue';
     idStorageValue = 'storageValue';
     idBooleanValue = 'value';
+    sql;
     constructor(options = {}) {
         super({
             ...options,
@@ -37,7 +39,10 @@ class AnalyticsMariadb extends utils.Adapter {
             if (this.config.sqlInstance) {
                 moment.locale(this.language);
                 await utils.I18n.init(`${utils.getAbsoluteDefaultDataDir().replace('iobroker-data/', '')}node_modules/iobroker.${this.name}/admin`, this);
-                await this.createDatapointsTotal(true);
+                this.sql = new SqlInterface(this);
+                await this.createDatapointsTotal(true, this.config.datapointsNumberList);
+                await this.createDatapointsTotal(true, this.config.datapointsBooleanList);
+                this.log.debug(`${logPrefix} finished creating datapoints for configured sources: ${JSON.stringify(this.sourceToTarget)}`);
             }
             else {
                 this.log.error(`${logPrefix} No SQL instance configured in adapter configuration!`);
@@ -76,10 +81,10 @@ class AnalyticsMariadb extends utils.Adapter {
         try {
             if (obj && !obj.from.includes(this.namespace)) {
                 // if objects changed outside of this adapter
-                if (id.endsWith(`.${this.idTotal}`) || id.endsWith(`.${this.idOldValue}`)) {
+                if (id.endsWith(`.${this.idTotal}`) || id.endsWith(`.${this.idOldValue}`) || id.endsWith(`.${this.idBooleanValue}`)) {
                     this.log.error(`${logPrefix} changing object '${id}' is not allowed, please use the adapter configuration! Changes will be undone !`);
-                    const idChannel = id.replace(`${this.namespace}.`, '').replace(`.${this.idTotal}`, '').replace(`.${this.idOldValue}`, '');
-                    const item = this.config.datapointsNumberList.find(i => i.idChannelTarget === idChannel);
+                    const idChannel = id.replace(`${this.namespace}.`, '').replace(`.${this.idTotal}`, '').replace(`.${this.idOldValue}`, '').replace(`.${this.idBooleanValue}`, '');
+                    const item = this.config.datapointsNumberList.find(i => i.idChannelTarget === idChannel) || this.config.datapointsBooleanList.find(i => i.idChannelTarget === idChannel);
                     await this.createDatapointsTotalSingle(idChannel, item, false);
                 }
                 else {
@@ -108,10 +113,15 @@ class AnalyticsMariadb extends utils.Adapter {
                     if (item) {
                         if (item.type === 'number') {
                             await this.totalChanges(item, id, state);
-                            await this.setStateChangedAsync(`${item.idChannelTarget}.${this.idOldValue}`, state);
+                            await this.setState(`${item.idChannelTarget}.${this.idOldValue}`, state);
                         }
                         else if (item.type === 'boolean') {
                             // currently no processing for boolean values
+                            await this.setState(`${item.idChannelTarget}.${this.idBooleanValue}`, state);
+                            const counter = (await this.sql.getCounter(item, Interval.ALL));
+                            if (counter) {
+                                await this.setStateChangedAsync(`${item.idChannelTarget}.${this.idTotal}`, counter.count, true);
+                            }
                         }
                     }
                     else {
@@ -185,11 +195,11 @@ class AnalyticsMariadb extends utils.Adapter {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
     }
-    async createDatapointsTotal(isAdapterStart) {
+    async createDatapointsTotal(isAdapterStart, list) {
         const logPrefix = '[createDatapointsTotal]:';
         try {
-            if (this.config.datapointsNumberList && this.config.datapointsNumberList.length > 0) {
-                for (const item of this.config.datapointsNumberList) {
+            if (list && list.length > 0) {
+                for (const item of list) {
                     const structure = item.idChannelTarget.split('.');
                     let idChannel = '';
                     for (const id of structure) {
@@ -208,7 +218,6 @@ class AnalyticsMariadb extends utils.Adapter {
                     }
                     await this.createDatapointsTotalSingle(idChannel, item, isAdapterStart);
                 }
-                this.log.debug(`${logPrefix} finished creating datapoints for configured sources: ${JSON.stringify(this.sourceToTarget)}`);
             }
         }
         catch (error) {
@@ -221,22 +230,56 @@ class AnalyticsMariadb extends utils.Adapter {
             if (await this.foreignObjectExists(item.idSource)) {
                 const sourceObj = await this.getForeignObjectAsync(item.idSource);
                 const sourceState = await this.getForeignStateAsync(item.idSource);
-                await objectHandler.createOrUpdateState(this, utils, `${idChannel}.${this, this.idTotal}`, 'cumulative total value', sourceState.val, sourceObj?.common, item, true, false);
-                // oldValue & storageValue must have the same value as total at state creation
-                const totalState = await this.getStateAsync(`${idChannel}.${this, this.idTotal}`);
-                await objectHandler.createOrUpdateState(this, utils, `${idChannel}.${this, this.idOldValue}`, 'old meter reading', totalState.val, sourceObj?.common, item, false, true);
-                await objectHandler.createOrUpdateState(this, utils, `${idChannel}.${this, this.idStorageValue}`, 'helper cumulative total value', totalState.val, sourceObj?.common, item, false, true);
-                if (item.enable) {
-                    this.sourceToTarget[item.idSource] = item;
-                    this.sourceToTarget[item.idSource].type = sourceObj?.common.type;
-                    await this.subscribeForeignStatesAsync(item.idSource);
-                    await this.subscribeObjectsAsync(`${idChannel}.${this, this.idTotal}`);
-                    await this.subscribeObjectsAsync(`${idChannel}.${this, this.idOldValue}`);
-                    if (isAdapterStart) {
-                        // beim Start des Adapter's die Werte aktualisieren
-                        await this.totalChanges(item, item.idSource, sourceState);
-                        await this.setStateChangedAsync(`${item.idChannelTarget}.${this.idOldValue}`, sourceState);
+                if (sourceObj?.common.type === 'number') {
+                    await objectHandler.createOrUpdateState(this, utils, `${idChannel}.${this, this.idTotal}`, 'cumulative total value', sourceState.val, sourceObj?.common, item, true, false);
+                    // oldValue & storageValue must have the same value as total at state creation
+                    const totalState = await this.getStateAsync(`${idChannel}.${this, this.idTotal}`);
+                    await objectHandler.createOrUpdateState(this, utils, `${idChannel}.${this, this.idOldValue}`, 'old meter reading', totalState.val, sourceObj?.common, item, false, true);
+                    await objectHandler.createOrUpdateState(this, utils, `${idChannel}.${this, this.idStorageValue}`, 'helper cumulative total value', totalState.val, sourceObj?.common, item, false, true);
+                    if (item.enable) {
+                        this.sourceToTarget[item.idSource] = item;
+                        this.sourceToTarget[item.idSource].type = sourceObj?.common.type;
+                        this.sourceToTarget[item.idSource].idSql = `${idChannel}.${this, this.idTotal}`;
+                        await this.subscribeForeignStatesAsync(item.idSource);
+                        await this.subscribeObjectsAsync(`${idChannel}.${this, this.idTotal}`);
+                        await this.subscribeObjectsAsync(`${idChannel}.${this, this.idOldValue}`);
+                        if (isAdapterStart) {
+                            // beim Start des Adapter's die Werte aktualisieren
+                            await this.totalChanges(item, item.idSource, sourceState);
+                            // old value nach verarbeiteter Änderung setzen
+                            await this.setStateChangedAsync(`${item.idChannelTarget}.${this.idOldValue}`, sourceState);
+                        }
                     }
+                }
+                else if (sourceObj?.common.type === 'boolean') {
+                    const common = {
+                        name: 'total count',
+                        type: 'number',
+                        role: 'value',
+                        read: true,
+                        write: false,
+                    };
+                    await objectHandler.createOrUpdateState(this, utils, `${idChannel}.${this, this.idTotal}`, 'total count', 0, common, item, false, false);
+                    await objectHandler.createOrUpdateState(this, utils, `${idChannel}.${this, this.idBooleanValue}`, 'value', sourceState.val, sourceObj?.common, item, true, true);
+                    if (item.enable) {
+                        this.sourceToTarget[item.idSource] = item;
+                        this.sourceToTarget[item.idSource].type = sourceObj?.common.type;
+                        this.sourceToTarget[item.idSource].idSql = `${idChannel}.${this, this.idBooleanValue}`;
+                        await this.subscribeForeignStatesAsync(item.idSource);
+                        await this.subscribeObjectsAsync(`${idChannel}.${this, this.idTotal}`);
+                        await this.subscribeObjectsAsync(`${idChannel}.${this, this.idBooleanValue}`);
+                        if (isAdapterStart) {
+                            // beim Start des Adapter's die Werte aktualisieren
+                            await this.setStateChangedAsync(`${item.idChannelTarget}.${this.idBooleanValue}`, sourceState);
+                            const counter = (await this.sql.getCounter(item, Interval.ALL));
+                            if (counter) {
+                                await this.setStateChangedAsync(`${item.idChannelTarget}.${this.idTotal}`, counter.count, true);
+                            }
+                        }
+                    }
+                }
+                else {
+                    this.log.error(`${logPrefix} source state '${item.idSource}' has unsupported type '${sourceObj?.common.type}', cannot processing functions for '${item.name}'`);
                 }
             }
             else {
@@ -266,11 +309,11 @@ class AnalyticsMariadb extends utils.Adapter {
                         if ((oldState.val > storageState.val)) {
                             // Rückfalllösung, wenn z.B. Skript oder LXC beendet wurde / crasht
                             delta = (state.val - storageState.val);
-                            this.debug(item, `${logPrefix} calculated delta from storage: (val: ${state.val} - storageVal: ${storageState.val}) = ${mathjs.round(delta, 5)}`);
+                            this.itemDebug(item, `${logPrefix} calculated delta from storage: (val: ${state.val} - storageVal: ${storageState.val}) = ${mathjs.round(delta, 5)}`);
                         }
                         else {
                             delta = (state.val - oldState.val);
-                            this.debug(item, `${logPrefix} calculated delta: (val: ${state.val} - oldVal: ${oldState.val}) = ${mathjs.round(delta, 5)}`);
+                            this.itemDebug(item, `${logPrefix} calculated delta: (val: ${state.val} - oldVal: ${oldState.val}) = ${mathjs.round(delta, 5)}`);
                         }
                         if (delta >= item.maxDelta && item.maxDelta !== 0) {
                             // wenn delta > maxDelta ist, wird ignoriert (kann z.B. bei springenden Scale Faktoren passieren)
@@ -292,7 +335,7 @@ class AnalyticsMariadb extends utils.Adapter {
                         const sum = mathjs.round((total.val + delta), 3);
                         if (sum >= total.val) {
                             await this.setState(`${item.idChannelTarget}.${this.idTotal}`, sum, true);
-                            this.debug(item, `${logPrefix} set new total value: (old total: ${total.val} + delta: ${mathjs.round(delta, 5)}) = ${sum}`);
+                            this.itemDebug(item, `${logPrefix} set new total value: (old total: ${total.val} + delta: ${mathjs.round(delta, 5)}) = ${sum}`);
                         }
                         else {
                             this.log.warn(`${logPrefix} calculated new total value ${sum} is lower than oldVal ${oldState.val} (val: ${state.val} oldVal: ${oldState.val} storageVal: ${storageState.val}, delta: ${mathjs.round(delta, 5)}) -> got a reset`);
@@ -309,7 +352,7 @@ class AnalyticsMariadb extends utils.Adapter {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
     }
-    debug(item, message) {
+    itemDebug(item, message) {
         if (item.debug) {
             this.log.debug(message);
         }

@@ -1,4 +1,3 @@
-import { adapter } from '@iobroker/adapter-core';
 import _ from 'lodash';
 
 export async function createChannel(adapter: ioBroker.Adapter, idChannel: string, name: string): Promise<void> {
@@ -64,7 +63,7 @@ export async function createOrUpdateState(adapter: ioBroker.Adapter, utils: type
                 native: {},
             });
 
-            await adapter.setState(id, { val: initVal, ack: true });
+            await adapter.setStateChangedAsync(id, { val: initVal, ack: true });
         } else {
             const obj = await adapter.getObjectAsync(id);
 
@@ -88,7 +87,7 @@ export async function createOrUpdateState(adapter: ioBroker.Adapter, utils: type
  * @returns
  */
 function isStateCommonEqual(objCommon: ioBroker.StateCommon, myCommon: ioBroker.StateCommon, sql: boolean, adapter: ioBroker.Adapter): boolean {
-    return _.isEqual(objCommon.name, myCommon.name) && _.isEqual(objCommon.role, myCommon.role) && _.isEqual(objCommon.unit, myCommon.unit) && (!sql || (objCommon.custom && objCommon.custom[adapter.config.sqlInstance] && _.isEqual(objCommon.custom[adapter.config.sqlInstance], myCommon.custom[adapter.config.sqlInstance])));
+    return _.isEqual(objCommon.name, myCommon.name) && _.isEqual(objCommon.role, myCommon.role) && _.isEqual(objCommon.unit, myCommon.unit) && _.isEqual(objCommon.expert, myCommon.expert) && (!sql || (objCommon.custom && objCommon.custom[adapter.config.sqlInstance] && _.isEqual(objCommon.custom[adapter.config.sqlInstance], myCommon.custom[adapter.config.sqlInstance])));
 }
 
 /**
