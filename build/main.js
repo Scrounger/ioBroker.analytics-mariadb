@@ -239,7 +239,7 @@ class AnalyticsMariadb extends utils.Adapter {
                     if (item.enable) {
                         this.sourceToTarget[item.idSource] = item;
                         this.sourceToTarget[item.idSource].type = sourceObj?.common.type;
-                        this.sourceToTarget[item.idSource].idSql = `${idChannel}.${this, this.idTotal}`;
+                        this.sourceToTarget[item.idSource].idSql = `${this.namespace}.${idChannel}.${this, this.idTotal}`;
                         await this.subscribeForeignStatesAsync(item.idSource);
                         await this.subscribeObjectsAsync(`${idChannel}.${this, this.idTotal}`);
                         await this.subscribeObjectsAsync(`${idChannel}.${this, this.idOldValue}`);
@@ -264,7 +264,7 @@ class AnalyticsMariadb extends utils.Adapter {
                     if (item.enable) {
                         this.sourceToTarget[item.idSource] = item;
                         this.sourceToTarget[item.idSource].type = sourceObj?.common.type;
-                        this.sourceToTarget[item.idSource].idSql = `${idChannel}.${this, this.idBooleanValue}`;
+                        this.sourceToTarget[item.idSource].idSql = `${this.namespace}.${idChannel}.${this, this.idBooleanValue}`;
                         await this.subscribeForeignStatesAsync(item.idSource);
                         await this.subscribeObjectsAsync(`${idChannel}.${this, this.idTotal}`);
                         await this.subscribeObjectsAsync(`${idChannel}.${this, this.idBooleanValue}`);

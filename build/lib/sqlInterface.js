@@ -43,7 +43,7 @@ export class SqlInterface {
                 WITH dp AS (
                     SELECT id
                     FROM ${this.dbName}.datapoints
-                    WHERE name = '${this.adapter.namespace}.${item.idSql}'
+                    WHERE name = '${item.idSql}'
                 )
                 SELECT
                     DATE_FORMAT(Min(FROM_UNIXTIME(ts / 1000)),'%d.%m.%Y') AS 'start',
@@ -56,6 +56,7 @@ export class SqlInterface {
                         LAG(val) OVER (PARTITION BY id ORDER BY ts) AS prev_val
                     FROM ${this.dbName}.ts_bool
                     WHERE id = (SELECT id FROM dp)
+                    ${item.sqlWhereAppend ? item.sqlWhereAppend : ''}
                 ) n
                 WHERE
                     n.prev_val = 0 AND

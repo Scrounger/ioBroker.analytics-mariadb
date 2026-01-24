@@ -52,8 +52,10 @@ class AnalyticsMariadb extends utils.Adapter {
                 this.sql = new SqlInterface(this);
 
                 await this.createDatapointsTotal(true);
-
                 this.log.debug(`${logPrefix} finished creating datapoints for configured sources: ${JSON.stringify(this.sourceToTarget)}`);
+
+                await this.createDatapointsHistory(true);
+
 
             } else {
                 this.log.error(`${logPrefix} No SQL instance configured in adapter configuration!`);
@@ -275,7 +277,7 @@ class AnalyticsMariadb extends utils.Adapter {
                     if (item.enable) {
                         this.sourceToTarget[item.idSource] = item;
                         this.sourceToTarget[item.idSource].type = sourceObj?.common.type;
-                        this.sourceToTarget[item.idSource].idSql = `${idChannel}.${this, this.idTotal}`;
+                        this.sourceToTarget[item.idSource].idSql = `${this.namespace}.${idChannel}.${this, this.idTotal}`;
 
                         await this.subscribeForeignStatesAsync(item.idSource);
 
@@ -305,7 +307,7 @@ class AnalyticsMariadb extends utils.Adapter {
                     if (item.enable) {
                         this.sourceToTarget[item.idSource] = item;
                         this.sourceToTarget[item.idSource].type = sourceObj?.common.type;
-                        this.sourceToTarget[item.idSource].idSql = `${idChannel}.${this, this.idBooleanValue}`;
+                        this.sourceToTarget[item.idSource].idSql = `${this.namespace}.${idChannel}.${this, this.idBooleanValue}`;
 
                         await this.subscribeForeignStatesAsync(item.idSource);
 
@@ -398,6 +400,16 @@ class AnalyticsMariadb extends utils.Adapter {
                     console.warn(`${logPrefix} val / oldVal is null (val: ${state.val} oldVal: ${total.val})' -> ignore values on this run`);
                 }
             }
+        } catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
+    }
+
+    private async createDatapointsHistory(isAdapterStart: boolean) {
+        const logPrefix = `[createDatapointsHistory]:`;
+
+        try {
+
         } catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }

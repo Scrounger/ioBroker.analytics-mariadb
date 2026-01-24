@@ -93,6 +93,11 @@
                     width: 280,
                 },
                 {
+                    attr: 'sqlWhereAppend',
+                    type: 'text',
+                    title: 'SQL WHERE append',
+                },
+                {
                     attr: 'debug',
                     type: 'checkbox',
                     title: 'debug',

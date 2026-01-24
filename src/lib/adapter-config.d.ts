@@ -28,6 +28,7 @@ declare global {
                 idPreset: string;
                 maxDelta?: number;
                 ignoreReset?: boolean;
+                sqlWhereAppend?: string;
                 debug: boolean;
                 type?: 'number' | 'boolean';        // not used in AdapterConfig
             }
