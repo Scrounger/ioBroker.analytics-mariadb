@@ -13,8 +13,10 @@ export interface SqlCounter {
 export declare class SqlInterface {
     private adapter;
     private log;
+    private sqlInstance;
+    private dbName;
     constructor(adapter: ioBroker.myAdapter);
-    getQuery(): Promise<any>;
+    getDatabaseName(): Promise<void>;
     getCounter(item: ioBroker.AdapterConfigTypes.DatapointsItem, interval: Interval): Promise<SqlCounter | SqlCounter[] | null>;
     private retrieve;
 }

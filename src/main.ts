@@ -51,8 +51,7 @@ class AnalyticsMariadb extends utils.Adapter {
 
                 this.sql = new SqlInterface(this);
 
-                await this.createDatapointsTotal(true, this.config.datapointsNumberList);
-                await this.createDatapointsTotal(true, this.config.datapointsBooleanList);
+                await this.createDatapointsTotal(true);
 
                 this.log.debug(`${logPrefix} finished creating datapoints for configured sources: ${JSON.stringify(this.sourceToTarget)}`);
 
@@ -224,10 +223,12 @@ class AnalyticsMariadb extends utils.Adapter {
         }
     }
 
-    private async createDatapointsTotal(isAdapterStart: boolean, list: ioBroker.AdapterConfigTypes.DatapointsItem[]): Promise<void> {
+    private async createDatapointsTotal(isAdapterStart: boolean): Promise<void> {
         const logPrefix = '[createDatapointsTotal]:';
 
         try {
+            const list = [...this.config.datapointsNumberList, ...this.config.datapointsBooleanList];
+
             if (list && list.length > 0) {
                 for (const item of list) {
                     const structure = item.idChannelTarget.split('.');

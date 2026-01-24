@@ -40,8 +40,7 @@ class AnalyticsMariadb extends utils.Adapter {
                 moment.locale(this.language);
                 await utils.I18n.init(`${utils.getAbsoluteDefaultDataDir().replace('iobroker-data/', '')}node_modules/iobroker.${this.name}/admin`, this);
                 this.sql = new SqlInterface(this);
-                await this.createDatapointsTotal(true, this.config.datapointsNumberList);
-                await this.createDatapointsTotal(true, this.config.datapointsBooleanList);
+                await this.createDatapointsTotal(true);
                 this.log.debug(`${logPrefix} finished creating datapoints for configured sources: ${JSON.stringify(this.sourceToTarget)}`);
             }
             else {
@@ -195,9 +194,10 @@ class AnalyticsMariadb extends utils.Adapter {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
     }
-    async createDatapointsTotal(isAdapterStart, list) {
+    async createDatapointsTotal(isAdapterStart) {
         const logPrefix = '[createDatapointsTotal]:';
         try {
+            const list = [...this.config.datapointsNumberList, ...this.config.datapointsBooleanList];
             if (list && list.length > 0) {
                 for (const item of list) {
                     const structure = item.idChannelTarget.split('.');

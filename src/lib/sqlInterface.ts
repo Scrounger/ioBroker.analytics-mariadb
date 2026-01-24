@@ -22,21 +22,28 @@ export class SqlInterface {
     private adapter: ioBroker.myAdapter;
     private log: ioBroker.Logger;
 
+    private sqlInstance: string;
+    private dbName: string;
+
     constructor(adapter: ioBroker.myAdapter) {
         this.adapter = adapter;
         this.log = adapter.log;
+        this.sqlInstance = adapter.config.sqlInstance;
+
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
+        this.getDatabaseName();
     }
 
-    public async getQuery(): Promise<any> {
-        const logPrefix = '[getQuery]:';
+    public async getDatabaseName(): Promise<void> {
+        const logPrefix = '[getDatabaseName]:';
 
         try {
-            const result = await this.adapter.sendToAsync(this.adapter.config.sqlInstance, 'query', 'SELECT * FROM devBroker.datapoints')
-                .catch((result) => {
-                    this.log.error(`${logPrefix} sql error: ${result}`);
-                });
+            const sqlObj = await this.adapter.getForeignObjectAsync(`system.adapter.${this.sqlInstance}`);
 
-            this.log.warn(JSON.stringify(result));
+            if (sqlObj && sqlObj.native && sqlObj.native.dbname) {
+                this.dbName = sqlObj.native.dbname;
+                this.log.debug(`${logPrefix} database name: ${this.dbName}`);
+            }
         } catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
@@ -49,8 +56,8 @@ export class SqlInterface {
             const query = `
                 WITH dp AS (
                     SELECT id
-                    FROM devBroker.datapoints
-                    WHERE name = '${item.idSql}'
+                    FROM ${this.dbName}.datapoints
+                    WHERE name = '${this.adapter.namespace}.${item.idSql}'
                 )
                 SELECT
                     DATE_FORMAT(Min(FROM_UNIXTIME(ts / 1000)),'%d.%m.%Y') AS 'start',
@@ -61,7 +68,7 @@ export class SqlInterface {
                         ts,
                         val,
                         LAG(val) OVER (PARTITION BY id ORDER BY ts) AS prev_val
-                    FROM devBroker.ts_bool
+                    FROM ${this.dbName}.ts_bool
                     WHERE id = (SELECT id FROM dp)
                 ) n
                 WHERE
@@ -103,18 +110,24 @@ export class SqlInterface {
         const logPrefix = `[retrieve] ${logP}`;
 
         try {
-            const now = moment();
+            const sqlAlive = await this.adapter.getForeignStateAsync(`system.adapter.${this.sqlInstance}.alive`);
 
-            const data = await this.adapter.sendToAsync(this.adapter.config.sqlInstance, queryType, query)
-                .catch((result) => {
-                    this.log.error(`${logPrefix} sql error: ${result}`);
-                    return null;
-                });
+            if (sqlAlive?.val) {
 
-            this.adapter.itemDebug(item, `${logPrefix} duration: ${moment().diff(now, 'milliseconds') / 1000}s, data: ${JSON.stringify(data)}`);
+                const now = moment();
 
-            return data
+                const data = await this.adapter.sendToAsync(this.sqlInstance, queryType, query)
+                    .catch((result) => {
+                        this.log.error(`${logPrefix} sql error: ${result}`);
+                        return null;
+                    });
 
+                this.adapter.itemDebug(item, `${logPrefix} duration: ${moment().diff(now, 'milliseconds') / 1000}s, data: ${JSON.stringify(data)}`);
+
+                return data
+            } else {
+                this.log.error(`${logPrefix} SQL instance '${this.sqlInstance}' is not alive`);
+            }
         } catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
