@@ -9,10 +9,12 @@ import url from 'node:url';
 import moment from 'moment';
 import * as mathjs from 'mathjs'
 
+
 // Load your modules here, e.g.:
 // import * as fs from 'fs';
 import * as objectHandler from './lib/objectHandler.js';
 import { Interval, SqlInterface, SqlCounter } from './lib/sqlInterface.js';
+import * as helper from './lib/helper.js';
 
 class AnalyticsMariadb extends utils.Adapter {
 
@@ -22,6 +24,8 @@ class AnalyticsMariadb extends utils.Adapter {
     idOldValue = 'oldValue';
     idStorageValue = 'storageValue';
     idBooleanValue = 'value'
+
+    idChannelHistory = 'history';
 
     sql: SqlInterface;
 
@@ -55,6 +59,7 @@ class AnalyticsMariadb extends utils.Adapter {
                 this.log.debug(`${logPrefix} finished creating datapoints for configured sources: ${JSON.stringify(this.sourceToTarget)}`);
 
                 await this.createDatapointsHistory(true);
+                await this.updateNamesOfDatapointsHistory();
 
 
             } else {
@@ -244,9 +249,9 @@ class AnalyticsMariadb extends utils.Adapter {
                         }
 
                         if (structure.indexOf(id) !== structure.length - 1) {
-                            await objectHandler.createChannel(this, idChannel, id);
+                            await objectHandler.createChannel(this, utils, idChannel, id);
                         } else {
-                            await objectHandler.createChannel(this, idChannel, item.name || id);
+                            await objectHandler.createChannel(this, utils, idChannel, item.name || id);
                         }
                     }
 
@@ -294,14 +299,14 @@ class AnalyticsMariadb extends utils.Adapter {
                     }
                 } else if (sourceObj?.common.type === 'boolean') {
                     const common: ioBroker.StateCommon = {
-                        name: 'total count',
+                        name: 'total number',
                         type: 'number',
                         role: 'value',
                         read: true,
                         write: false,
                     };
 
-                    await objectHandler.createOrUpdateState(this, utils, `${idChannel}.${this, this.idTotal}`, 'total count', 0, common, item, false, false);
+                    await objectHandler.createOrUpdateState(this, utils, `${idChannel}.${this, this.idTotal}`, 'total number', 0, common, item, false, false);
                     await objectHandler.createOrUpdateState(this, utils, `${idChannel}.${this, this.idBooleanValue}`, 'value', sourceState.val, sourceObj?.common as ioBroker.StateCommon, item, true, true);
 
                     if (item.enable) {
@@ -409,7 +414,113 @@ class AnalyticsMariadb extends utils.Adapter {
         const logPrefix = `[createDatapointsHistory]:`;
 
         try {
+            const list = [...this.config.historyList];
 
+            const commonHistory: ioBroker.StateCommon = {
+                name: 'generic',
+                type: 'number',
+                role: 'state',
+                read: true,
+                write: false,
+                def: 0,
+            }
+
+            for (const item of list) {
+                const idChannel = helper.getIdWithoutLastPart(item.id);
+                objectHandler.createChannel(this, utils, `${idChannel}.${this.idChannelHistory}`, 'historical values');
+
+                const itemObj = await this.getObjectAsync(item.id);
+                commonHistory.unit = itemObj?.common?.unit;
+
+                for (const interval of Object.keys(Interval)) {
+                    if (interval !== Interval.ALL) {
+                        objectHandler.createOrUpdateState(this, utils, `${idChannel}.${this.idChannelHistory}.${interval}`, `tbd`, 0, commonHistory, undefined, false, false);
+
+                        objectHandler.createChannel(this, utils, `${idChannel}.${this.idChannelHistory}._${interval}`, `past ${interval}s`);
+
+                        if (item[interval] > 0) {
+                            for (let i = 1; i <= item[interval]; i++) {
+                                objectHandler.createOrUpdateState(this, utils, `${idChannel}.${this.idChannelHistory}._${interval}.${interval}_${helper.zeroPad(i, 2)}`, `tbd`, 0, commonHistory, undefined, false, false);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
+    }
+
+    private async updateNamesOfDatapointsHistory(): Promise<void> {
+        const logPrefix = `[updateNamesOfDatapointsHistory]:`;
+
+        try {
+            const list = [...this.config.historyList];
+
+            for (const item of list) {
+                const idChannel = helper.getIdWithoutLastPart(item.id);
+
+                for (const interval of Object.keys(Interval)) {
+                    if (interval !== Interval.ALL) {
+                        let name = '';
+
+                        if (interval === Interval.day) {
+                            name = `${utils.I18n.translate('today')} ${moment().format('DD.MM.')}`
+                        } else if (interval === Interval.week) {
+                            name = `${utils.I18n.translate('this week')} (${moment().startOf('week').format('DD.MM.')} - ${moment().format('DD.MM.')})`
+                        } else if (interval === Interval.month) {
+                            name = moment().format('MMMM YYYY');
+                        } else if (interval === Interval.year) {
+                            name = moment().format('YYYY');
+                        } else {
+                            continue;
+                        }
+
+                        await this._updateNamesOfDatapointsHistory(`${idChannel}.${this.idChannelHistory}.${interval}`, name, logPrefix);
+
+                        if (item[interval] > 0) {
+                            for (let i = 1; i <= item[interval]; i++) {
+                                if (interval === Interval.day) {
+                                    if (i === 1) {
+                                        name = `Gestern ${moment().add(-i, 'days').format('DD.MM.')}`
+                                    } else {
+                                        name = moment().add(-i, 'days').format('dddd DD.MM.');
+                                    }
+                                } else if (interval === Interval.week) {
+                                    if (i === 1) {
+                                        name = `letzte Woche (${moment().add(-i, 'week').startOf('week').format('DD.MM.')} - ${moment().add(-i, 'week').endOf('week').format('DD.MM.')})`
+                                    } else {
+                                        name = `vor ${i} Wochen (${moment().add(-i, 'week').startOf('week').format('DD.MM.')} - ${moment().add(-i, 'week').endOf('week').format('DD.MM.')})`
+                                    }
+                                } else if (interval === Interval.month) {
+                                    name = moment().add(-i, 'month').format('MMMM YYYY');
+                                } else if (interval === Interval.year) {
+                                    name = moment().add(-i, 'year').format('YYYY');
+                                } else {
+                                    continue;
+                                }
+
+                                await this._updateNamesOfDatapointsHistory(`${idChannel}.${this.idChannelHistory}._${interval}.${interval}_${helper.zeroPad(i, 2)}`, name, logPrefix);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
+    }
+
+    private async _updateNamesOfDatapointsHistory(id: string, name: string, logPrefix: string): Promise<void> {
+        try {
+            let obj: any = await this.getObjectAsync(id);
+
+            if (obj && obj.common && obj.common.name !== name) {
+                obj.common.name = name;
+                await this.setObject(id, obj);
+
+                this.log.debug(`${logPrefix} update name of '${id}' to '${name}'`);
+            }
         } catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }

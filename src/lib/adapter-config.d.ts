@@ -47,10 +47,10 @@ declare global {
                 id: string;
                 formula?: string;
                 decimals: number;
-                days: number;
-                weeks: number;
-                months: number;
-                years: number;
+                day: number;
+                week: number;
+                month: number;
+                year: number;
                 debug: boolean;
             }
         }

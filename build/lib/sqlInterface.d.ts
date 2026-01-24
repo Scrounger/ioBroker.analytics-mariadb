@@ -1,9 +1,9 @@
 export declare enum Interval {
-    DAILY = "daily",
-    WEEKLY = "weekly",
-    MONTHLY = "monthly",
-    YEARLY = "yearly",
-    ALL = "all"
+    day = "day",
+    week = "week",
+    month = "month",
+    year = "year",
+    ALL = "ALL"
 }
 export interface SqlCounter {
     start: string;

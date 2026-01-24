@@ -1,11 +1,11 @@
 import moment from "moment";
 export var Interval;
 (function (Interval) {
-    Interval["DAILY"] = "daily";
-    Interval["WEEKLY"] = "weekly";
-    Interval["MONTHLY"] = "monthly";
-    Interval["YEARLY"] = "yearly";
-    Interval["ALL"] = "all";
+    Interval["day"] = "day";
+    Interval["week"] = "week";
+    Interval["month"] = "month";
+    Interval["year"] = "year";
+    Interval["ALL"] = "ALL";
 })(Interval || (Interval = {}));
 var QueryTaype;
 (function (QueryTaype) {

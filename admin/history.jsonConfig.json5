@@ -65,7 +65,7 @@
                     width: 85,
                 },
                 {
-                    attr: 'days',
+                    attr: 'day',
                     type: 'number',
                     title: 'days',
                     min: 0,
@@ -78,7 +78,7 @@
                     width: 85,
                 },
                 {
-                    attr: 'weeks',
+                    attr: 'week',
                     type: 'number',
                     title: 'weeks',
                     min: 0,
@@ -91,7 +91,7 @@
                     width: 85,
                 },
                 {
-                    attr: 'months',
+                    attr: 'month',
                     type: 'number',
                     title: 'months',
                     min: 0,
@@ -104,7 +104,7 @@
                     width: 85,
                 },
                 {
-                    attr: 'years',
+                    attr: 'year',
                     type: 'number',
                     title: 'years',
                     min: 0,

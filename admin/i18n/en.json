@@ -46,5 +46,13 @@
     "Datapoints presets for SQL": "Datapoints presets for SQL",
     "decimals": "decimals",
     "Datapoints (boolean)": "Datapoints (boolean)",
-    "History calculated": "History calculated"
+    "History calculated": "History calculated",
+    "past days": "past days",
+    "past weeks": "past weeks",
+    "past months": "past months",
+    "past years": "past years",
+    "historical values": "historical values",
+    "today": "today",
+    "this week": "this week",
+    "total number": "total number"
 }

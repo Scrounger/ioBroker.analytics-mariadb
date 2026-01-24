@@ -6,6 +6,7 @@ declare class AnalyticsMariadb extends utils.Adapter {
     idOldValue: string;
     idStorageValue: string;
     idBooleanValue: string;
+    idChannelHistory: string;
     sql: SqlInterface;
     constructor(options?: Partial<utils.AdapterOptions>);
     /**
@@ -30,6 +31,9 @@ declare class AnalyticsMariadb extends utils.Adapter {
     private createDatapointsTotal;
     private createDatapointsTotalSingle;
     private totalChanges;
+    private createDatapointsHistory;
+    private updateNamesOfDatapointsHistory;
+    private _updateNamesOfDatapointsHistory;
     itemDebug(item: ioBroker.AdapterConfigTypes.DatapointsItem, message: string): void;
 }
 export default function startAdapter(options: Partial<utils.AdapterOptions> | undefined): AnalyticsMariadb;

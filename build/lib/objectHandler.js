@@ -1,20 +1,41 @@
 import _ from 'lodash';
-export async function createChannel(adapter, idChannel, name) {
+import * as helper from './helper.js';
+export async function createChannel(adapter, utils, idChannel, name) {
     const logPrefix = '[objectHandler.createChannel]:';
     try {
-        await adapter.setObjectNotExistsAsync(idChannel, {
-            type: 'channel',
-            common: {
-                name: name,
-            },
-            native: {},
-        });
+        if (typeof name === 'string') {
+            const translation = utils.I18n.getTranslatedObject(name);
+            name = translation && Object.keys(translation).length > 1 ? translation : name;
+        }
+        const common = {
+            name: name
+        };
+        if (!(await adapter.objectExists(idChannel))) {
+            await adapter.setObject(idChannel, {
+                type: 'channel',
+                common: common,
+                native: {},
+            });
+        }
+        else {
+            const obj = await adapter.getObjectAsync(idChannel);
+            if (obj && obj.common) {
+                if (!isChannelCommonEqual(obj.common, common)) {
+                    await adapter.extendObject(idChannel, { common: common });
+                    const diff = deepDiffBetweenObjects(common, obj.common, adapter);
+                    if (diff && diff.icon) {
+                        diff.icon = _.truncate(diff.icon);
+                    } // reduce base64 image string for logging
+                    adapter.log.debug(`${logPrefix} channel updated '${idChannel}' (updated properties: ${JSON.stringify(diff)})`);
+                }
+            }
+        }
     }
     catch (error) {
         adapter.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
     }
 }
-export async function createOrUpdateState(adapter, utils, id, name, initVal, sourceCommon, item, sql = false, expert = false) {
+export async function createOrUpdateState(adapter, utils, id, name, initVal, sourceCommon, item = undefined, sql = false, expert = false) {
     const logPrefix = '[objectHandler.createOrUpdateState]:';
     try {
         if (typeof name === 'string') {
@@ -34,7 +55,8 @@ export async function createOrUpdateState(adapter, utils, id, name, initVal, sou
         if (expert) {
             common.expert = true;
         }
-        if (sql) {
+        common.role = sourceCommon.role && sourceCommon.role !== 'state' && sourceCommon.role !== 'value' ? sourceCommon.role : assignPredefinedRoles(common, id, adapter);
+        if (item && sql) {
             const sqlPreset = getSqlPreset(item.idPreset, item.type, adapter);
             if (sqlPreset) {
                 common.custom = common.custom || {};
@@ -67,6 +89,16 @@ export async function createOrUpdateState(adapter, utils, id, name, initVal, sou
     }
 }
 /**
+ * Compare common properties of channel
+ *
+ * @param objCommon
+ * @param myCommon
+ * @returns
+ */
+function isChannelCommonEqual(objCommon, myCommon) {
+    return (!myCommon.name || _.isEqual(objCommon.name, myCommon.name)) && (!myCommon.icon || objCommon.icon === myCommon.icon) && objCommon.desc === myCommon.desc && objCommon.role === myCommon.role;
+}
+/**
  * Compare common properties of state
  *
  * @param objCommon
@@ -75,6 +107,131 @@ export async function createOrUpdateState(adapter, utils, id, name, initVal, sou
  */
 function isStateCommonEqual(objCommon, myCommon, sql, adapter) {
     return _.isEqual(objCommon.name, myCommon.name) && _.isEqual(objCommon.role, myCommon.role) && _.isEqual(objCommon.unit, myCommon.unit) && _.isEqual(objCommon.expert, myCommon.expert) && (!sql || (objCommon.custom && objCommon.custom[adapter.config.sqlInstance] && _.isEqual(objCommon.custom[adapter.config.sqlInstance], myCommon.custom[adapter.config.sqlInstance])));
+}
+function assignPredefinedRoles(common, id, adapter) {
+    //https://github.com/ioBroker/ioBroker.docs/blob/master/docs/en/dev/stateroles.md
+    const logPrefix = '[myIob.assignPredefinedRoles]:';
+    try {
+        id = helper.getIdLastPart(id);
+        if (common.type === 'boolean') {
+            if (common.read === true && common.write === true) {
+                if (id.toLocaleLowerCase().includes('enable')) {
+                    return 'switch.enable';
+                }
+                if (id.toLocaleLowerCase().includes('light') || id.toLocaleLowerCase().includes('led')) {
+                    return 'switch.light';
+                }
+                if (id.toLocaleLowerCase().includes('power') || id.toLocaleLowerCase().includes('poe')) {
+                    return 'switch.power';
+                }
+                return 'switch';
+            }
+            if (common.read === true && common.write === false) {
+                if (id.toLocaleLowerCase().includes('connected') || id.toLocaleLowerCase().includes('reachable') || id.toLocaleLowerCase().includes('isonline')) {
+                    return 'indicator.reachable';
+                }
+                if (id.toLocaleLowerCase().includes('error')) {
+                    return 'indicator.error';
+                }
+                if (id.toLocaleLowerCase().includes('alarm')) {
+                    return 'indicator.alarm';
+                }
+                if (id.toLocaleLowerCase().includes('maintenance')) {
+                    return 'indicator.maintenance';
+                }
+                return 'sensor';
+            }
+        }
+        if (common.type === 'number') {
+            let suffix = '';
+            if (common.unit === '°C' || common.unit === '°F' || common.unit === 'K' || id.toLowerCase().includes('temperatur')) {
+                suffix = '.temperature';
+            }
+            if (common.unit === 'lux') {
+                suffix = '.brightness';
+            }
+            if (common.unit === 'ppm') {
+                suffix = '.co2';
+            }
+            if (common.unit === 'mbar') {
+                suffix = '.pressure';
+            }
+            if (common.unit === 'Wh' || common.unit === 'kWh') {
+                suffix = '.energy';
+            }
+            if (common.unit === 'W' || common.unit === 'kW') {
+                suffix = '.power';
+            }
+            if (common.unit === 'A') {
+                suffix = '.current';
+            }
+            if (common.unit === 'V') {
+                suffix = '.voltage';
+            }
+            if (common.unit === 'Hz') {
+                suffix = '.frequency';
+            }
+            if (id.toLocaleLowerCase().includes('longitude')) {
+                suffix = '.gps.longitude';
+            }
+            if (id.toLocaleLowerCase().includes('latitude')) {
+                suffix = '.gps.latitude';
+            }
+            if (id.toLowerCase().includes('humidity') && common.unit !== '') {
+                suffix = '.humidity';
+            }
+            if (id.toLowerCase().includes('battery') && common.unit === '%') {
+                suffix = '.battery';
+            }
+            if (id.toLowerCase().includes('volume') && common.unit === '%') {
+                suffix = '.volume';
+            }
+            if (common.read === true && common.write === true) {
+                return `level${suffix}`;
+            }
+            if (common.read === false && common.write === true) {
+                return `level${suffix}`;
+            }
+            if (common.read === true && common.write === false) {
+                return `value${suffix}`;
+            }
+        }
+        if (common.type === 'string') {
+            if (common.read === true && common.write === false) {
+                if (id.toLocaleLowerCase().includes('firmware') || id.toLocaleLowerCase().includes('version')) {
+                    return 'info.firmware';
+                }
+                else if (id.toLocaleLowerCase().includes('status')) {
+                    return 'info.status';
+                }
+                else if (id.toLocaleLowerCase().includes('model')) {
+                    return 'info.model';
+                }
+                else if (id.toLocaleLowerCase().includes('mac')) {
+                    return 'info.mac';
+                }
+                else if (id.toLocaleLowerCase().includes('name')) {
+                    return 'info.name';
+                }
+                else if (id.toLocaleLowerCase().includes('hardware')) {
+                    return 'info.hardware';
+                }
+                else if (id.toLocaleLowerCase().includes('serial')) {
+                    return 'info.serial';
+                }
+                else {
+                    return 'text';
+                }
+            }
+            else {
+                return 'text';
+            }
+        }
+    }
+    catch (error) {
+        adapter.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+    }
+    return 'state';
 }
 /**
      * Compare two objects and return properties that are diffrent
