@@ -61,6 +61,9 @@ declare global {
         interface myAdapter extends ioBroker.Adapter {
             sql: SqlInterface;
 
+            sourceToDatapoint: Record<string, ioBroker.AdapterConfigTypes.DatapointsItem>;
+            timeoutBoolean: Record<string, ioBroker.Timeout>;
+
             itemDebug(item: ioBroker.AdapterConfigTypes.DatapointsItem, message: string): void
         }
     }

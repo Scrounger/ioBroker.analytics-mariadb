@@ -7,18 +7,17 @@
 import * as utils from '@iobroker/adapter-core';
 import url from 'node:url';
 import moment from 'moment';
-import * as mathjs from 'mathjs'
 
 
 // Load your modules here, e.g.:
 // import * as fs from 'fs';
-import * as objectHandler from './lib/objectHandler.js';
-import { Interval, SqlInterface, SqlCounter } from './lib/sqlInterface.js';
-import * as helper from './lib/helper.js';
+import { SqlInterface } from './lib/sqlInterface.js';
+import { History } from './lib/history.js';
+import { Datapoints } from './lib/datapoints.js';
 
 class AnalyticsMariadb extends utils.Adapter {
 
-    sourceToTarget: Record<string, ioBroker.AdapterConfigTypes.DatapointsItem> = {};
+    sourceToDatapoint: Record<string, ioBroker.AdapterConfigTypes.DatapointsItem> = {};
 
     timeoutBoolean: Record<string, ioBroker.Timeout> = {};
 
@@ -27,9 +26,10 @@ class AnalyticsMariadb extends utils.Adapter {
     idStorageValue = 'storageValue';
     idBooleanValue = 'value'
 
-    idChannelHistory = 'history';
 
     sql: SqlInterface;
+    datapoints: Datapoints;
+    history: History;
 
     public constructor(options: Partial<utils.AdapterOptions> = {}) {
         super({
@@ -57,12 +57,11 @@ class AnalyticsMariadb extends utils.Adapter {
 
                 this.sql = new SqlInterface(this);
 
-                await this.createDatapointsTotal(true);
-                this.log.debug(`${logPrefix} finished creating datapoints for configured sources: ${JSON.stringify(this.sourceToTarget)}`);
+                this.datapoints = new Datapoints(this, utils);
+                await this.datapoints.init();
 
-                await this.createDatapointsHistory(true);
-                await this.updateNamesOfDatapointsHistory();
-
+                this.history = new History(this, utils);
+                await this.history.init();
 
             } else {
                 this.log.error(`${logPrefix} No SQL instance configured in adapter configuration!`);
@@ -104,16 +103,10 @@ class AnalyticsMariadb extends utils.Adapter {
 
         try {
             if (obj && !obj.from.includes(this.namespace)) {
-                // if objects changed outside of this adapter
+                // if adapter objects changed from outside of this adapter
 
                 if (id.endsWith(`.${this.idTotal}`) || id.endsWith(`.${this.idOldValue}`) || id.endsWith(`.${this.idBooleanValue}`)) {
-                    this.log.error(`${logPrefix} changing object '${id}' is not allowed, please use the adapter configuration! Changes will be undone !`);
-
-                    const idChannel = id.replace(`${this.namespace}.`, '').replace(`.${this.idTotal}`, '').replace(`.${this.idOldValue}`, '').replace(`.${this.idBooleanValue}`, '');
-
-                    const item = this.config.datapointsNumberList.find(i => i.idChannelTarget === idChannel) || this.config.datapointsBooleanList.find(i => i.idChannelTarget === idChannel);
-
-                    await this.createDatapointsTotalSingle(idChannel, item, false);
+                    await this.datapoints.onObjectChange(id);
 
                 } else {
                     // The object was changed
@@ -135,59 +128,20 @@ class AnalyticsMariadb extends utils.Adapter {
         const logPrefix = '[onStateChange]:';
 
         try {
-
             if (state) {
                 if (!state.from.includes(this.namespace)) {
-                    // if state changed outside of this adapter
-
-                    const item = this.sourceToTarget[id];
+                    // source states changed
+                    const item = this.sourceToDatapoint[id];
 
                     if (item) {
-                        if (item.type === 'number') {
-                            await this.totalChanges(item, id, state);
-
-                            await this.setState(`${item.idChannelTarget}.${this.idOldValue}`, state);
-
-                        } else if (item.type === 'boolean') {
-                            const idTarget = `${item.idChannelTarget}.${this.idBooleanValue}`
-                            const targetState = await this.getStateAsync(idTarget);
-
-                            if (state.val !== targetState.val) {
-                                // nur ausführen, wenn sich der Wert / ack auch geändert hat
-                                if (this.timeoutBoolean[id]) {
-                                    this.clearTimeout(this.timeoutBoolean[id]);
-                                }
-
-                                this.timeoutBoolean[idTarget] = this.setTimeout(async () => {
-                                    // we need a timeout, because sql need some time to write the new value in the database
-                                    const counter = (await this.sql.getCounter(item, Interval.ALL)) as SqlCounter;
-                                    if (counter) {
-                                        await this.setStateChangedAsync(`${item.idChannelTarget}.${this.idTotal}`, { val: counter.count, lc: state.lc, ack: true });
-                                    }
-
-                                    this.clearTimeout(this.timeoutBoolean[id]);
-                                    delete this.timeoutBoolean[id];
-
-                                }, this.config.sqlWriteTimeout);
-                            }
-
-                            await this.setState(idTarget, state);
-                        }
+                        await this.datapoints.onStateChange(item, id, state);
                     } else {
                         this.log.warn(`${logPrefix} state '${id}' changed but is not in configured source list, ignoring change.`);
                     }
+                } else if (state.from.includes(this.namespace)) {
+                    // adapter states changed
+
                 }
-
-                // // The state was changed
-                // this.log.info(`state ${id} changed: ${state.val} (ack = ${state.ack})`);
-
-                // if (state.ack === false) {
-                //     // This is a command from the user (e.g., from the UI or other adapter)
-                //     // and should be processed by the adapter
-                //     this.log.info(`User command received for ${id}: ${state.val}`);
-
-                //     // TODO: Add your control logic here
-                // }
             } else {
                 // The object was deleted or the state value has expired
                 this.log.info(`state ${id} deleted`);
@@ -245,324 +199,6 @@ class AnalyticsMariadb extends utils.Adapter {
                 }
             }
 
-        } catch (error) {
-            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
-        }
-    }
-
-    private async createDatapointsTotal(isAdapterStart: boolean): Promise<void> {
-        const logPrefix = '[createDatapointsTotal]:';
-
-        try {
-            const list = [...this.config.datapointsNumberList, ...this.config.datapointsBooleanList];
-
-            if (list && list.length > 0) {
-                for (const item of list) {
-                    const structure = item.idChannelTarget.split('.');
-
-                    let idChannel = '';
-                    for (const id of structure) {
-                        if (!idChannel) {
-                            idChannel = id;
-                        } else {
-                            idChannel = `${idChannel}.${id}`;
-                        }
-
-                        if (structure.indexOf(id) !== structure.length - 1) {
-                            await objectHandler.createChannel(this, utils, idChannel, id);
-                        } else {
-                            await objectHandler.createChannel(this, utils, idChannel, item.name || id);
-                        }
-                    }
-
-                    await this.createDatapointsTotalSingle(idChannel, item, isAdapterStart);
-                }
-            }
-        } catch (error) {
-            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
-        }
-    }
-
-    private async createDatapointsTotalSingle(idChannel: string, item: ioBroker.AdapterConfigTypes.DatapointsItem, isAdapterStart: boolean): Promise<void> {
-        const logPrefix = `[createDatapointsTotalSingle] - ${idChannel}:`;
-
-        try {
-            if (await this.foreignObjectExists(item.idSource)) {
-                const sourceObj = await this.getForeignObjectAsync(item.idSource);
-                const sourceState = await this.getForeignStateAsync(item.idSource);
-
-                if (sourceObj?.common.type === 'number') {
-                    await objectHandler.createOrUpdateState(this, utils, `${idChannel}.${this, this.idTotal}`, 'cumulative total value', sourceState.val, sourceObj?.common as ioBroker.StateCommon, item, true, false);
-
-                    // oldValue & storageValue must have the same value as total at state creation
-                    const totalState = await this.getStateAsync(`${idChannel}.${this, this.idTotal}`);
-                    await objectHandler.createOrUpdateState(this, utils, `${idChannel}.${this, this.idOldValue}`, 'old meter reading', totalState.val, sourceObj?.common as ioBroker.StateCommon, item, false, true);
-                    await objectHandler.createOrUpdateState(this, utils, `${idChannel}.${this, this.idStorageValue}`, 'helper cumulative total value', totalState.val, sourceObj?.common as ioBroker.StateCommon, item, false, true);
-
-                    if (item.enable) {
-                        this.sourceToTarget[item.idSource] = item;
-                        this.sourceToTarget[item.idSource].type = sourceObj?.common.type;
-                        this.sourceToTarget[item.idSource].idSql = `${this.namespace}.${idChannel}.${this, this.idTotal}`;
-
-                        await this.subscribeForeignStatesAsync(item.idSource);
-
-                        await this.subscribeObjectsAsync(`${idChannel}.${this, this.idTotal}`);
-                        await this.subscribeObjectsAsync(`${idChannel}.${this, this.idOldValue}`);
-
-                        if (isAdapterStart) {
-                            // beim Start des Adapter's die Werte aktualisieren
-                            await this.totalChanges(item, item.idSource, sourceState);
-
-                            // old value nach verarbeiteter Änderung setzen
-                            await this.setStateChangedAsync(`${item.idChannelTarget}.${this.idOldValue}`, sourceState);
-                        }
-                    }
-                } else if (sourceObj?.common.type === 'boolean') {
-                    const common: ioBroker.StateCommon = {
-                        name: 'total number',
-                        type: 'number',
-                        role: 'value',
-                        read: true,
-                        write: false,
-                    };
-
-                    await objectHandler.createOrUpdateState(this, utils, `${idChannel}.${this, this.idTotal}`, 'total number', 0, common, item, false, false);
-                    await objectHandler.createOrUpdateState(this, utils, `${idChannel}.${this, this.idBooleanValue}`, 'value', sourceState.val, sourceObj?.common as ioBroker.StateCommon, item, true, true);
-
-                    if (item.enable) {
-                        this.sourceToTarget[item.idSource] = item;
-                        this.sourceToTarget[item.idSource].type = sourceObj?.common.type;
-                        this.sourceToTarget[item.idSource].idSql = `${this.namespace}.${idChannel}.${this, this.idBooleanValue}`;
-
-                        await this.subscribeForeignStatesAsync(item.idSource);
-
-                        await this.subscribeObjectsAsync(`${idChannel}.${this, this.idTotal}`);
-                        await this.subscribeObjectsAsync(`${idChannel}.${this, this.idBooleanValue}`);
-
-                        if (isAdapterStart) {
-                            // beim Start des Adapter's die Werte aktualisieren
-                            await this.setStateChangedAsync(`${item.idChannelTarget}.${this.idBooleanValue}`, sourceState);
-
-                            const counter = (await this.sql.getCounter(item, Interval.ALL)) as SqlCounter;
-                            if (counter) {
-                                await this.setStateChangedAsync(`${item.idChannelTarget}.${this.idTotal}`, counter.count, true);
-                            }
-                        }
-                    }
-                } else {
-                    this.log.error(`${logPrefix} source state '${item.idSource}' has unsupported type '${sourceObj?.common.type}', cannot processing functions for '${item.name}'`);
-                }
-
-            } else {
-                this.log.warn(`${logPrefix} source state '${item.idSource}' does not exist, cannot processing functions for '${item.name}' ('${idChannel}')`);
-                item.enable = false;
-            }
-
-        } catch (error) {
-            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
-        }
-    }
-
-    private async totalChanges(item: ioBroker.AdapterConfigTypes.DatapointsItem, idState: string, state: ioBroker.State): Promise<void> {
-        const logPrefix = `[totalChanges] '${idState}': `;
-
-        try {
-            if (item.enable) {
-                const total = await this.getStateAsync(`${item.idChannelTarget}.${this.idTotal}`);
-                const oldState = await this.getStateAsync(`${item.idChannelTarget}.${this.idOldValue}`);
-
-                if (state.val !== null || oldState.val !== null) {
-                    total.val = total.val as number;
-                    state.val = state.val as number;
-                    oldState.val = oldState.val as number;
-
-                    if (state.lc - total.lc > this.config.totalDebounceTime * 1000) {
-                        // entprellen
-                        const storageState = await this.getStateAsync(`${item.idChannelTarget}.${this.idStorageValue}`);
-                        storageState.val = storageState.val as number;
-
-                        let delta = 0;
-
-                        if ((oldState.val > storageState.val)) {
-                            // Rückfalllösung, wenn z.B. Skript oder LXC beendet wurde / crasht
-                            delta = (state.val - storageState.val);
-                            this.itemDebug(item, `${logPrefix} calculated delta from storage: (val: ${state.val} - storageVal: ${storageState.val}) = ${mathjs.round(delta, 5)}`);
-                        } else {
-                            delta = (state.val - oldState.val);
-                            this.itemDebug(item, `${logPrefix} calculated delta: (val: ${state.val} - oldVal: ${oldState.val}) = ${mathjs.round(delta, 5)}`);
-                        }
-
-                        if (delta >= item.maxDelta && item.maxDelta !== 0) {
-                            // wenn delta > maxDelta ist, wird ignoriert (kann z.B. bei springenden Scale Faktoren passieren)
-                            this.log.warn(`${logPrefix} delta ${mathjs.round(delta, 5)} is bigger than configured max. delta ${item.maxDelta} (val: ${state.val} oldVal: ${oldState.val} storageVal: ${storageState.val}) -> ignore on this run`);
-                            return;
-                        }
-
-                        if (item.ignoreReset) {
-                            if (delta <= 0) {
-                                // delta ist kleiner 0, d.h. Wert liegt unter altem Wert
-                                this.log.warn(`${logPrefix} delta ${mathjs.round(delta, 5)} is <= 0 and ignore reset is active (val: ${state.val} oldVal: ${oldState.val} storageVal: ${storageState.val}) -> ignore on this run`);
-                                return;
-                            } else if (oldState.val < storageState.val) {
-                                // solange oldVal nicht über altem gespeichertem Wert liegt wird ignoriert
-                                this.log.warn(`${logPrefix} oldVal ${oldState.val} < storageVal ${storageState.val} and ignore reset is active (val: ${state.val} oldVal: ${oldState.val} storageVal: ${storageState.val}) -> ignore on this run`);
-                                return;
-                            }
-                        }
-
-                        const sum = mathjs.round((total.val + delta), 3);
-
-                        if (sum >= total.val) {
-                            await this.setState(`${item.idChannelTarget}.${this.idTotal}`, sum, true);
-                            this.itemDebug(item, `${logPrefix} set new total value: (old total: ${total.val} + delta: ${mathjs.round(delta, 5)}) = ${sum}`);
-                        } else {
-                            this.log.warn(`${logPrefix} calculated new total value ${sum} is lower than oldVal ${oldState.val} (val: ${state.val} oldVal: ${oldState.val} storageVal: ${storageState.val}, delta: ${mathjs.round(delta, 5)}) -> got a reset`);
-                        }
-
-                        await this.setState(`${item.idChannelTarget}.${this.idStorageValue}`, sum, true);
-                    }
-                } else {
-                    console.warn(`${logPrefix} val / oldVal is null (val: ${state.val} oldVal: ${total.val})' -> ignore values on this run`);
-                }
-            }
-        } catch (error) {
-            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
-        }
-    }
-
-    private async createDatapointsHistory(isAdapterStart: boolean): Promise<void> {
-        const logPrefix = `[createDatapointsHistory]:`;
-
-        try {
-            const list = [...this.config.historyList, ...this.config.historyCalcList];
-
-            const commonHistory: ioBroker.StateCommon = {
-                name: 'generic',
-                type: 'number',
-                role: 'state',
-                read: true,
-                write: false,
-                def: 0,
-            }
-
-            for (const item of list) {
-                const idChannel = item.idChannel || helper.getIdWithoutLastPart(item.id);
-                await objectHandler.createChannel(this, utils, `${idChannel}.${this.idChannelHistory}`, 'historical values');
-
-                if (typeof item.id === 'string') {
-                    // history item
-                    const itemObj = await this.getObjectAsync(item.id);
-                    commonHistory.unit = itemObj?.common?.unit;
-                } else {
-                    // history calc item
-                    commonHistory.unit = item.unit;
-
-                    if (isAdapterStart) {
-                        // creating the channel sturcture for calc items
-                        const structure = item.idChannel.split('.');
-
-                        let idTmp = '';
-                        for (const id of structure) {
-                            if (!idTmp) {
-                                idTmp = id;
-                            } else {
-                                idTmp = `${idTmp}.${id}`;
-                            }
-
-                            await objectHandler.createChannel(this, utils, idTmp, id);
-                        }
-                    }
-                }
-
-                for (const interval of Object.keys(Interval)) {
-                    if (interval !== Interval.ALL) {
-                        await objectHandler.createOrUpdateState(this, utils, `${idChannel}.${this.idChannelHistory}.${interval}`, null, null, commonHistory, undefined, false, false);
-
-                        await objectHandler.createChannel(this, utils, `${idChannel}.${this.idChannelHistory}._${interval}`, `past ${interval}s`);
-
-                        if (item[interval] > 0) {
-                            for (let i = 1; i <= item[interval]; i++) {
-                                await objectHandler.createOrUpdateState(this, utils, `${idChannel}.${this.idChannelHistory}._${interval}.${interval}_${helper.zeroPad(i, 2)}`, null, null, commonHistory, undefined, false, false);
-                            }
-                        }
-                    }
-                }
-            }
-        } catch (error) {
-            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
-        }
-    }
-
-    private async updateNamesOfDatapointsHistory(): Promise<void> {
-        const logPrefix = `[updateNamesOfDatapointsHistory]:`;
-
-        try {
-            const list = [...this.config.historyList, ... this.config.historyCalcList];
-
-            for (const item of list) {
-                const idChannel = item.idChannel || helper.getIdWithoutLastPart(item.id);
-
-                for (const interval of Object.keys(Interval)) {
-                    if (interval !== Interval.ALL) {
-                        let name = '';
-
-                        if (interval === Interval.day) {
-                            name = `${utils.I18n.translate('today')} ${moment().format('DD.MM.')}`
-                        } else if (interval === Interval.week) {
-                            name = `${utils.I18n.translate('this week')} (${moment().startOf('week').format('DD.MM.')} - ${moment().format('DD.MM.')})`
-                        } else if (interval === Interval.month) {
-                            name = moment().format('MMMM YYYY');
-                        } else if (interval === Interval.year) {
-                            name = moment().format('YYYY');
-                        } else {
-                            continue;
-                        }
-
-                        await this._updateNamesOfDatapointsHistory(`${idChannel}.${this.idChannelHistory}.${interval}`, name, logPrefix);
-
-                        if (item[interval] > 0) {
-                            for (let i = 1; i <= item[interval]; i++) {
-                                if (interval === Interval.day) {
-                                    if (i === 1) {
-                                        name = `Gestern ${moment().add(-i, 'days').format('DD.MM.')}`
-                                    } else {
-                                        name = moment().add(-i, 'days').format('dddd DD.MM.');
-                                    }
-                                } else if (interval === Interval.week) {
-                                    if (i === 1) {
-                                        name = `letzte Woche (${moment().add(-i, 'week').startOf('week').format('DD.MM.')} - ${moment().add(-i, 'week').endOf('week').format('DD.MM.')})`
-                                    } else {
-                                        name = `vor ${i} Wochen (${moment().add(-i, 'week').startOf('week').format('DD.MM.')} - ${moment().add(-i, 'week').endOf('week').format('DD.MM.')})`
-                                    }
-                                } else if (interval === Interval.month) {
-                                    name = moment().add(-i, 'month').format('MMMM YYYY');
-                                } else if (interval === Interval.year) {
-                                    name = moment().add(-i, 'year').format('YYYY');
-                                } else {
-                                    continue;
-                                }
-
-                                await this._updateNamesOfDatapointsHistory(`${idChannel}.${this.idChannelHistory}._${interval}.${interval}_${helper.zeroPad(i, 2)}`, name, logPrefix);
-                            }
-                        }
-                    }
-                }
-            }
-        } catch (error) {
-            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
-        }
-    }
-
-    private async _updateNamesOfDatapointsHistory(id: string, name: string, logPrefix: string): Promise<void> {
-        try {
-            const obj: any = await this.getObjectAsync(id);
-
-            if (obj && obj.common && obj.common.name !== name) {
-                obj.common.name = name;
-                await this.setObject(id, obj);
-
-                this.log.debug(`${logPrefix} update name of '${id}' to '${name}'`);
-            }
         } catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
