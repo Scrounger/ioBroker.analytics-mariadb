@@ -20,6 +20,8 @@ class AnalyticsMariadb extends utils.Adapter {
 
     sourceToTarget: Record<string, ioBroker.AdapterConfigTypes.DatapointsItem> = {};
 
+    timeoutBoolean: Record<string, ioBroker.Timeout> = {};
+
     idTotal = 'total';
     idOldValue = 'oldValue';
     idStorageValue = 'storageValue';
@@ -79,10 +81,11 @@ class AnalyticsMariadb extends utils.Adapter {
     private onUnload(callback: () => void): void {
         try {
             // Here you must clear all timeouts or intervals that may still be active
-            // clearTimeout(timeout1);
-            // clearTimeout(timeout2);
-            // ...
-            // clearInterval(interval1);
+            for (const id in this.timeoutBoolean) {
+                if (this.timeoutBoolean[id]) {
+                    this.clearTimeout(this.timeoutBoolean[id]);
+                }
+            }
 
             callback();
         } catch (error) {
@@ -144,14 +147,31 @@ class AnalyticsMariadb extends utils.Adapter {
                             await this.totalChanges(item, id, state);
 
                             await this.setState(`${item.idChannelTarget}.${this.idOldValue}`, state);
-                        } else if (item.type === 'boolean') {
-                            // currently no processing for boolean values
-                            await this.setState(`${item.idChannelTarget}.${this.idBooleanValue}`, state);
 
-                            const counter = (await this.sql.getCounter(item, Interval.ALL)) as SqlCounter;
-                            if (counter) {
-                                await this.setStateChangedAsync(`${item.idChannelTarget}.${this.idTotal}`, counter.count, true);
+                        } else if (item.type === 'boolean') {
+                            const idTarget = `${item.idChannelTarget}.${this.idBooleanValue}`
+                            const targetState = await this.getStateAsync(idTarget);
+
+                            if (state.val !== targetState.val) {
+                                // nur ausführen, wenn sich der Wert / ack auch geändert hat
+                                if (this.timeoutBoolean[id]) {
+                                    this.clearTimeout(this.timeoutBoolean[id]);
+                                }
+
+                                this.timeoutBoolean[idTarget] = this.setTimeout(async () => {
+                                    // we need a timeout, because sql need some time to write the new value in the database
+                                    const counter = (await this.sql.getCounter(item, Interval.ALL)) as SqlCounter;
+                                    if (counter) {
+                                        await this.setStateChangedAsync(`${item.idChannelTarget}.${this.idTotal}`, { val: counter.count, lc: state.lc, ack: true });
+                                    }
+
+                                    this.clearTimeout(this.timeoutBoolean[id]);
+                                    delete this.timeoutBoolean[id];
+
+                                }, this.config.sqlWriteTimeout);
                             }
+
+                            await this.setState(idTarget, state);
                         }
                     } else {
                         this.log.warn(`${logPrefix} state '${id}' changed but is not in configured source list, ignoring change.`);
@@ -410,7 +430,7 @@ class AnalyticsMariadb extends utils.Adapter {
         }
     }
 
-    private async createDatapointsHistory(isAdapterStart: boolean) {
+    private async createDatapointsHistory(isAdapterStart: boolean): Promise<void> {
         const logPrefix = `[createDatapointsHistory]:`;
 
         try {
@@ -427,7 +447,7 @@ class AnalyticsMariadb extends utils.Adapter {
 
             for (const item of list) {
                 const idChannel = item.idChannel || helper.getIdWithoutLastPart(item.id);
-                objectHandler.createChannel(this, utils, `${idChannel}.${this.idChannelHistory}`, 'historical values');
+                await objectHandler.createChannel(this, utils, `${idChannel}.${this.idChannelHistory}`, 'historical values');
 
                 if (typeof item.id === 'string') {
                     // history item
@@ -456,13 +476,13 @@ class AnalyticsMariadb extends utils.Adapter {
 
                 for (const interval of Object.keys(Interval)) {
                     if (interval !== Interval.ALL) {
-                        objectHandler.createOrUpdateState(this, utils, `${idChannel}.${this.idChannelHistory}.${interval}`, null, null, commonHistory, undefined, false, false);
+                        await objectHandler.createOrUpdateState(this, utils, `${idChannel}.${this.idChannelHistory}.${interval}`, null, null, commonHistory, undefined, false, false);
 
-                        objectHandler.createChannel(this, utils, `${idChannel}.${this.idChannelHistory}._${interval}`, `past ${interval}s`);
+                        await objectHandler.createChannel(this, utils, `${idChannel}.${this.idChannelHistory}._${interval}`, `past ${interval}s`);
 
                         if (item[interval] > 0) {
                             for (let i = 1; i <= item[interval]; i++) {
-                                objectHandler.createOrUpdateState(this, utils, `${idChannel}.${this.idChannelHistory}._${interval}.${interval}_${helper.zeroPad(i, 2)}`, null, null, commonHistory, undefined, false, false);
+                                await objectHandler.createOrUpdateState(this, utils, `${idChannel}.${this.idChannelHistory}._${interval}.${interval}_${helper.zeroPad(i, 2)}`, null, null, commonHistory, undefined, false, false);
                             }
                         }
                     }
@@ -535,7 +555,7 @@ class AnalyticsMariadb extends utils.Adapter {
 
     private async _updateNamesOfDatapointsHistory(id: string, name: string, logPrefix: string): Promise<void> {
         try {
-            let obj: any = await this.getObjectAsync(id);
+            const obj: any = await this.getObjectAsync(id);
 
             if (obj && obj.common && obj.common.name !== name) {
                 obj.common.name = name;

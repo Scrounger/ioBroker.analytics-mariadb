@@ -26,5 +26,9 @@
             type: 'panel',
             '#include': 'history.calculation.jsonConfig.json5',
         },
+        tab_expert: {
+            type: 'panel',
+            '#include': 'expert.jsonConfig.json5',
+        },
     },
 }

@@ -2,6 +2,7 @@ import * as utils from '@iobroker/adapter-core';
 import { SqlInterface } from './lib/sqlInterface.js';
 declare class AnalyticsMariadb extends utils.Adapter {
     sourceToTarget: Record<string, ioBroker.AdapterConfigTypes.DatapointsItem>;
+    timeoutBoolean: Record<string, ioBroker.Timeout>;
     idTotal: string;
     idOldValue: string;
     idStorageValue: string;

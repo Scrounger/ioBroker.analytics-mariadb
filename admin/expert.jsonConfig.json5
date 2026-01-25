@@ -1,0 +1,42 @@
+{
+    label: 'Expert',
+    hidden: '!data.sqlInstance',
+    expertMode: true,
+    items: {
+        donation_link: {
+            type: 'staticLink',
+            text: 'You like the adapter? Then support me.',
+            button: true,
+            newLine: true,
+            href: 'https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=VWAXSTS634G88&source=url',
+            style: {
+                justifyContent: 'flex-start !important',
+            },
+            xl: 12,
+            lg: 12,
+            md: 12,
+            sm: 12,
+            xs: 12,
+        },
+        dividerExpert: {
+            newLine: true,
+            type: 'header',
+            text: 'expert settings',
+            size: 2,
+        },
+        sqlWriteTimeout: {
+            type: 'number',
+            label: 'SQL Write Timeout (ms)',
+            default: 2000,
+            min: 500,
+            max: 10000,
+            step: 100,
+            unit: 'ms',
+            xl: 2,
+            lg: 2,
+            md: 2,
+            sm: 12,
+            xs: 12,
+        },
+    },
+}

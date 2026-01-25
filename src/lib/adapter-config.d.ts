@@ -16,6 +16,7 @@ declare global {
             datapointsSqlPresetsList: AdapterConfigTypes.DatapointsSqlPresetsItem[];
             historyList: AdapterConfigTypes.HistoryItem[];
             historyCalcList: AdapterConfigTypes.HistoryItem[];
+            sqlWriteTimeout: number;
         }
 
         namespace AdapterConfigTypes {

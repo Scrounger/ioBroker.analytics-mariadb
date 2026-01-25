@@ -103,6 +103,8 @@ function isChannelCommonEqual(objCommon, myCommon) {
  *
  * @param objCommon
  * @param myCommon
+ * @param sql
+ * @param adapter
  * @returns
  */
 function isStateCommonEqual(objCommon, myCommon, sql, adapter) {

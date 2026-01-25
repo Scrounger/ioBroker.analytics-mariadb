@@ -123,6 +123,8 @@ function isChannelCommonEqual(objCommon: ioBroker.ChannelCommon, myCommon: ioBro
  *
  * @param objCommon
  * @param myCommon
+ * @param sql
+ * @param adapter
  * @returns
  */
 function isStateCommonEqual(objCommon: ioBroker.StateCommon, myCommon: ioBroker.StateCommon, sql: boolean, adapter: ioBroker.Adapter): boolean {
