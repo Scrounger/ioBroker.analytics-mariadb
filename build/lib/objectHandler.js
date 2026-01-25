@@ -106,7 +106,7 @@ function isChannelCommonEqual(objCommon, myCommon) {
  * @returns
  */
 function isStateCommonEqual(objCommon, myCommon, sql, adapter) {
-    return _.isEqual(objCommon.name, myCommon.name) && _.isEqual(objCommon.role, myCommon.role) && _.isEqual(objCommon.unit, myCommon.unit) && _.isEqual(objCommon.expert, myCommon.expert) && (!sql || (objCommon.custom && objCommon.custom[adapter.config.sqlInstance] && _.isEqual(objCommon.custom[adapter.config.sqlInstance], myCommon.custom[adapter.config.sqlInstance])));
+    return (_.isEqual(objCommon.name, myCommon.name) || myCommon.name === null) && _.isEqual(objCommon.role, myCommon.role) && _.isEqual(objCommon.unit, myCommon.unit) && _.isEqual(objCommon.expert, myCommon.expert) && (!sql || (objCommon.custom && objCommon.custom[adapter.config.sqlInstance] && _.isEqual(objCommon.custom[adapter.config.sqlInstance], myCommon.custom[adapter.config.sqlInstance])));
 }
 function assignPredefinedRoles(common, id, adapter) {
     //https://github.com/ioBroker/ioBroker.docs/blob/master/docs/en/dev/stateroles.md

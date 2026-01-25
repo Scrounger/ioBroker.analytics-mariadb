@@ -359,7 +359,7 @@ class AnalyticsMariadb extends utils.Adapter {
     async createDatapointsHistory(isAdapterStart) {
         const logPrefix = `[createDatapointsHistory]:`;
         try {
-            const list = [...this.config.historyList];
+            const list = [...this.config.historyList, ...this.config.historyCalcList];
             const commonHistory = {
                 name: 'generic',
                 type: 'number',
@@ -369,17 +369,38 @@ class AnalyticsMariadb extends utils.Adapter {
                 def: 0,
             };
             for (const item of list) {
-                const idChannel = helper.getIdWithoutLastPart(item.id);
+                const idChannel = item.idChannel || helper.getIdWithoutLastPart(item.id);
                 objectHandler.createChannel(this, utils, `${idChannel}.${this.idChannelHistory}`, 'historical values');
-                const itemObj = await this.getObjectAsync(item.id);
-                commonHistory.unit = itemObj?.common.unit;
+                if (typeof item.id === 'string') {
+                    // history item
+                    const itemObj = await this.getObjectAsync(item.id);
+                    commonHistory.unit = itemObj?.common?.unit;
+                }
+                else {
+                    // history calc item
+                    commonHistory.unit = item.unit;
+                    if (isAdapterStart) {
+                        // creating the channel sturcture for calc items
+                        const structure = item.idChannel.split('.');
+                        let idTmp = '';
+                        for (const id of structure) {
+                            if (!idTmp) {
+                                idTmp = id;
+                            }
+                            else {
+                                idTmp = `${idTmp}.${id}`;
+                            }
+                            await objectHandler.createChannel(this, utils, idTmp, id);
+                        }
+                    }
+                }
                 for (const interval of Object.keys(Interval)) {
                     if (interval !== Interval.ALL) {
-                        objectHandler.createOrUpdateState(this, utils, `${idChannel}.${this.idChannelHistory}.${interval}`, `tbd`, 0, commonHistory, undefined, false, false);
+                        objectHandler.createOrUpdateState(this, utils, `${idChannel}.${this.idChannelHistory}.${interval}`, null, null, commonHistory, undefined, false, false);
                         objectHandler.createChannel(this, utils, `${idChannel}.${this.idChannelHistory}._${interval}`, `past ${interval}s`);
                         if (item[interval] > 0) {
                             for (let i = 1; i <= item[interval]; i++) {
-                                objectHandler.createOrUpdateState(this, utils, `${idChannel}.${this.idChannelHistory}._${interval}.${interval}_${helper.zeroPad(i, 2)}`, `tbd`, 0, commonHistory, undefined, false, false);
+                                objectHandler.createOrUpdateState(this, utils, `${idChannel}.${this.idChannelHistory}._${interval}.${interval}_${helper.zeroPad(i, 2)}`, null, null, commonHistory, undefined, false, false);
                             }
                         }
                     }
@@ -393,10 +414,9 @@ class AnalyticsMariadb extends utils.Adapter {
     async updateNamesOfDatapointsHistory() {
         const logPrefix = `[updateNamesOfDatapointsHistory]:`;
         try {
-            const list = [...this.config.historyList];
-            this.log.warn(this.dateFormat);
+            const list = [...this.config.historyList, ...this.config.historyCalcList];
             for (const item of list) {
-                const idChannel = helper.getIdWithoutLastPart(item.id);
+                const idChannel = item.idChannel || helper.getIdWithoutLastPart(item.id);
                 for (const interval of Object.keys(Interval)) {
                     if (interval !== Interval.ALL) {
                         let name = '';

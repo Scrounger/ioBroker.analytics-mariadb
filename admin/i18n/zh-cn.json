@@ -28,6 +28,8 @@
     "You like the adapter? Then support me.": "你喜欢这个适配器吗？那就支持我吧。",
     "You must first save your entries before you can use them in the datapoints tab": "您必须先保存条目，然后才能在数据点选项卡中使用它们",
     "analytics-mariadb adapter settings": "analytics-mariadb的适配器设置",
+    "calculation formula": "计算公式",
+    "channel id": "频道号",
     "cumulative total value": "累计总价值",
     "cumulative total value De-bounce time": "累计总值 去抖时间",
     "days": "天",

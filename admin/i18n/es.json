@@ -28,6 +28,8 @@
     "You like the adapter? Then support me.": "¿Te gusta el adaptador? Entonces apóyame.",
     "You must first save your entries before you can use them in the datapoints tab": "Primero debe guardar sus entradas antes de poder usarlas en la pestaña de puntos de datos",
     "analytics-mariadb adapter settings": "Ajustes del adaptador para analytics-mariadb",
+    "calculation formula": "fórmula de cálculo",
+    "channel id": "identificación del canal",
     "cumulative total value": "valor total acumulado",
     "cumulative total value De-bounce time": "valor total acumulado tiempo anti-rebote",
     "days": "días",

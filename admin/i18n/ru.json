@@ -28,6 +28,8 @@
     "You like the adapter? Then support me.": "Вам нравится адаптер? Тогда поддержите меня.",
     "You must first save your entries before you can use them in the datapoints tab": "Сначала вы должны сохранить свои записи, прежде чем сможете использовать их на вкладке «Точки данных».",
     "analytics-mariadb adapter settings": "Настройки адаптера для analytics-mariadb",
+    "calculation formula": "формула расчета",
+    "channel id": "идентификатор канала",
     "cumulative total value": "совокупная общая стоимость",
     "cumulative total value De-bounce time": "совокупное общее значение Время устранения дребезга",
     "days": "дни",

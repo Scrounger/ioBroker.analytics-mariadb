@@ -48,7 +48,7 @@ export async function createOrUpdateState(adapter: ioBroker.Adapter, utils: type
 
         if (typeof name === 'string') {
             const translation = utils.I18n.getTranslatedObject(name);
-            name = translation && Object.keys(translation).length > 1 ? translation : name
+            name = translation && Object.keys(translation).length > 1 ? translation : name;
         }
 
         const common: ioBroker.StateCommon = {
@@ -126,7 +126,7 @@ function isChannelCommonEqual(objCommon: ioBroker.ChannelCommon, myCommon: ioBro
  * @returns
  */
 function isStateCommonEqual(objCommon: ioBroker.StateCommon, myCommon: ioBroker.StateCommon, sql: boolean, adapter: ioBroker.Adapter): boolean {
-    return _.isEqual(objCommon.name, myCommon.name) && _.isEqual(objCommon.role, myCommon.role) && _.isEqual(objCommon.unit, myCommon.unit) && _.isEqual(objCommon.expert, myCommon.expert) && (!sql || (objCommon.custom && objCommon.custom[adapter.config.sqlInstance] && _.isEqual(objCommon.custom[adapter.config.sqlInstance], myCommon.custom[adapter.config.sqlInstance])));
+    return (_.isEqual(objCommon.name, myCommon.name) || myCommon.name === null) && _.isEqual(objCommon.role, myCommon.role) && _.isEqual(objCommon.unit, myCommon.unit) && _.isEqual(objCommon.expert, myCommon.expert) && (!sql || (objCommon.custom && objCommon.custom[adapter.config.sqlInstance] && _.isEqual(objCommon.custom[adapter.config.sqlInstance], myCommon.custom[adapter.config.sqlInstance])));
 }
 
 function assignPredefinedRoles(common: ioBroker.StateCommon, id: string, adapter: ioBroker.Adapter): string {

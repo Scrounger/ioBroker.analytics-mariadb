@@ -45,8 +45,10 @@ declare global {
 
             interface HistoryItem {
                 id: string;
+                idChannel?: string;
                 formula?: string;
                 decimals: number;
+                unit?: string;
                 day: number;
                 week: number;
                 month: number;
