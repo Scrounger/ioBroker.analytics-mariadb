@@ -2,6 +2,7 @@ import * as mathjs from 'mathjs'
 
 import * as objectHandler from './objectHandler.js';
 import { Interval, SqlCounter } from './sqlInterface.js';
+import * as helper from './helper.js';
 
 
 export class Datapoints {
@@ -11,10 +12,10 @@ export class Datapoints {
     private utils: typeof import("@iobroker/adapter-core")
     private log: ioBroker.Logger;
 
-    private idTotal = 'total';
+    public idTotal = 'total';
     private idOldValue = 'oldValue';
     private idStorageValue = 'storageValue';
-    private idBooleanValue = 'value'
+    public idBooleanValue = 'value'
 
     constructor(adapter: ioBroker.myAdapter, utils: typeof import("@iobroker/adapter-core")) {
         this.adapter = adapter;
@@ -31,6 +32,12 @@ export class Datapoints {
         } catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
+    }
+
+    public getByIdTarget(idTarget: string): ioBroker.AdapterConfigTypes.DatapointsItem {
+        return Object.values(this.adapter.sourceToDatapoint).find(
+            (item) => item.idChannelTarget === helper.getIdWithoutLastPart(idTarget)
+        );
     }
 
     private async createStates(isAdapterStart: boolean): Promise<void> {
@@ -101,22 +108,24 @@ export class Datapoints {
         const logPrefix = `[${this.logPrefix}.createStateNumber] - '${idChannel}':`
 
         try {
-            await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this, this.idTotal}`, 'cumulative total value', sourceState.val, sourceObj?.common as ioBroker.StateCommon, item, true, false);
+            await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idTotal}`, 'cumulative total value', sourceState.val, sourceObj?.common as ioBroker.StateCommon, item, true, false);
 
             // oldValue & storageValue must have the same value as total at state creation
-            const totalState = await this.adapter.getStateAsync(`${idChannel}.${this, this.idTotal}`);
-            await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this, this.idOldValue}`, 'old meter reading', totalState.val, sourceObj?.common as ioBroker.StateCommon, item, false, true);
-            await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this, this.idStorageValue}`, 'helper cumulative total value', totalState.val, sourceObj?.common as ioBroker.StateCommon, item, false, true);
+            const totalState = await this.adapter.getStateAsync(`${idChannel}.${this.idTotal}`);
+            await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idOldValue}`, 'old meter reading', totalState.val, sourceObj?.common as ioBroker.StateCommon, item, false, true);
+            await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idStorageValue}`, 'helper cumulative total value', totalState.val, sourceObj?.common as ioBroker.StateCommon, item, false, true);
 
             if (item.enable) {
+                item.type = sourceObj?.common.type;
                 this.adapter.sourceToDatapoint[item.idSource] = item;
                 this.adapter.sourceToDatapoint[item.idSource].type = sourceObj?.common.type;
-                this.adapter.sourceToDatapoint[item.idSource].idSql = `${this.adapter.namespace}.${idChannel}.${this, this.idTotal}`;
+                this.adapter.sourceToDatapoint[item.idSource].idSql = `${idChannel}.${this.idTotal}`;
 
                 await this.adapter.subscribeForeignStatesAsync(item.idSource);
+                await this.adapter.subscribeStatesAsync(`${idChannel}.${this.idTotal}`);
 
-                await this.adapter.subscribeObjectsAsync(`${idChannel}.${this, this.idTotal}`);
-                await this.adapter.subscribeObjectsAsync(`${idChannel}.${this, this.idOldValue}`);
+                await this.adapter.subscribeObjectsAsync(`${idChannel}.${this.idTotal}`);
+                await this.adapter.subscribeObjectsAsync(`${idChannel}.${this.idOldValue}`);
 
                 if (isAdapterStart) {
                     // beim Start des Adapter's die Werte aktualisieren
@@ -143,18 +152,19 @@ export class Datapoints {
                 write: false,
             };
 
-            await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this, this.idTotal}`, 'total number', 0, common, item, false, false);
-            await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this, this.idBooleanValue}`, 'value', sourceState.val, sourceObj?.common as ioBroker.StateCommon, item, true, true);
+            await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idTotal}`, 'total number', 0, common, item, false, false);
+            await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idBooleanValue}`, 'value', sourceState.val, sourceObj?.common as ioBroker.StateCommon, item, true, true);
 
             if (item.enable) {
                 this.adapter.sourceToDatapoint[item.idSource] = item;
                 this.adapter.sourceToDatapoint[item.idSource].type = sourceObj?.common.type;
-                this.adapter.sourceToDatapoint[item.idSource].idSql = `${this.adapter.namespace}.${idChannel}.${this, this.idBooleanValue}`;
+                this.adapter.sourceToDatapoint[item.idSource].idSql = `${idChannel}.${this.idBooleanValue}`;
 
                 await this.adapter.subscribeForeignStatesAsync(item.idSource);
+                await this.adapter.subscribeStatesAsync(`${idChannel}.${this.idTotal}`);    // react on total changes is needed, because it's changed from the adapter
 
-                await this.adapter.subscribeObjectsAsync(`${idChannel}.${this, this.idTotal}`);
-                await this.adapter.subscribeObjectsAsync(`${idChannel}.${this, this.idBooleanValue}`);
+                await this.adapter.subscribeObjectsAsync(`${idChannel}.${this.idTotal}`);
+                await this.adapter.subscribeObjectsAsync(`${idChannel}.${this.idBooleanValue}`);
 
                 if (isAdapterStart) {
                     // beim Start des Adapter's die Werte aktualisieren

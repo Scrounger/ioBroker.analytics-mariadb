@@ -94,6 +94,7 @@
         "historyDefaultWeeks": 4,
         "historyDefaultMonths": 14,
         "historyDefaultYears": 5,
+        "historyDefaultUpdateDeBounce": 30,
         "datapointsNumberList": [],
         "datapointsBooleanList": [],
         "datapointsSqlPresetsList": [

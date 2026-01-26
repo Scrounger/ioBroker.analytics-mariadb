@@ -121,6 +121,12 @@ class AnalyticsMariadb extends utils.Adapter {
                 }
                 else if (state.from.includes(this.namespace)) {
                     // adapter states changed
+                    const item = this.config.historyList.find(item => item.id === id.replace(`${this.namespace}.`, '') ||
+                        item.id === id.replace(`${this.namespace}.`, '').replace(`.${this.datapoints.idTotal}`, `.${this.datapoints.idBooleanValue}`));
+                    if (item && this.history) {
+                        // this.log.warn(moment().diff(state.lc, 'second').toString());
+                        await this.history.updateState(item, state);
+                    }
                 }
             }
             else {

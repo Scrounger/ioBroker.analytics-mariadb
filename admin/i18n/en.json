@@ -56,5 +56,6 @@
     "this week": "this week",
     "total number": "total number",
     "calculation formula": "calculation formula",
-    "channel id": "channel id"
+    "channel id": "channel id",
+    "update debounce": "update de-bounce"
 }

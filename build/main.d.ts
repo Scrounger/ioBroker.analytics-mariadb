@@ -32,7 +32,7 @@ declare class AnalyticsMariadb extends utils.Adapter {
      */
     private onStateChange;
     private onMessage;
-    itemDebug(item: ioBroker.AdapterConfigTypes.DatapointsItem, message: string): void;
+    itemDebug(item: ioBroker.AdapterConfigTypes.DatapointsItem | ioBroker.AdapterConfigTypes.HistoryItem, message: string): void;
 }
 export default function startAdapter(options: Partial<utils.AdapterOptions> | undefined): AnalyticsMariadb;
 export {};

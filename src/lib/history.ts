@@ -1,4 +1,5 @@
-import moment from 'moment';
+import moment, { DurationInputArg2, unitOfTime } from 'moment';
+import * as mathjs from 'mathjs'
 
 import * as helper from './helper.js';
 import * as objectHandler from './objectHandler.js';
@@ -25,6 +26,7 @@ export class History {
         try {
             await this.createStates(true);
             await this.updateNameOfStates();
+            await this.updateStates(true);
 
         } catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
@@ -168,5 +170,93 @@ export class History {
         } catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
+    }
+
+    private async updateStates(isAdapterStart: boolean) {
+        const logPrefix = `[${this.logPrefix}.updateStates]:`
+
+        try {
+            const list = [...this.adapter.config.historyList];
+
+            for (const item of list) {
+                const currentState = await this.adapter.getStateAsync(item.id);
+
+                await this.updateState(item, currentState, isAdapterStart);
+            }
+        } catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
+    }
+
+    public async updateState(item: ioBroker.AdapterConfigTypes.HistoryItem, currentState: ioBroker.State, isAdapterStart: boolean = false) {
+        const logPrefix = `[${this.logPrefix}.updateState] - '${item.id}':`
+
+        try {
+            const datapointItem = this.adapter.datapoints.getByIdTarget(item.id);
+
+            for (const interval of Object.keys(Interval)) {
+                if (interval !== Interval.ALL && item[interval] > 0) {
+                    const id = `${helper.getIdWithoutLastPart(item.id)}.${this.idChannelHistory}.${interval}`
+                    const lastState = await this.adapter.getStateAsync(id);
+
+                    const range = this.getDatesFromInterval(interval);
+
+                    const debounce = moment(currentState.lc).diff(moment(lastState.lc), 'second');
+                    if (isAdapterStart || debounce >= item.debounce || this.adapter.config.historyDefaultUpdateDeBounce) {
+                        let result = null;
+
+                        if (datapointItem.type === 'number') {
+                            const data = await this.adapter.sql.getTotal(item, interval, range.start.valueOf(), range.end.valueOf());
+
+                            if (data && data.start && data.end) {
+                                result = mathjs.round((currentState.val as number) - data.min, item.decimals);
+                            }
+
+                        } else if (datapointItem.type === 'boolean') {
+                            const data = await this.adapter.sql.getCounter(datapointItem, interval, range.start.valueOf(), range.end.valueOf());
+
+                            if (data && data.start && data.end) {
+                                result = data.count;
+                            }
+
+                        } else {
+                            this.log.error(`${logPrefix} state '${item.id}' has unsupported type '${datapointItem.type}', cannot processing functions'`);
+                        }
+
+                        this.adapter.setStateChangedAsync(id, result, true);
+                    }
+                }
+            }
+        } catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
+    }
+
+    private async updateCalcedStates() {
+        const logPrefix = `[${this.logPrefix}.updateCalcedStates]:`
+
+        try {
+
+        } catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
+    }
+
+    private getDatesFromInterval(interval: string, intervalDelta: number | null = null): { start: moment.Moment; end: moment.Moment; } | undefined {
+        const logPrefix = `[${this.logPrefix}.getDatesFromInterval]:`
+
+        try {
+            const start = moment().startOf(interval as unitOfTime.StartOf).add(intervalDelta === null ? 0 : intervalDelta, interval as DurationInputArg2);
+
+            return {
+                start: start,
+                end: intervalDelta === null ? moment() : start.clone().endOf(interval as unitOfTime.StartOf)
+            }
+
+        } catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
+
+        return undefined;
     }
 }

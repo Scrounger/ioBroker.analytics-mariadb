@@ -18,6 +18,14 @@ export interface SqlCounter {
     count: number;
 }
 
+export interface SqlTotal {
+    start: string;
+    min: number;
+    end: string;
+    max: number;
+    delta: number;
+}
+
 export class SqlInterface {
     private adapter: ioBroker.myAdapter;
     private log: ioBroker.Logger;
@@ -49,7 +57,7 @@ export class SqlInterface {
         }
     }
 
-    public async getCounter(item: ioBroker.AdapterConfigTypes.DatapointsItem, interval: Interval): Promise<SqlCounter | SqlCounter[] | null> {
+    public async getCounter(item: ioBroker.AdapterConfigTypes.DatapointsItem, interval: string, timestampStart: number = 0, timestampEnd: number = 0): Promise<SqlCounter | null> {
         const logPrefix = `[getCounter] [${interval}] - '${item.idSql}':`;
 
         try {
@@ -57,11 +65,11 @@ export class SqlInterface {
                 WITH dp AS (
                     SELECT id
                     FROM ${this.dbName}.datapoints
-                    WHERE name = '${item.idSql}'
+                    WHERE name = '${this.adapter.namespace}.${item.idSql}'
                 )
                 SELECT
-                    DATE_FORMAT(Min(FROM_UNIXTIME(ts / 1000)),'%d.%m.%Y') AS 'start',
-                    DATE_FORMAT(Max(FROM_UNIXTIME(ts / 1000)),'%d.%m.%Y') AS 'end',
+                    DATE_FORMAT(Min(FROM_UNIXTIME(ts / 1000)),'%d.%m.%Y - %H:%i') AS 'start',
+                    DATE_FORMAT(Max(FROM_UNIXTIME(ts / 1000)),'%d.%m.%Y - %H:%i') AS 'end',
                     COUNT(*) AS 'count'
                 FROM (
                     SELECT
@@ -69,7 +77,9 @@ export class SqlInterface {
                         val,
                         LAG(val) OVER (PARTITION BY id ORDER BY ts) AS prev_val
                     FROM ${this.dbName}.ts_bool
-                    WHERE id = (SELECT id FROM dp)
+                    WHERE 
+                    id = (SELECT id FROM dp)
+                    ${interval === Interval.ALL ? '' : `AND ts >= ${timestampStart} AND ts <  ${timestampEnd}`}
                     ${item.sqlWhereAppend ? item.sqlWhereAppend : ''}
                 ) n
                 WHERE
@@ -82,22 +92,13 @@ export class SqlInterface {
 
             const data = await this.retrieve(QueryTaype.QUERY, query, item, logPrefix);
 
-            if (data && data.result) {
-                if (data.error) {
-                    this.log.error(`${logPrefix} data error: ${data.error}`);
-                    return null;
+            if (data) {
+                // can only have one row
+                if (data.length === 1) {
+                    return data[0] as SqlCounter;
                 } else {
-                    if (interval === Interval.ALL) {
-                        // can only have one row
-                        if (data.result.length === 1) {
-                            return data.result[0] as SqlCounter;
-                        } else {
-                            this.log.error(`${logPrefix} unexpected number of data rows: ${data.result.length} (data: ${JSON.stringify(data.result)})`);
-                            return null;
-                        }
-                    } else {
-                        return data.result as SqlCounter[];
-                    }
+                    this.log.error(`${logPrefix} unexpected number of data rows: ${data.length} (data: ${JSON.stringify(data)})`);
+                    return null;
                 }
             }
         } catch (error) {
@@ -107,14 +108,64 @@ export class SqlInterface {
         return null;
     }
 
-    private async retrieve(queryType: QueryTaype, query: string, item: ioBroker.AdapterConfigTypes.DatapointsItem, logP: string): Promise<any | null> {
+    public async getTotal(item: ioBroker.AdapterConfigTypes.HistoryItem, interval: string, timestampStart: number, timestampEnd: number): Promise<SqlTotal | null> {
+        const logPrefix = `[getTotal] [${interval}] - '${item.id}':`;
+
+        try {
+            const query = `
+                WITH dp AS (
+                SELECT id
+                FROM ${this.dbName}.datapoints
+                WHERE name = '${this.adapter.namespace}.${item.id}'
+                )
+                SELECT
+                    DATE_FORMAT(FROM_UNIXTIME(result.start / 1000), '%d.%m.%Y - %H:%i') as 'start',
+                    result.min,
+                    DATE_FORMAT(FROM_UNIXTIME(result.end / 1000), '%d.%m.%Y - %H:%i') as 'end',
+                    result.max,
+                    ROUND(result.max - result.min, ${item.decimals}) as 'delta'
+                FROM (
+                    SELECT
+                        MIN(ts) AS 'start',
+                        MIN(val) AS 'min',
+                        MAX(ts) AS 'end',
+                        MAX(val) AS 'max'
+                    FROM ${this.dbName}.ts_number
+                    WHERE id = (SELECT id FROM dp)
+                    AND ts >= ${timestampStart}
+                    AND ts <  ${timestampEnd}
+                ) result;
+            `;
+
+            this.adapter.itemDebug(item, `${logPrefix} query: ${query}`);
+
+            const data = await this.retrieve(QueryTaype.QUERY, query, item, logPrefix);
+
+            if (data) {
+                if (interval)
+                    // can only have one row as result
+                    if (data.length === 1) {
+                        return data[0] as SqlTotal;
+                    } else {
+                        this.log.error(`${logPrefix} unexpected number of data rows: ${data.length} (data: ${JSON.stringify(data)})`);
+                        return null;
+                    }
+            }
+        } catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
+
+        return null;
+    }
+
+
+    private async retrieve(queryType: QueryTaype, query: string, item: ioBroker.AdapterConfigTypes.DatapointsItem | ioBroker.AdapterConfigTypes.HistoryItem, logP: string): Promise<any | null> {
         const logPrefix = `[retrieve] ${logP}`;
 
         try {
-            const sqlAlive = await this.adapter.getForeignStateAsync(`system.adapter.${this.sqlInstance}.alive`);
+            const sqlAlive = await this.adapter.getForeignStateAsync(`${this.sqlInstance}.info.connection`);
 
             if (sqlAlive?.val) {
-
                 const now = moment();
 
                 const data = await this.adapter.sendToAsync(this.sqlInstance, queryType, query)
@@ -125,7 +176,14 @@ export class SqlInterface {
 
                 this.adapter.itemDebug(item, `${logPrefix} duration: ${moment().diff(now, 'milliseconds') / 1000}s, data: ${JSON.stringify(data)}`);
 
-                return data
+                if (data && data.result) {
+                    if (data.error) {
+                        this.log.error(`${logPrefix} data error: ${data.error}`);
+                        return null;
+                    } else {
+                        return data.result
+                    }
+                }
             } else {
                 this.log.error(`${logPrefix} SQL instance '${this.sqlInstance}' is not alive`);
             }

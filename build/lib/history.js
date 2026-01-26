@@ -1,4 +1,5 @@
 import moment from 'moment';
+import * as mathjs from 'mathjs';
 import * as helper from './helper.js';
 import * as objectHandler from './objectHandler.js';
 import { Interval } from './sqlInterface.js';
@@ -18,6 +19,7 @@ export class History {
         try {
             await this.createStates(true);
             await this.updateNameOfStates();
+            await this.updateStates(true);
         }
         catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
@@ -153,5 +155,76 @@ export class History {
         catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
+    }
+    async updateStates(isAdapterStart) {
+        const logPrefix = `[${this.logPrefix}.updateStates]:`;
+        try {
+            const list = [...this.adapter.config.historyList];
+            for (const item of list) {
+                const currentState = await this.adapter.getStateAsync(item.id);
+                await this.updateState(item, currentState, isAdapterStart);
+            }
+        }
+        catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
+    }
+    async updateState(item, currentState, isAdapterStart = false) {
+        const logPrefix = `[${this.logPrefix}.updateState] - '${item.id}':`;
+        try {
+            const datapointItem = this.adapter.datapoints.getByIdTarget(item.id);
+            for (const interval of Object.keys(Interval)) {
+                if (interval !== Interval.ALL && item[interval] > 0) {
+                    const id = `${helper.getIdWithoutLastPart(item.id)}.${this.idChannelHistory}.${interval}`;
+                    const lastState = await this.adapter.getStateAsync(id);
+                    const range = this.getDatesFromInterval(interval);
+                    const debounce = moment(currentState.lc).diff(moment(lastState.lc), 'second');
+                    if (isAdapterStart || debounce >= item.debounce || this.adapter.config.historyDefaultUpdateDeBounce) {
+                        let result = null;
+                        if (datapointItem.type === 'number') {
+                            const data = await this.adapter.sql.getTotal(item, interval, range.start.valueOf(), range.end.valueOf());
+                            if (data && data.start && data.end) {
+                                result = mathjs.round(currentState.val - data.min, item.decimals);
+                            }
+                        }
+                        else if (datapointItem.type === 'boolean') {
+                            const data = await this.adapter.sql.getCounter(datapointItem, interval, range.start.valueOf(), range.end.valueOf());
+                            if (data && data.start && data.end) {
+                                result = data.count;
+                            }
+                        }
+                        else {
+                            this.log.error(`${logPrefix} state '${item.id}' has unsupported type '${datapointItem.type}', cannot processing functions'`);
+                        }
+                        this.adapter.setStateChangedAsync(id, result, true);
+                    }
+                }
+            }
+        }
+        catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
+    }
+    async updateCalcedStates() {
+        const logPrefix = `[${this.logPrefix}.updateCalcedStates]:`;
+        try {
+        }
+        catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
+    }
+    getDatesFromInterval(interval, intervalDelta = null) {
+        const logPrefix = `[${this.logPrefix}.getDatesFromInterval]:`;
+        try {
+            const start = moment().startOf(interval).add(intervalDelta === null ? 0 : intervalDelta, interval);
+            return {
+                start: start,
+                end: intervalDelta === null ? moment() : start.clone().endOf(interval)
+            };
+        }
+        catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
+        return undefined;
     }
 }

@@ -1,5 +1,6 @@
 // This file extends the AdapterConfig type from "@iobroker/types"
 import { Interval, SqlInterface } from './sqlInterface.js';
+import { Datapoints } from './datapoints.js';
 
 // Augment the globally declared type ioBroker.AdapterConfig
 declare global {
@@ -11,6 +12,7 @@ declare global {
             historyDefaultWeeks: number;
             historyDefaultMonths: number;
             historyDefaultYears: number;
+            historyDefaultUpdateDeBounce: number;
             datapointsNumberList: AdapterConfigTypes.DatapointsItem[];
             datapointsBooleanList: AdapterConfigTypes.DatapointsItem[];
             datapointsSqlPresetsList: AdapterConfigTypes.DatapointsSqlPresetsItem[];
@@ -54,17 +56,19 @@ declare global {
                 week: number;
                 month: number;
                 year: number;
+                debounce: number;
                 debug: boolean;
             }
         }
 
         interface myAdapter extends ioBroker.Adapter {
             sql: SqlInterface;
+            datapoints: Datapoints;
 
             sourceToDatapoint: Record<string, ioBroker.AdapterConfigTypes.DatapointsItem>;
             timeoutBoolean: Record<string, ioBroker.Timeout>;
 
-            itemDebug(item: ioBroker.AdapterConfigTypes.DatapointsItem, message: string): void
+            itemDebug(item: ioBroker.AdapterConfigTypes.DatapointsItem | ioBroker.AdapterConfigTypes.HistoryItem, message: string): void
         }
     }
 }

@@ -3,12 +3,13 @@ export declare class Datapoints {
     private adapter;
     private utils;
     private log;
-    private idTotal;
+    idTotal: string;
     private idOldValue;
     private idStorageValue;
-    private idBooleanValue;
+    idBooleanValue: string;
     constructor(adapter: ioBroker.myAdapter, utils: typeof import("@iobroker/adapter-core"));
     init(): Promise<void>;
+    getByIdTarget(idTarget: string): ioBroker.AdapterConfigTypes.DatapointsItem;
     private createStates;
     private createState;
     private createStateNumber;

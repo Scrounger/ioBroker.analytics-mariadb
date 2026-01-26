@@ -1,6 +1,7 @@
 import * as mathjs from 'mathjs';
 import * as objectHandler from './objectHandler.js';
 import { Interval } from './sqlInterface.js';
+import * as helper from './helper.js';
 export class Datapoints {
     logPrefix = 'Datapoints';
     adapter;
@@ -23,6 +24,9 @@ export class Datapoints {
         catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
+    }
+    getByIdTarget(idTarget) {
+        return Object.values(this.adapter.sourceToDatapoint).find((item) => item.idChannelTarget === helper.getIdWithoutLastPart(idTarget));
     }
     async createStates(isAdapterStart) {
         const logPrefix = `[${this.logPrefix}.createStates]:`;
@@ -84,18 +88,20 @@ export class Datapoints {
     async createStateNumber(idChannel, item, isAdapterStart, sourceObj, sourceState) {
         const logPrefix = `[${this.logPrefix}.createStateNumber] - '${idChannel}':`;
         try {
-            await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this, this.idTotal}`, 'cumulative total value', sourceState.val, sourceObj?.common, item, true, false);
+            await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idTotal}`, 'cumulative total value', sourceState.val, sourceObj?.common, item, true, false);
             // oldValue & storageValue must have the same value as total at state creation
-            const totalState = await this.adapter.getStateAsync(`${idChannel}.${this, this.idTotal}`);
-            await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this, this.idOldValue}`, 'old meter reading', totalState.val, sourceObj?.common, item, false, true);
-            await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this, this.idStorageValue}`, 'helper cumulative total value', totalState.val, sourceObj?.common, item, false, true);
+            const totalState = await this.adapter.getStateAsync(`${idChannel}.${this.idTotal}`);
+            await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idOldValue}`, 'old meter reading', totalState.val, sourceObj?.common, item, false, true);
+            await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idStorageValue}`, 'helper cumulative total value', totalState.val, sourceObj?.common, item, false, true);
             if (item.enable) {
+                item.type = sourceObj?.common.type;
                 this.adapter.sourceToDatapoint[item.idSource] = item;
                 this.adapter.sourceToDatapoint[item.idSource].type = sourceObj?.common.type;
-                this.adapter.sourceToDatapoint[item.idSource].idSql = `${this.adapter.namespace}.${idChannel}.${this, this.idTotal}`;
+                this.adapter.sourceToDatapoint[item.idSource].idSql = `${idChannel}.${this.idTotal}`;
                 await this.adapter.subscribeForeignStatesAsync(item.idSource);
-                await this.adapter.subscribeObjectsAsync(`${idChannel}.${this, this.idTotal}`);
-                await this.adapter.subscribeObjectsAsync(`${idChannel}.${this, this.idOldValue}`);
+                await this.adapter.subscribeStatesAsync(`${idChannel}.${this.idTotal}`);
+                await this.adapter.subscribeObjectsAsync(`${idChannel}.${this.idTotal}`);
+                await this.adapter.subscribeObjectsAsync(`${idChannel}.${this.idOldValue}`);
                 if (isAdapterStart) {
                     // beim Start des Adapter's die Werte aktualisieren
                     await this.updateState(item, item.idSource, sourceState);
@@ -118,15 +124,16 @@ export class Datapoints {
                 read: true,
                 write: false,
             };
-            await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this, this.idTotal}`, 'total number', 0, common, item, false, false);
-            await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this, this.idBooleanValue}`, 'value', sourceState.val, sourceObj?.common, item, true, true);
+            await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idTotal}`, 'total number', 0, common, item, false, false);
+            await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idBooleanValue}`, 'value', sourceState.val, sourceObj?.common, item, true, true);
             if (item.enable) {
                 this.adapter.sourceToDatapoint[item.idSource] = item;
                 this.adapter.sourceToDatapoint[item.idSource].type = sourceObj?.common.type;
-                this.adapter.sourceToDatapoint[item.idSource].idSql = `${this.adapter.namespace}.${idChannel}.${this, this.idBooleanValue}`;
+                this.adapter.sourceToDatapoint[item.idSource].idSql = `${idChannel}.${this.idBooleanValue}`;
                 await this.adapter.subscribeForeignStatesAsync(item.idSource);
-                await this.adapter.subscribeObjectsAsync(`${idChannel}.${this, this.idTotal}`);
-                await this.adapter.subscribeObjectsAsync(`${idChannel}.${this, this.idBooleanValue}`);
+                await this.adapter.subscribeStatesAsync(`${idChannel}.${this.idTotal}`); // react on total changes is needed, because it's changed from the adapter
+                await this.adapter.subscribeObjectsAsync(`${idChannel}.${this.idTotal}`);
+                await this.adapter.subscribeObjectsAsync(`${idChannel}.${this.idBooleanValue}`);
                 if (isAdapterStart) {
                     // beim Start des Adapter's die Werte aktualisieren
                     await this.adapter.setStateChangedAsync(`${item.idChannelTarget}.${this.idBooleanValue}`, sourceState);

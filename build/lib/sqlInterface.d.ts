@@ -10,6 +10,13 @@ export interface SqlCounter {
     end: string;
     count: number;
 }
+export interface SqlTotal {
+    start: string;
+    min: number;
+    end: string;
+    max: number;
+    delta: number;
+}
 export declare class SqlInterface {
     private adapter;
     private log;
@@ -17,6 +24,7 @@ export declare class SqlInterface {
     private dbName;
     constructor(adapter: ioBroker.myAdapter);
     getDatabaseName(): Promise<void>;
-    getCounter(item: ioBroker.AdapterConfigTypes.DatapointsItem, interval: Interval): Promise<SqlCounter | SqlCounter[] | null>;
+    getCounter(item: ioBroker.AdapterConfigTypes.DatapointsItem, interval: string, timestampStart?: number, timestampEnd?: number): Promise<SqlCounter | null>;
+    getTotal(item: ioBroker.AdapterConfigTypes.HistoryItem, interval: string, timestampStart: number, timestampEnd: number): Promise<SqlTotal | null>;
     private retrieve;
 }
