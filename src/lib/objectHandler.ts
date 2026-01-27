@@ -70,7 +70,7 @@ export async function createOrUpdateState(adapter: ioBroker.Adapter, utils: type
         common.role = sourceCommon.role && sourceCommon.role !== 'state' && sourceCommon.role !== 'value' ? sourceCommon.role : assignPredefinedRoles(common, id, adapter);
 
         if (item && sql) {
-            const sqlPreset = getSqlPreset(item.idPreset, item.type, adapter);
+            const sqlPreset = getSqlPreset(item, adapter);
 
             if (sqlPreset) {
                 common.custom = common.custom || {};
@@ -332,15 +332,15 @@ function deepDiffBetweenObjects(object: any, base: any, adapter: ioBroker.Adapte
     return object;
 };
 
-function getSqlPreset(idPreset: string, type: 'number' | 'boolean', adapter: ioBroker.Adapter): { enabled: boolean; storageType: string; counter: boolean; aliasId: string; debounceTime: number; blockTime: number; changesOnly: boolean; changesRelogInterval: number; changesMinDelta: number; ignoreBelowNumber: string; disableSkippedValueLogging: boolean; retention: number; customRetentionDuration: number; maxLength: number; enableDebugLogs: boolean; debounce: number; ignoreZero: boolean; } {
+function getSqlPreset(item: ioBroker.AdapterConfigTypes.DatapointsItem, adapter: ioBroker.Adapter): { enabled: boolean; storageType: string; counter: boolean; aliasId: string; debounceTime: number; blockTime: number; changesOnly: boolean; changesRelogInterval: number; changesMinDelta: number; ignoreBelowNumber: string; disableSkippedValueLogging: boolean; retention: number; customRetentionDuration: number; maxLength: number; enableDebugLogs: boolean; debounce: number; ignoreZero: boolean; } {
     const logPrefix = '[objectHandler.getSqlPreset]:';
 
     try {
-        const preset: ioBroker.AdapterConfigTypes.DatapointsSqlPresetsItem = adapter.config.datapointsSqlPresetsList.find(p => p.idPreset === idPreset);
+        const preset: ioBroker.AdapterConfigTypes.DatapointsSqlPresetsItem = adapter.config.datapointsSqlPresetsList.find(p => p.idPreset === item.idPreset);
 
         if (preset) {
             return {
-                enabled: true,
+                enabled: item.enable,
                 storageType: "",
                 counter: false,
                 aliasId: "",
@@ -348,7 +348,7 @@ function getSqlPreset(idPreset: string, type: 'number' | 'boolean', adapter: ioB
                 blockTime: 0,
                 changesOnly: true,
                 changesRelogInterval: preset.changesRelogInterval,
-                changesMinDelta: type === 'number' ? preset.changesMinDelta : 0,
+                changesMinDelta: item.type === 'number' ? preset.changesMinDelta : 0,
                 ignoreBelowNumber: "",
                 disableSkippedValueLogging: true,
                 retention: preset.retention,

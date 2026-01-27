@@ -188,44 +188,48 @@ export class History {
         }
     }
 
-    public async updateState(item: ioBroker.AdapterConfigTypes.HistoryItem, currentState: ioBroker.State, isAdapterStart: boolean = false) {
+    private async updateState(item: ioBroker.AdapterConfigTypes.HistoryItem, currentState: ioBroker.State, isAdapterStart: boolean = false) {
         const logPrefix = `[${this.logPrefix}.updateState] - '${item.id}':`
 
         try {
             const datapointItem = this.adapter.datapoints.getByIdTarget(item.id);
 
-            for (const interval of Object.keys(Interval)) {
-                if (interval !== Interval.ALL && item[interval] > 0) {
-                    const id = `${helper.getIdWithoutLastPart(item.id)}.${this.idChannelHistory}.${interval}`
-                    const lastState = await this.adapter.getStateAsync(id);
+            if (datapointItem && datapointItem.enable) {
+                for (const interval of Object.keys(Interval)) {
+                    if (interval !== Interval.ALL && item[interval] > 0) {
+                        const id = `${helper.getIdWithoutLastPart(item.id)}.${this.idChannelHistory}.${interval}`
+                        const lastState = await this.adapter.getStateAsync(id);
 
-                    const range = this.getDatesFromInterval(interval);
+                        const range = this.getDatesFromInterval(interval);
 
-                    const debounce = moment(currentState.lc).diff(moment(lastState.lc), 'second');
-                    if (isAdapterStart || debounce >= item.debounce || this.adapter.config.historyDefaultUpdateDeBounce) {
-                        let result = null;
+                        const debounce = moment(currentState.lc).diff(moment(lastState.lc), 'second');
+                        if (isAdapterStart || debounce >= item.debounce || this.adapter.config.historyDefaultUpdateDeBounce) {
+                            let result = null;
 
-                        if (datapointItem.type === 'number') {
-                            const data = await this.adapter.sql.getTotal(item, interval, range.start.valueOf(), range.end.valueOf());
+                            if (datapointItem.type === 'number') {
+                                const data = await this.adapter.sql.getTotal(item, interval, range.start.valueOf(), range.end.valueOf());
 
-                            if (data && data.start && data.end) {
-                                result = mathjs.round((currentState.val as number) - data.min, item.decimals);
+                                if (data && data.start && data.end) {
+                                    result = mathjs.round((currentState.val as number) - data.min, item.decimals);
+                                }
+
+                            } else if (datapointItem.type === 'boolean') {
+                                const data = await this.adapter.sql.getCounter(datapointItem, interval, range.start.valueOf(), range.end.valueOf());
+
+                                if (data && data.start && data.end) {
+                                    result = data.count;
+                                }
+
+                            } else {
+                                this.log.error(`${logPrefix} state '${item.id}' has unsupported type '${datapointItem.type}', cannot processing functions'`);
                             }
 
-                        } else if (datapointItem.type === 'boolean') {
-                            const data = await this.adapter.sql.getCounter(datapointItem, interval, range.start.valueOf(), range.end.valueOf());
-
-                            if (data && data.start && data.end) {
-                                result = data.count;
-                            }
-
-                        } else {
-                            this.log.error(`${logPrefix} state '${item.id}' has unsupported type '${datapointItem.type}', cannot processing functions'`);
+                            this.adapter.setStateChangedAsync(id, result, true);
                         }
-
-                        this.adapter.setStateChangedAsync(id, result, true);
                     }
                 }
+            } else {
+                this.log.debug(`${logPrefix} is disabled, no history processing available`);
             }
         } catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
@@ -237,6 +241,16 @@ export class History {
 
         try {
 
+        } catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
+    }
+
+    public async onStateChange(item: ioBroker.AdapterConfigTypes.HistoryItem, currentState: ioBroker.State): Promise<void> {
+        const logPrefix = `[${this.logPrefix}.onStateChange] - '${item.id}':`
+
+        try {
+            await this.updateState(item, currentState);
         } catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }

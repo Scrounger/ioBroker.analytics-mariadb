@@ -57,7 +57,7 @@ export async function createOrUpdateState(adapter, utils, id, name, initVal, sou
         }
         common.role = sourceCommon.role && sourceCommon.role !== 'state' && sourceCommon.role !== 'value' ? sourceCommon.role : assignPredefinedRoles(common, id, adapter);
         if (item && sql) {
-            const sqlPreset = getSqlPreset(item.idPreset, item.type, adapter);
+            const sqlPreset = getSqlPreset(item, adapter);
             if (sqlPreset) {
                 common.custom = common.custom || {};
                 common.custom[adapter.config.sqlInstance] = sqlPreset;
@@ -304,13 +304,13 @@ function deepDiffBetweenObjects(object, base, adapter, allowedKeys = undefined, 
     return object;
 }
 ;
-function getSqlPreset(idPreset, type, adapter) {
+function getSqlPreset(item, adapter) {
     const logPrefix = '[objectHandler.getSqlPreset]:';
     try {
-        const preset = adapter.config.datapointsSqlPresetsList.find(p => p.idPreset === idPreset);
+        const preset = adapter.config.datapointsSqlPresetsList.find(p => p.idPreset === item.idPreset);
         if (preset) {
             return {
-                enabled: true,
+                enabled: item.enable,
                 storageType: "",
                 counter: false,
                 aliasId: "",
@@ -318,7 +318,7 @@ function getSqlPreset(idPreset, type, adapter) {
                 blockTime: 0,
                 changesOnly: true,
                 changesRelogInterval: preset.changesRelogInterval,
-                changesMinDelta: type === 'number' ? preset.changesMinDelta : 0,
+                changesMinDelta: item.type === 'number' ? preset.changesMinDelta : 0,
                 ignoreBelowNumber: "",
                 disableSkippedValueLogging: true,
                 retention: preset.retention,

@@ -135,6 +135,7 @@ export class SqlInterface {
             const sqlAlive = await this.adapter.getForeignStateAsync(`${this.sqlInstance}.info.connection`);
             if (sqlAlive?.val) {
                 const now = moment();
+                // ToDo: Statistik Abfragen pro Minute oder pro Sekunde
                 const data = await this.adapter.sendToAsync(this.sqlInstance, queryType, query)
                     .catch((result) => {
                     this.log.error(`${logPrefix} sql error: ${result}`);

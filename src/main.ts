@@ -147,8 +147,7 @@ class AnalyticsMariadb extends utils.Adapter {
                     );
 
                     if (item && this.history) {
-                        // this.log.warn(moment().diff(state.lc, 'second').toString());
-                        await this.history.updateState(item, state);
+                        await this.history.onStateChange(item, state);
                     }
                 }
             } else {
