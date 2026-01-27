@@ -10,7 +10,8 @@ export declare class History {
     private updateNameOfStates;
     private _updateNameOfStates;
     private updateStates;
-    private updateState;
+    private updateStateOfThisYear;
+    private updateStatesOfThePast;
     private updateCalcedStates;
     onStateChange(item: ioBroker.AdapterConfigTypes.HistoryItem, currentState: ioBroker.State): Promise<void>;
     private getDatesFromInterval;

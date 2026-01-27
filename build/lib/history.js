@@ -162,20 +162,21 @@ export class History {
             const list = [...this.adapter.config.historyList];
             for (const item of list) {
                 const currentState = await this.adapter.getStateAsync(item.id);
-                await this.updateState(item, currentState, isAdapterStart);
+                await this.updateStateOfThisYear(item, currentState, isAdapterStart);
+                await this.updateStatesOfThePast(item, isAdapterStart);
             }
         }
         catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
     }
-    async updateState(item, currentState, isAdapterStart = false) {
+    async updateStateOfThisYear(item, currentState, isAdapterStart = false) {
         const logPrefix = `[${this.logPrefix}.updateState] - '${item.id}':`;
         try {
             const datapointItem = this.adapter.datapoints.getByIdTarget(item.id);
             if (datapointItem && datapointItem.enable) {
                 for (const interval of Object.keys(Interval)) {
-                    if (interval !== Interval.ALL && item[interval] > 0) {
+                    if (interval !== Interval.ALL) {
                         const id = `${helper.getIdWithoutLastPart(item.id)}.${this.idChannelHistory}.${interval}`;
                         const lastState = await this.adapter.getStateAsync(id);
                         const range = this.getDatesFromInterval(interval);
@@ -210,6 +211,50 @@ export class History {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
     }
+    async updateStatesOfThePast(item, isAdapterStart = false) {
+        const logPrefix = `[${this.logPrefix}.updateStatesOfThePast] - '${item.id}':`;
+        try {
+            const datapointItem = this.adapter.datapoints.getByIdTarget(item.id);
+            if (datapointItem && datapointItem.enable) {
+                for (const interval of Object.keys(Interval)) {
+                    if (interval !== Interval.ALL) {
+                        if (item[interval] > 0) {
+                            for (let i = 1; i <= item[interval]; i++) {
+                                const id = `${helper.getIdWithoutLastPart(item.id)}.${this.idChannelHistory}._${interval}.${interval}_${helper.zeroPad(i, 2)}`;
+                                const range = this.getDatesFromInterval(interval, i);
+                                let result = null;
+                                if (datapointItem.type === 'number') {
+                                    const data = await this.adapter.sql.getTotal(item, interval, range.start.valueOf(), range.end.valueOf());
+                                    if (data && data.start && data.end) {
+                                        result = mathjs.round(data.delta, item.decimals);
+                                    }
+                                }
+                                else if (datapointItem.type === 'boolean') {
+                                    const data = await this.adapter.sql.getCounter(datapointItem, interval, range.start.valueOf(), range.end.valueOf());
+                                    if (data && data.start && data.end) {
+                                        result = data.count;
+                                    }
+                                }
+                                else {
+                                    this.log.error(`${logPrefix} state '${item.id}' has unsupported type '${datapointItem.type}', cannot processing functions'`);
+                                }
+                                this.adapter.setStateChangedAsync(id, result, true);
+                            }
+                        }
+                        else {
+                            this.adapter.log.debug(`${logPrefix} history for interval '${interval}' is disabled`);
+                        }
+                    }
+                }
+            }
+            else {
+                this.log.debug(`${logPrefix} is disabled, no history processing available`);
+            }
+        }
+        catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
+    }
     async updateCalcedStates() {
         const logPrefix = `[${this.logPrefix}.updateCalcedStates]:`;
         try {
@@ -221,7 +266,7 @@ export class History {
     async onStateChange(item, currentState) {
         const logPrefix = `[${this.logPrefix}.onStateChange] - '${item.id}':`;
         try {
-            await this.updateState(item, currentState);
+            await this.updateStateOfThisYear(item, currentState);
         }
         catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
@@ -230,7 +275,7 @@ export class History {
     getDatesFromInterval(interval, intervalDelta = null) {
         const logPrefix = `[${this.logPrefix}.getDatesFromInterval]:`;
         try {
-            const start = moment().startOf(interval).add(intervalDelta === null ? 0 : intervalDelta, interval);
+            const start = moment().startOf(interval).add(intervalDelta === null ? 0 : -intervalDelta, interval);
             return {
                 start: start,
                 end: intervalDelta === null ? moment() : start.clone().endOf(interval)
