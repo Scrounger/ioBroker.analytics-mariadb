@@ -58,5 +58,6 @@
     "calculation formula": "calculation formula",
     "channel id": "channel id",
     "update debounce": "update de-bounce",
-    "Time at which the history data is updated after the day change": "Time at which the history data is updated after the day change"
+    "Time at which the history data is updated after the day change": "Time at which the history data is updated after the day change",
+    "historical calculated values": "historical calculated values"
 }

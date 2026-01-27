@@ -170,7 +170,7 @@ export class Datapoints {
                     // beim Start des Adapter's die Werte aktualisieren
                     await this.adapter.setStateChangedAsync(`${item.idChannelTarget}.${this.idBooleanValue}`, sourceState);
 
-                    const counter = (await this.adapter.sql.getCounter(item, Interval.ALL)) as SqlCounter;
+                    const counter = (await this.adapter.sql.getCounter(item, Interval.ALL, `'${idChannel}.${this.idTotal}'`)) as SqlCounter;
                     if (counter) {
                         await this.adapter.setStateChangedAsync(`${item.idChannelTarget}.${this.idTotal}`, counter.count, true);
                     }
@@ -286,7 +286,7 @@ export class Datapoints {
 
                     this.adapter.timeoutBoolean[idTarget] = this.adapter.setTimeout(async () => {
                         // we need a timeout, because sql need some time to write the new value in the database
-                        const counter = (await this.adapter.sql.getCounter(item, Interval.ALL)) as SqlCounter;
+                        const counter = (await this.adapter.sql.getCounter(item, Interval.ALL, `'${item.idChannelTarget}.${this.idTotal}'`)) as SqlCounter;
                         if (counter) {
                             await this.adapter.setStateChangedAsync(`${item.idChannelTarget}.${this.idTotal}`, { val: counter.count, lc: state.lc, ack: true });
                         }

@@ -71,9 +71,9 @@
                     attr: 'formula',
                     type: 'text',
                     title: 'calculation formula',
-                    validator: '!!data.formula',
+                    validator: '!!data.formula && !!data.id.every((_, index) =>data.formula.includes(`[${index}]`));',
                     validatorNoSaveOnError: true,
-                    validatorErrorText: 'mandatory input',
+                    validatorErrorText: 'mandatory input and all ids must be included',
                 },
                 {
                     attr: 'unit',

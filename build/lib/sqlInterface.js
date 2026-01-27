@@ -38,7 +38,7 @@ export class SqlInterface {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
     }
-    async getCounter(item, interval, timestampStart = 0, timestampEnd = 0) {
+    async getCounter(item, interval, logPrefixAppend, timestampStart = 0, timestampEnd = 0) {
         const logPrefix = `[${this.logPrefix}.getCounter] [${interval}] - '${item.idSql}':`;
         try {
             const query = `
@@ -68,7 +68,7 @@ export class SqlInterface {
                 ORDER BY ts DESC;
             `;
             this.adapter.itemDebug(item, `${logPrefix} start: ${moment(timestampStart).format('DD.MM.YYYY - HH:mm')}, end: ${moment(timestampEnd).format('DD.MM.YYYY - HH:mm')}, query: ${query}`);
-            const data = await this.retrieve(QueryType.QUERY, query, item, logPrefix);
+            const data = await this.retrieve(QueryType.QUERY, query, item, logPrefixAppend);
             if (data) {
                 // can only have one row
                 if (data.length === 1) {
@@ -85,8 +85,8 @@ export class SqlInterface {
         }
         return null;
     }
-    async getTotal(item, interval, timestampStart, timestampEnd) {
-        const logPrefix = `[${this.logPrefix}.getTotal] [${interval}] - '${item.id}':`;
+    async getTotal(item, interval, timestampStart, timestampEnd, logPrefixAppend) {
+        const logPrefix = `[${this.logPrefix}.getTotal] ${logPrefixAppend}:`;
         try {
             const query = `
                 WITH dp AS (
@@ -113,7 +113,7 @@ export class SqlInterface {
                 ) result;
             `;
             this.adapter.itemDebug(item, `${logPrefix} start: ${moment(timestampStart).format('DD.MM.YYYY - HH:mm')}, end: ${moment(timestampEnd).format('DD.MM.YYYY - HH:mm')}, query: ${query}`);
-            const data = await this.retrieve(QueryType.QUERY, query, item, logPrefix);
+            const data = await this.retrieve(QueryType.QUERY, query, item, logPrefixAppend);
             if (data) {
                 if (interval)
                     // can only have one row as result
@@ -149,8 +149,8 @@ export class SqlInterface {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
     }
-    async retrieve(queryType, query, item, logP) {
-        const logPrefix = `[retrieve] ${logP}`;
+    async retrieve(queryType, query, item, logPrefixAppend) {
+        const logPrefix = `[${this.logPrefix}.retrieve] ${logPrefixAppend}:`;
         try {
             const sqlAlive = await this.adapter.getForeignStateAsync(`${this.sqlInstance}.info.connection`);
             if (sqlAlive?.val) {
@@ -162,13 +162,16 @@ export class SqlInterface {
                     return null;
                 });
                 this.adapter.itemDebug(item, `${logPrefix} duration: ${moment().diff(now, 'milliseconds') / 1000}s, data: ${JSON.stringify(data)}`);
-                if (data && data.result) {
-                    if (data.error) {
-                        this.log.error(`${logPrefix} data error: ${data.error}`);
-                        return null;
+                if (data.error) {
+                    this.log.error(`${logPrefix} data error: ${data.error}`);
+                    return null;
+                }
+                else {
+                    if (data && data.result) {
+                        return data.result;
                     }
                     else {
-                        return data.result;
+                        this.log.error(`${logPrefix} no result exists in data: ${JSON.stringify(data)}`);
                     }
                 }
             }

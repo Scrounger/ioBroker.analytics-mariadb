@@ -173,7 +173,7 @@
         ],
         "historyList": [],
         "historyCalcList": [],
-        "sqlWriteTimeout": 2000,
+        "sqlWriteTimeout": 5000,
         "cronUpdateHistoryAtDayChange": "3 0 * * *"
     },
     "objects": [],

@@ -70,7 +70,7 @@ export async function createOrUpdateState(adapter: ioBroker.Adapter, utils: type
         common.role = sourceCommon.role && sourceCommon.role !== 'state' && sourceCommon.role !== 'value' ? sourceCommon.role : assignPredefinedRoles(common, id, adapter);
 
         if (item && sql) {
-            const sqlPreset = getSqlPreset(item, adapter);
+            const sqlPreset = getSqlPreset(item, adapter, sourceCommon.type);
 
             if (sqlPreset) {
                 common.custom = common.custom || {};
@@ -332,7 +332,7 @@ function deepDiffBetweenObjects(object: any, base: any, adapter: ioBroker.Adapte
     return object;
 };
 
-function getSqlPreset(item: ioBroker.AdapterConfigTypes.DatapointsItem, adapter: ioBroker.Adapter): { enabled: boolean; storageType: string; counter: boolean; aliasId: string; debounceTime: number; blockTime: number; changesOnly: boolean; changesRelogInterval: number; changesMinDelta: number; ignoreBelowNumber: string; disableSkippedValueLogging: boolean; retention: number; customRetentionDuration: number; maxLength: number; enableDebugLogs: boolean; debounce: number; ignoreZero: boolean; } {
+function getSqlPreset(item: ioBroker.AdapterConfigTypes.DatapointsItem, adapter: ioBroker.Adapter, type: ioBroker.CommonType): { enabled: boolean; storageType: string; counter: boolean; aliasId: string; debounceTime: number; blockTime: number; changesOnly: boolean; changesRelogInterval: number; changesMinDelta: number; ignoreBelowNumber: string; disableSkippedValueLogging: boolean; retention: number; customRetentionDuration: number; maxLength: number; enableDebugLogs: boolean; debounce: number; ignoreZero: boolean; } {
     const logPrefix = '[objectHandler.getSqlPreset]:';
 
     try {
@@ -348,7 +348,7 @@ function getSqlPreset(item: ioBroker.AdapterConfigTypes.DatapointsItem, adapter:
                 blockTime: 0,
                 changesOnly: true,
                 changesRelogInterval: preset.changesRelogInterval,
-                changesMinDelta: item.type === 'number' ? preset.changesMinDelta : 0,
+                changesMinDelta: type === 'number' ? preset.changesMinDelta : 0,
                 ignoreBelowNumber: "",
                 disableSkippedValueLogging: true,
                 retention: preset.retention,

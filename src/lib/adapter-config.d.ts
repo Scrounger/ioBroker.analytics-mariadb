@@ -48,7 +48,7 @@ declare global {
             }
 
             interface HistoryItem {
-                id: string;
+                id: string | string[];
                 idChannel?: string;
                 formula?: string;
                 decimals: number;

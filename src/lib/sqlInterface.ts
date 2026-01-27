@@ -60,7 +60,7 @@ export class SqlInterface {
         }
     }
 
-    public async getCounter(item: ioBroker.AdapterConfigTypes.DatapointsItem, interval: string, timestampStart: number = 0, timestampEnd: number = 0): Promise<SqlCounter | null> {
+    public async getCounter(item: ioBroker.AdapterConfigTypes.DatapointsItem, interval: string, logPrefixAppend: string, timestampStart: number = 0, timestampEnd: number = 0,): Promise<SqlCounter | null> {
         const logPrefix = `[${this.logPrefix}.getCounter] [${interval}] - '${item.idSql}':`
 
         try {
@@ -93,7 +93,7 @@ export class SqlInterface {
 
             this.adapter.itemDebug(item, `${logPrefix} start: ${moment(timestampStart).format('DD.MM.YYYY - HH:mm')}, end: ${moment(timestampEnd).format('DD.MM.YYYY - HH:mm')}, query: ${query}`);
 
-            const data = await this.retrieve(QueryType.QUERY, query, item, logPrefix);
+            const data = await this.retrieve(QueryType.QUERY, query, item, logPrefixAppend);
 
             if (data) {
                 // can only have one row
@@ -111,8 +111,8 @@ export class SqlInterface {
         return null;
     }
 
-    public async getTotal(item: ioBroker.AdapterConfigTypes.HistoryItem, interval: string, timestampStart: number, timestampEnd: number): Promise<SqlTotal | null> {
-        const logPrefix = `[${this.logPrefix}.getTotal] [${interval}] - '${item.id}':`
+    public async getTotal(item: ioBroker.AdapterConfigTypes.HistoryItem, interval: string, timestampStart: number, timestampEnd: number, logPrefixAppend: string): Promise<SqlTotal | null> {
+        const logPrefix = `[${this.logPrefix}.getTotal] ${logPrefixAppend}:`
 
         try {
             const query = `
@@ -142,7 +142,7 @@ export class SqlInterface {
 
             this.adapter.itemDebug(item, `${logPrefix} start: ${moment(timestampStart).format('DD.MM.YYYY - HH:mm')}, end: ${moment(timestampEnd).format('DD.MM.YYYY - HH:mm')}, query: ${query}`);
 
-            const data = await this.retrieve(QueryType.QUERY, query, item, logPrefix);
+            const data = await this.retrieve(QueryType.QUERY, query, item, logPrefixAppend);
 
             if (data) {
                 if (interval)
@@ -181,8 +181,8 @@ export class SqlInterface {
         }
     }
 
-    private async retrieve(queryType: QueryType, query: any, item: ioBroker.AdapterConfigTypes.DatapointsItem | ioBroker.AdapterConfigTypes.HistoryItem, logP: string): Promise<any | null> {
-        const logPrefix = `[retrieve] ${logP}`;
+    private async retrieve(queryType: QueryType, query: any, item: ioBroker.AdapterConfigTypes.DatapointsItem | ioBroker.AdapterConfigTypes.HistoryItem, logPrefixAppend: string): Promise<any | null> {
+        const logPrefix = `[${this.logPrefix}.retrieve] ${logPrefixAppend}:`
 
         try {
             const sqlAlive = await this.adapter.getForeignStateAsync(`${this.sqlInstance}.info.connection`);
@@ -200,12 +200,14 @@ export class SqlInterface {
 
                 this.adapter.itemDebug(item, `${logPrefix} duration: ${moment().diff(now, 'milliseconds') / 1000}s, data: ${JSON.stringify(data)}`);
 
-                if (data && data.result) {
-                    if (data.error) {
-                        this.log.error(`${logPrefix} data error: ${data.error}`);
-                        return null;
-                    } else {
+                if (data.error) {
+                    this.log.error(`${logPrefix} data error: ${data.error}`);
+                    return null;
+                } else {
+                    if (data && data.result) {
                         return data.result
+                    } else {
+                        this.log.error(`${logPrefix} no result exists in data: ${JSON.stringify(data)}`);
                     }
                 }
             } else {

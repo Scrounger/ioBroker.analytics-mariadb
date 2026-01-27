@@ -49,8 +49,14 @@ export class History {
             }
 
             for (const item of list) {
-                const idChannel = item.idChannel || helper.getIdWithoutLastPart(item.id);
-                await objectHandler.createChannel(this.adapter, this.utils, `${idChannel}.${this.idChannelHistory}`, 'historical values');
+                const idChannel = item.idChannel || helper.getIdWithoutLastPart(item.id as string);
+
+                if (item.idChannel) {
+                    // calculated item
+                    await objectHandler.createChannel(this.adapter, this.utils, `${idChannel}.${this.idChannelHistory}`, 'historical calculated values');
+                } else {
+                    await objectHandler.createChannel(this.adapter, this.utils, `${idChannel}.${this.idChannelHistory}`, 'historical values');
+                }
 
                 if (typeof item.id === 'string') {
                     // history item
@@ -104,7 +110,7 @@ export class History {
             const list = [...this.adapter.config.historyList, ... this.adapter.config.historyCalcList];
 
             for (const item of list) {
-                const idChannel = item.idChannel || helper.getIdWithoutLastPart(item.id);
+                const idChannel = item.idChannel || helper.getIdWithoutLastPart(item.id as string);
 
                 for (const interval of Object.keys(Interval)) {
                     if (interval !== Interval.ALL) {
@@ -180,56 +186,37 @@ export class History {
         const logPrefix = `[${this.logPrefix}.updateStates]:`
 
         try {
-            const list = [...this.adapter.config.historyList];
+            for (const item of this.adapter.config.historyList) {
+                const currentState = await this.adapter.getStateAsync(item.id as string);
 
-            for (const item of list) {
-                const currentState = await this.adapter.getStateAsync(item.id);
+                await this.updateThisYear(item, currentState, isAdapterStart);
+                await this.updateThePast(item, isAdapterStart);
+            }
 
-                await this.updateStateOfThisYear(item, currentState, isAdapterStart);
-                await this.updateStatesOfThePast(item, isAdapterStart);
+            for (const item of this.adapter.config.historyCalcList) {
+                await this.updateCalculatedStates(item, isAdapterStart);
             }
         } catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
     }
 
-    private async updateStateOfThisYear(item: ioBroker.AdapterConfigTypes.HistoryItem, currentState: ioBroker.State, isAdapterStart: boolean = false) {
+    private async updateThisYear(item: ioBroker.AdapterConfigTypes.HistoryItem, currentState: ioBroker.State, isAdapterStart: boolean = false) {
         const logPrefix = `[${this.logPrefix}.updateState] - '${item.id}':`
 
         try {
-            const datapointItem = this.adapter.datapoints.getByIdTarget(item.id);
+            const datapointItem = this.adapter.datapoints.getByIdTarget(item.id as string);
 
             if (datapointItem && datapointItem.enable) {
                 for (const interval of Object.keys(Interval)) {
                     if (interval !== Interval.ALL) {
-                        const id = `${helper.getIdWithoutLastPart(item.id)}.${this.idChannelHistory}.${interval}`
+                        const id = `${helper.getIdWithoutLastPart(item.id as string)}.${this.idChannelHistory}.${interval}`
                         const lastState = await this.adapter.getStateAsync(id);
 
-                        const range = this.getDatesFromInterval(interval);
-
                         const debounce = moment(currentState.lc).diff(moment(lastState.lc), 'second');
-                        if (isAdapterStart || debounce >= item.debounce || this.adapter.config.historyDefaultUpdateDeBounce) {
-                            let result = null;
+                        if (isAdapterStart || debounce >= (item.debounce || this.adapter.config.historyDefaultUpdateDeBounce)) {
 
-                            if (datapointItem.type === 'number') {
-                                const data = await this.adapter.sql.getTotal(item, interval, range.start.valueOf(), range.end.valueOf());
-
-                                if (data && data.start && data.end) {
-                                    result = mathjs.round((currentState.val as number) - data.min, item.decimals);
-                                }
-
-                            } else if (datapointItem.type === 'boolean') {
-                                const data = await this.adapter.sql.getCounter(datapointItem, interval, range.start.valueOf(), range.end.valueOf());
-
-                                if (data && data.start && data.end) {
-                                    result = data.count;
-                                }
-
-                            } else {
-                                this.log.error(`${logPrefix} state '${item.id}' has unsupported type '${datapointItem.type}', cannot processing functions'`);
-                            }
-
-                            this.adapter.setStateChangedAsync(id, result, true);
+                            await this.updateHistory(id, item, datapointItem, interval, null, currentState);
                         }
                     }
                 }
@@ -241,11 +228,11 @@ export class History {
         }
     }
 
-    private async updateStatesOfThePast(item: ioBroker.AdapterConfigTypes.HistoryItem, isAdapterStart: boolean = false) {
+    private async updateThePast(item: ioBroker.AdapterConfigTypes.HistoryItem, isAdapterStart: boolean = false) {
         const logPrefix = `[${this.logPrefix}.updateStatesOfThePast] - '${item.id}':`
 
         try {
-            const datapointItem = this.adapter.datapoints.getByIdTarget(item.id);
+            const datapointItem = this.adapter.datapoints.getByIdTarget(item.id as string);
 
             if (datapointItem && datapointItem.enable) {
                 for (const interval of Object.keys(Interval)) {
@@ -253,30 +240,9 @@ export class History {
 
                         if (item[interval] > 0) {
                             for (let i = 1; i <= item[interval]; i++) {
-                                const id = `${helper.getIdWithoutLastPart(item.id)}.${this.idChannelHistory}._${interval}.${interval}_${helper.zeroPad(i, 2)}`;
-                                const range = this.getDatesFromInterval(interval, i);
+                                const id = `${helper.getIdWithoutLastPart(item.id as string)}.${this.idChannelHistory}._${interval}.${interval}_${helper.zeroPad(i, 2)}`;
 
-                                let result = null;
-
-                                if (datapointItem.type === 'number') {
-                                    const data = await this.adapter.sql.getTotal(item, interval, range.start.valueOf(), range.end.valueOf());
-
-                                    if (data && data.start && data.end) {
-                                        result = mathjs.round(data.delta, item.decimals);
-                                    }
-
-                                } else if (datapointItem.type === 'boolean') {
-                                    const data = await this.adapter.sql.getCounter(datapointItem, interval, range.start.valueOf(), range.end.valueOf());
-
-                                    if (data && data.start && data.end) {
-                                        result = data.count;
-                                    }
-
-                                } else {
-                                    this.log.error(`${logPrefix} state '${item.id}' has unsupported type '${datapointItem.type}', cannot processing functions'`);
-                                }
-
-                                this.adapter.setStateChangedAsync(id, result, true);
+                                await this.updateHistory(id, item, datapointItem, interval, i, null);
                             }
                         } else {
                             this.adapter.log.debug(`${logPrefix} history for interval '${interval}' is disabled`);
@@ -291,11 +257,88 @@ export class History {
         }
     }
 
-    private async updateCalcedStates() {
-        const logPrefix = `[${this.logPrefix}.updateCalcedStates]:`
+    private async updateHistory(id: string, item: ioBroker.AdapterConfigTypes.HistoryItem, datapointItem: ioBroker.AdapterConfigTypes.DatapointsItem, interval: string, i: number | null, currentState: ioBroker.State | null) {
+        const logPrefixAppend = `[${datapointItem.idChannelTarget}] [${helper.getIdLastPart(id)}]`
+        const logPrefix = `[${this.logPrefix}.updateStateHistory] ${logPrefixAppend}:`
 
         try {
+            const range = this.getDatesFromInterval(interval, i);
 
+            let result = null;
+
+            if (datapointItem.type === 'number') {
+                const data = await this.adapter.sql.getTotal(item, interval, range.start.valueOf(), range.end.valueOf(), logPrefixAppend);
+
+                if (data && data.start && data.end) {
+                    if (i === null) {
+                        // values of this year -> taking current state value for delta calculation
+                        result = mathjs.round((currentState.val as number) - data.min, item.decimals);
+                    } else {
+                        result = mathjs.round(data.delta, item.decimals);
+                    }
+                }
+
+            } else if (datapointItem.type === 'boolean') {
+                const data = await this.adapter.sql.getCounter(datapointItem, interval, logPrefixAppend, range.start.valueOf(), range.end.valueOf());
+
+                if (data && data.start && data.end) {
+                    result = data.count;
+                }
+
+            } else {
+                this.log.error(`${logPrefix} state '${item.id}' has unsupported type '${datapointItem.type}', cannot processing functions'`);
+            }
+
+            this.adapter.setStateChangedAsync(id, result, true);
+
+            this.adapter.itemDebug(item, `${logPrefix} start: ${moment(range.start).format('DD.MM.YYYY - HH:mm')}, end: ${moment(range.end).format('DD.MM.YYYY - HH:mm')}, result: ${result}`);
+
+        } catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
+    }
+
+    private async updateCalculatedStates(item: ioBroker.AdapterConfigTypes.HistoryItem, isAdapterStart: boolean) {
+        const logPrefix = `[${this.logPrefix}.updateCalculatedStates] - '${item.idChannel}':`
+
+        try {
+            for (const id of item.id) {
+                const datapointItem = this.adapter.datapoints.getByIdTarget(id);
+
+                if (!datapointItem || !datapointItem.enable) {
+                    this.log.error(`${logPrefix} datapoint '${helper.getIdWithoutLastPart(id)}' not enabled or exists, but it's mandatory for the calculation -> abort!`);
+                    return;
+                }
+            }
+
+            const debugFormula = item.formula.replace(/\[(\d+)\]/g, (_, index: string) => {
+                return helper.getIdWithoutLastPart(item.id[Number(index)]);
+            });
+
+            this.adapter.itemDebug(item, `${logPrefix} calculation formula: ${debugFormula}`);
+
+            for (const interval of Object.keys(Interval)) {
+                if (interval !== Interval.ALL) {
+
+                    const calcArray = [];
+                    for (const id of item.id) {
+                        const state = await this.adapter.getStateAsync(`${helper.getIdWithoutLastPart(id)}.${this.idChannelHistory}.${interval}`);
+                        calcArray.push(state.val);
+                    }
+
+                    const formula = item.formula.replace(/\[(\d+)\]/g, (_, index: string) => {
+                        return calcArray[Number(index)];
+                    });
+
+                    const result = mathjs.evaluate(formula);
+
+                    if (result) {
+                        this.adapter.itemDebug(item, `${logPrefix} ${interval} - calculation: ${formula} = ${result}`);
+                    }
+
+                    this.adapter.setStateChangedAsync(`${item.idChannel}.${this.idChannelHistory}.${interval}`, mathjs.round(result, item.decimals), true);
+                }
+            }
         } catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
@@ -305,7 +348,7 @@ export class History {
         const logPrefix = `[${this.logPrefix}.onStateChange] - '${item.id}':`
 
         try {
-            await this.updateStateOfThisYear(item, currentState);
+            await this.updateThisYear(item, currentState);
         } catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
