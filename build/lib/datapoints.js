@@ -20,6 +20,7 @@ export class Datapoints {
         const logPrefix = `[${this.logPrefix}.init]`;
         try {
             await this.createStates(true);
+            await this.writeValuesAtDayChangeToDatabase();
         }
         catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
@@ -247,6 +248,24 @@ export class Datapoints {
                     }, this.adapter.config.sqlWriteTimeout);
                 }
                 await this.adapter.setState(idTarget, state);
+            }
+        }
+        catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
+    }
+    async writeValuesAtDayChangeToDatabase() {
+        const logPrefix = `[${this.logPrefix}.writeValuesAtDayChangeToDatabase]':`;
+        try {
+            const list = [...this.adapter.config.datapointsNumberList, ...this.adapter.config.datapointsBooleanList];
+            if (list && list.length > 0) {
+                for (const item of list) {
+                    if (item.enable) {
+                        let state = await this.adapter.getStateAsync(item.idSql);
+                        this.adapter.log.info(`${logPrefix} '${item.idSql}' - save state to database`);
+                        this.adapter.sql.storeState(item, state);
+                    }
+                }
             }
         }
         catch (error) {

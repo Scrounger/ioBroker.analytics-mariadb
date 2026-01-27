@@ -8,8 +8,9 @@ export enum Interval {
     ALL = 'ALL',
 }
 
-enum QueryTaype {
+enum QueryType {
     QUERY = 'query',
+    STORESTATE = 'storeState',
 }
 
 export interface SqlCounter {
@@ -27,6 +28,8 @@ export interface SqlTotal {
 }
 
 export class SqlInterface {
+    private logPrefix: string = 'SqlInterface'
+
     private adapter: ioBroker.myAdapter;
     private log: ioBroker.Logger;
 
@@ -43,7 +46,7 @@ export class SqlInterface {
     }
 
     public async getDatabaseName(): Promise<void> {
-        const logPrefix = '[getDatabaseName]:';
+        const logPrefix = `[${this.logPrefix}.getDatabaseName]:`
 
         try {
             const sqlObj = await this.adapter.getForeignObjectAsync(`system.adapter.${this.sqlInstance}`);
@@ -58,7 +61,7 @@ export class SqlInterface {
     }
 
     public async getCounter(item: ioBroker.AdapterConfigTypes.DatapointsItem, interval: string, timestampStart: number = 0, timestampEnd: number = 0): Promise<SqlCounter | null> {
-        const logPrefix = `[getCounter] [${interval}] - '${item.idSql}':`;
+        const logPrefix = `[${this.logPrefix}.getCounter] [${interval}] - '${item.idSql}':`
 
         try {
             const query = `
@@ -88,9 +91,9 @@ export class SqlInterface {
                 ORDER BY ts DESC;
             `;
 
-            this.adapter.itemDebug(item, `${logPrefix} query: ${query}`);
+            this.adapter.itemDebug(item, `${logPrefix} start: ${moment(timestampStart).format('DD.MM.YYYY - HH:mm')}, end: ${moment(timestampEnd).format('DD.MM.YYYY - HH:mm')}, query: ${query}`);
 
-            const data = await this.retrieve(QueryTaype.QUERY, query, item, logPrefix);
+            const data = await this.retrieve(QueryType.QUERY, query, item, logPrefix);
 
             if (data) {
                 // can only have one row
@@ -109,7 +112,7 @@ export class SqlInterface {
     }
 
     public async getTotal(item: ioBroker.AdapterConfigTypes.HistoryItem, interval: string, timestampStart: number, timestampEnd: number): Promise<SqlTotal | null> {
-        const logPrefix = `[getTotal] [${interval}] - '${item.id}':`;
+        const logPrefix = `[${this.logPrefix}.getTotal] [${interval}] - '${item.id}':`
 
         try {
             const query = `
@@ -123,7 +126,7 @@ export class SqlInterface {
                     result.min,
                     DATE_FORMAT(FROM_UNIXTIME(result.end / 1000), '%d.%m.%Y - %H:%i') as 'end',
                     result.max,
-                    ROUND(result.max - result.min, ${item.decimals}) as 'delta'
+                    result.max - result.min as 'delta'
                 FROM (
                     SELECT
                         MIN(ts) AS 'start',
@@ -137,9 +140,9 @@ export class SqlInterface {
                 ) result;
             `;
 
-            this.adapter.itemDebug(item, `${logPrefix} query: ${query}`);
+            this.adapter.itemDebug(item, `${logPrefix} start: ${moment(timestampStart).format('DD.MM.YYYY - HH:mm')}, end: ${moment(timestampEnd).format('DD.MM.YYYY - HH:mm')}, query: ${query}`);
 
-            const data = await this.retrieve(QueryTaype.QUERY, query, item, logPrefix);
+            const data = await this.retrieve(QueryType.QUERY, query, item, logPrefix);
 
             if (data) {
                 if (interval)
@@ -158,8 +161,27 @@ export class SqlInterface {
         return null;
     }
 
+    public async storeState(item: ioBroker.AdapterConfigTypes.DatapointsItem, state: ioBroker.State): Promise<any> {
+        const logPrefix = `[${this.logPrefix}.storeState] - '${item.idSql}':`
 
-    private async retrieve(queryType: QueryTaype, query: string, item: ioBroker.AdapterConfigTypes.DatapointsItem | ioBroker.AdapterConfigTypes.HistoryItem, logP: string): Promise<any | null> {
+        try {
+            this.retrieve(QueryType.STORESTATE, {
+                id: `${this.adapter.namespace}.${item.idSql}`,
+                state: {
+                    ts: moment().valueOf(),
+                    val: state.val,
+                    ack: state.ack,
+                    from: `system.adapter.${this.adapter.namespace}`,
+                    q: state.q ? state.q : 0
+                }
+            }, item, logPrefix);
+
+        } catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
+    }
+
+    private async retrieve(queryType: QueryType, query: any, item: ioBroker.AdapterConfigTypes.DatapointsItem | ioBroker.AdapterConfigTypes.HistoryItem, logP: string): Promise<any | null> {
         const logPrefix = `[retrieve] ${logP}`;
 
         try {

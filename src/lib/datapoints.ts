@@ -303,4 +303,27 @@ export class Datapoints {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
     }
+
+    public async writeValuesAtDayChangeToDatabase() {
+        const logPrefix = `[${this.logPrefix}.writeValuesAtDayChangeToDatabase]':`
+
+        try {
+            const list = [...this.adapter.config.datapointsNumberList, ...this.adapter.config.datapointsBooleanList];
+
+            if (list && list.length > 0) {
+                for (const item of list) {
+                    if (item.enable) {
+                        let state = await this.adapter.getStateAsync(item.idSql);
+
+                        this.adapter.log.info(`${logPrefix} '${item.idSql}' - save state to database`);
+
+                        this.adapter.sql.storeState(item, state);
+                    }
+                }
+            }
+
+        } catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
+    }
 }

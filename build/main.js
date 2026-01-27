@@ -6,6 +6,7 @@
 import * as utils from '@iobroker/adapter-core';
 import url from 'node:url';
 import moment from 'moment';
+import { scheduleJob } from 'node-schedule';
 // Load your modules here, e.g.:
 // import * as fs from 'fs';
 import { SqlInterface } from './lib/sqlInterface.js';
@@ -21,6 +22,8 @@ class AnalyticsMariadb extends utils.Adapter {
     sql;
     datapoints;
     history;
+    scheduleSaveValueBeforeDayChange;
+    scheduleSaveValueAfterDayChange;
     constructor(options = {}) {
         super({
             ...options,
@@ -47,6 +50,9 @@ class AnalyticsMariadb extends utils.Adapter {
                 await this.datapoints.init();
                 this.history = new History(this, utils);
                 await this.history.init();
+                // Beim Tageswechsel, Wert kurz vor und nach 0:00 in Datenbank schreiben, damit der Verbrauch zwischen Tageswechsel korrekt erfasst wird
+                this.scheduleSaveValueBeforeDayChange = scheduleJob('55 59 23 * * *', this.datapoints.writeValuesAtDayChangeToDatabase);
+                this.scheduleSaveValueAfterDayChange = scheduleJob('5 0 0 * * *', this.datapoints.writeValuesAtDayChangeToDatabase);
             }
             else {
                 this.log.error(`${logPrefix} No SQL instance configured in adapter configuration!`);
@@ -68,6 +74,12 @@ class AnalyticsMariadb extends utils.Adapter {
                 if (this.timeoutBoolean[id]) {
                     this.clearTimeout(this.timeoutBoolean[id]);
                 }
+            }
+            if (this.scheduleSaveValueBeforeDayChange) {
+                this.scheduleSaveValueBeforeDayChange.cancel();
+            }
+            if (this.scheduleSaveValueAfterDayChange) {
+                this.scheduleSaveValueAfterDayChange.cancel();
             }
             callback();
         }

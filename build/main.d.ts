@@ -1,4 +1,5 @@
 import * as utils from '@iobroker/adapter-core';
+import { Job } from 'node-schedule';
 import { SqlInterface } from './lib/sqlInterface.js';
 import { History } from './lib/history.js';
 import { Datapoints } from './lib/datapoints.js';
@@ -12,6 +13,8 @@ declare class AnalyticsMariadb extends utils.Adapter {
     sql: SqlInterface;
     datapoints: Datapoints;
     history: History;
+    scheduleSaveValueBeforeDayChange: Job;
+    scheduleSaveValueAfterDayChange: Job;
     constructor(options?: Partial<utils.AdapterOptions>);
     /**
      * Is called when databases are connected and adapter received configuration.

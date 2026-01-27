@@ -7,11 +7,13 @@ export var Interval;
     Interval["year"] = "year";
     Interval["ALL"] = "ALL";
 })(Interval || (Interval = {}));
-var QueryTaype;
-(function (QueryTaype) {
-    QueryTaype["QUERY"] = "query";
-})(QueryTaype || (QueryTaype = {}));
+var QueryType;
+(function (QueryType) {
+    QueryType["QUERY"] = "query";
+    QueryType["STORESTATE"] = "storeState";
+})(QueryType || (QueryType = {}));
 export class SqlInterface {
+    logPrefix = 'SqlInterface';
     adapter;
     log;
     sqlInstance;
@@ -24,7 +26,7 @@ export class SqlInterface {
         this.getDatabaseName();
     }
     async getDatabaseName() {
-        const logPrefix = '[getDatabaseName]:';
+        const logPrefix = `[${this.logPrefix}.getDatabaseName]:`;
         try {
             const sqlObj = await this.adapter.getForeignObjectAsync(`system.adapter.${this.sqlInstance}`);
             if (sqlObj && sqlObj.native && sqlObj.native.dbname) {
@@ -37,7 +39,7 @@ export class SqlInterface {
         }
     }
     async getCounter(item, interval, timestampStart = 0, timestampEnd = 0) {
-        const logPrefix = `[getCounter] [${interval}] - '${item.idSql}':`;
+        const logPrefix = `[${this.logPrefix}.getCounter] [${interval}] - '${item.idSql}':`;
         try {
             const query = `
                 WITH dp AS (
@@ -65,8 +67,8 @@ export class SqlInterface {
                     n.val = 1
                 ORDER BY ts DESC;
             `;
-            this.adapter.itemDebug(item, `${logPrefix} query: ${query}`);
-            const data = await this.retrieve(QueryTaype.QUERY, query, item, logPrefix);
+            this.adapter.itemDebug(item, `${logPrefix} start: ${moment(timestampStart).format('DD.MM.YYYY - HH:mm')}, end: ${moment(timestampEnd).format('DD.MM.YYYY - HH:mm')}, query: ${query}`);
+            const data = await this.retrieve(QueryType.QUERY, query, item, logPrefix);
             if (data) {
                 // can only have one row
                 if (data.length === 1) {
@@ -84,7 +86,7 @@ export class SqlInterface {
         return null;
     }
     async getTotal(item, interval, timestampStart, timestampEnd) {
-        const logPrefix = `[getTotal] [${interval}] - '${item.id}':`;
+        const logPrefix = `[${this.logPrefix}.getTotal] [${interval}] - '${item.id}':`;
         try {
             const query = `
                 WITH dp AS (
@@ -97,7 +99,7 @@ export class SqlInterface {
                     result.min,
                     DATE_FORMAT(FROM_UNIXTIME(result.end / 1000), '%d.%m.%Y - %H:%i') as 'end',
                     result.max,
-                    ROUND(result.max - result.min, ${item.decimals}) as 'delta'
+                    result.max - result.min as 'delta'
                 FROM (
                     SELECT
                         MIN(ts) AS 'start',
@@ -110,8 +112,8 @@ export class SqlInterface {
                     AND ts <  ${timestampEnd}
                 ) result;
             `;
-            this.adapter.itemDebug(item, `${logPrefix} query: ${query}`);
-            const data = await this.retrieve(QueryTaype.QUERY, query, item, logPrefix);
+            this.adapter.itemDebug(item, `${logPrefix} start: ${moment(timestampStart).format('DD.MM.YYYY - HH:mm')}, end: ${moment(timestampEnd).format('DD.MM.YYYY - HH:mm')}, query: ${query}`);
+            const data = await this.retrieve(QueryType.QUERY, query, item, logPrefix);
             if (data) {
                 if (interval)
                     // can only have one row as result
@@ -128,6 +130,24 @@ export class SqlInterface {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
         return null;
+    }
+    async storeState(item, state) {
+        const logPrefix = `[${this.logPrefix}.storeState] - '${item.idSql}':`;
+        try {
+            this.retrieve(QueryType.STORESTATE, {
+                id: `${this.adapter.namespace}.${item.idSql}`,
+                state: {
+                    ts: moment().valueOf(),
+                    val: state.val,
+                    ack: state.ack,
+                    from: `system.adapter.${this.adapter.namespace}`,
+                    q: state.q ? state.q : 0
+                }
+            }, item, logPrefix);
+        }
+        catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
     }
     async retrieve(queryType, query, item, logP) {
         const logPrefix = `[retrieve] ${logP}`;

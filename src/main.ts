@@ -7,6 +7,7 @@
 import * as utils from '@iobroker/adapter-core';
 import url from 'node:url';
 import moment from 'moment';
+import { Job, scheduleJob } from 'node-schedule';
 
 
 // Load your modules here, e.g.:
@@ -14,6 +15,7 @@ import moment from 'moment';
 import { SqlInterface } from './lib/sqlInterface.js';
 import { History } from './lib/history.js';
 import { Datapoints } from './lib/datapoints.js';
+
 
 class AnalyticsMariadb extends utils.Adapter {
 
@@ -26,10 +28,12 @@ class AnalyticsMariadb extends utils.Adapter {
     idStorageValue = 'storageValue';
     idBooleanValue = 'value'
 
-
     sql: SqlInterface;
     datapoints: Datapoints;
     history: History;
+
+    scheduleSaveValueBeforeDayChange: Job
+    scheduleSaveValueAfterDayChange: Job
 
     public constructor(options: Partial<utils.AdapterOptions> = {}) {
         super({
@@ -63,6 +67,10 @@ class AnalyticsMariadb extends utils.Adapter {
                 this.history = new History(this, utils);
                 await this.history.init();
 
+                // Beim Tageswechsel, Wert kurz vor und nach 0:00 in Datenbank schreiben, damit der Verbrauch zwischen Tageswechsel korrekt erfasst wird
+                this.scheduleSaveValueBeforeDayChange = scheduleJob('55 59 23 * * *', this.datapoints.writeValuesAtDayChangeToDatabase);
+                this.scheduleSaveValueAfterDayChange = scheduleJob('5 0 0 * * *', this.datapoints.writeValuesAtDayChangeToDatabase);
+
             } else {
                 this.log.error(`${logPrefix} No SQL instance configured in adapter configuration!`);
             }
@@ -84,6 +92,13 @@ class AnalyticsMariadb extends utils.Adapter {
                 if (this.timeoutBoolean[id]) {
                     this.clearTimeout(this.timeoutBoolean[id]);
                 }
+            }
+
+            if (this.scheduleSaveValueBeforeDayChange) {
+                this.scheduleSaveValueBeforeDayChange.cancel();
+            }
+            if (this.scheduleSaveValueAfterDayChange) {
+                this.scheduleSaveValueAfterDayChange.cancel();
             }
 
             callback();
