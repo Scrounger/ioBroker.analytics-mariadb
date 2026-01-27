@@ -19,7 +19,7 @@ export class History {
         try {
             await this.createStates(true);
             await this.updateNameOfStates();
-            await this.updateStates(true);
+            await this._updateStates(true);
         }
         catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
@@ -156,7 +156,10 @@ export class History {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
     }
-    async updateStates(isAdapterStart) {
+    async updateStates() {
+        await this._updateStates(false);
+    }
+    async _updateStates(isAdapterStart) {
         const logPrefix = `[${this.logPrefix}.updateStates]:`;
         try {
             const list = [...this.adapter.config.historyList];

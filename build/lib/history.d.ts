@@ -9,7 +9,8 @@ export declare class History {
     private createStates;
     private updateNameOfStates;
     private _updateNameOfStates;
-    private updateStates;
+    updateStates(): Promise<void>;
+    private _updateStates;
     private updateStateOfThisYear;
     private updateStatesOfThePast;
     private updateCalcedStates;

@@ -25,6 +25,7 @@
     "History": "Historia",
     "History calculated": "Historia calculada",
     "This selection is only possible with a running instance!": "¡Esta selección solo es posible con una instancia en ejecución!",
+    "Time at which the history data is updated after the day change": "Hora a la que se actualizan los datos del historial después del cambio de día",
     "You like the adapter? Then support me.": "¿Te gusta el adaptador? Entonces apóyame.",
     "You must first save your entries before you can use them in the datapoints tab": "Primero debe guardar sus entradas antes de poder usarlas en la pestaña de puntos de datos",
     "analytics-mariadb adapter settings": "Ajustes del adaptador para analytics-mariadb",

@@ -19,6 +19,7 @@ declare global {
             historyList: AdapterConfigTypes.HistoryItem[];
             historyCalcList: AdapterConfigTypes.HistoryItem[];
             sqlWriteTimeout: number;
+            cronUpdateHistoryAtDayChange: string;
         }
 
         namespace AdapterConfigTypes {

@@ -26,7 +26,7 @@ export class History {
         try {
             await this.createStates(true);
             await this.updateNameOfStates();
-            await this.updateStates(true);
+            await this._updateStates(true);
 
         } catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
@@ -172,7 +172,11 @@ export class History {
         }
     }
 
-    private async updateStates(isAdapterStart: boolean) {
+    public async updateStates() {
+        await this._updateStates(false);
+    }
+
+    private async _updateStates(isAdapterStart: boolean) {
         const logPrefix = `[${this.logPrefix}.updateStates]:`
 
         try {

@@ -99,7 +99,7 @@
         "datapointsBooleanList": [],
         "datapointsSqlPresetsList": [
             {
-                "idPreset": "Energy (big, forever)",
+                "idPreset": "Total (big, forever)",
                 "type": "number",
                 "debounceTime": 1000,
                 "changesRelogInterval": 0,
@@ -107,7 +107,7 @@
                 "retention": 0
             },
             {
-                "idPreset": "Energy (big, 5 years)",
+                "idPreset": "Total (big, 5 years)",
                 "type": "number",
                 "debounceTime": 1000,
                 "changesRelogInterval": 0,
@@ -115,7 +115,7 @@
                 "retention": 157680000
             },
             {
-                "idPreset": "Energy (big, 2 years)",
+                "idPreset": "Total (big, 2 years)",
                 "type": "number",
                 "debounceTime": 1000,
                 "changesRelogInterval": 0,
@@ -123,7 +123,7 @@
                 "retention": 63072000
             },
             {
-                "idPreset": "Energy (small, forever)",
+                "idPreset": "Total (small, forever)",
                 "type": "number",
                 "debounceTime": 1000,
                 "changesRelogInterval": 0,
@@ -131,7 +131,7 @@
                 "retention": 0
             },
             {
-                "idPreset": "Energy (small, 5 years)",
+                "idPreset": "Total (small, 5 years)",
                 "type": "number",
                 "debounceTime": 1000,
                 "changesRelogInterval": 0,
@@ -139,7 +139,7 @@
                 "retention": 157680000
             },
             {
-                "idPreset": "Energy (small, 2 years)",
+                "idPreset": "Total (small, 2 years)",
                 "type": "number",
                 "debounceTime": 1000,
                 "changesRelogInterval": 0,
@@ -173,7 +173,8 @@
         ],
         "historyList": [],
         "historyCalcList": [],
-        "sqlWriteTimeout": 2000
+        "sqlWriteTimeout": 2000,
+        "cronUpdateHistoryAtDayChange": "3 0 * * *"
     },
     "objects": [],
     "instanceObjects": []

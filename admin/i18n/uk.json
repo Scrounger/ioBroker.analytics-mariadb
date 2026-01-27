@@ -25,6 +25,7 @@
     "History": "історія",
     "History calculated": "Історія підрахована",
     "This selection is only possible with a running instance!": "Цей вибір можливий лише з запущеним екземпляром!",
+    "Time at which the history data is updated after the day change": "Час, коли дані історії оновлюються після зміни дня",
     "You like the adapter? Then support me.": "Вам подобається адаптер? Тоді підтримай мене.",
     "You must first save your entries before you can use them in the datapoints tab": "Ви повинні спочатку зберегти свої записи, перш ніж використовувати їх на вкладці точок даних",
     "analytics-mariadb adapter settings": "Налаштування адаптера для analytics-mariadb",

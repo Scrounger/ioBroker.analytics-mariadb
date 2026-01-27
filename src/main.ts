@@ -32,8 +32,9 @@ class AnalyticsMariadb extends utils.Adapter {
     datapoints: Datapoints;
     history: History;
 
-    scheduleSaveValueBeforeDayChange: Job
-    scheduleSaveValueAfterDayChange: Job
+    scheduleUpdateHistoryAtDayChange: Job;
+    scheduleSaveValueBeforeDayChange: Job;
+    scheduleSaveValueAfterDayChange: Job;
 
     public constructor(options: Partial<utils.AdapterOptions> = {}) {
         super({
@@ -67,6 +68,9 @@ class AnalyticsMariadb extends utils.Adapter {
                 this.history = new History(this, utils);
                 await this.history.init();
 
+                // Historische Werte einmal täglich aktualisieren (_Tag, _Woche, _Monat, _Jahr)
+                this.scheduleUpdateHistoryAtDayChange = scheduleJob(this.config.cronUpdateHistoryAtDayChange, this.history.updateStates);
+
                 // Beim Tageswechsel, Wert kurz vor und nach 0:00 in Datenbank schreiben, damit der Verbrauch zwischen Tageswechsel korrekt erfasst wird
                 this.scheduleSaveValueBeforeDayChange = scheduleJob('55 59 23 * * *', this.datapoints.writeValuesAtDayChangeToDatabase);
                 this.scheduleSaveValueAfterDayChange = scheduleJob('5 0 0 * * *', this.datapoints.writeValuesAtDayChangeToDatabase);
@@ -94,6 +98,9 @@ class AnalyticsMariadb extends utils.Adapter {
                 }
             }
 
+            if (this.scheduleUpdateHistoryAtDayChange) {
+                this.scheduleUpdateHistoryAtDayChange.cancel();
+            }
             if (this.scheduleSaveValueBeforeDayChange) {
                 this.scheduleSaveValueBeforeDayChange.cancel();
             }

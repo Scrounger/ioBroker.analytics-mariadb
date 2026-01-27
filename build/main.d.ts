@@ -13,6 +13,7 @@ declare class AnalyticsMariadb extends utils.Adapter {
     sql: SqlInterface;
     datapoints: Datapoints;
     history: History;
+    scheduleUpdateHistoryAtDayChange: Job;
     scheduleSaveValueBeforeDayChange: Job;
     scheduleSaveValueAfterDayChange: Job;
     constructor(options?: Partial<utils.AdapterOptions>);
