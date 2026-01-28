@@ -39,10 +39,12 @@
     "contract type": "тип контракта",
     "contract types": "типы контрактов",
     "costs default settings": "стоит настройки по умолчанию",
+    "costs for historical values": "затраты на исторические ценности",
     "cumulative total value": "совокупная общая стоимость",
     "cumulative total value De-bounce time": "совокупное общее значение Время устранения дребезга",
     "currency": "валюта",
     "days": "дни",
+    "daysShort": "Д",
     "debug": "Отлаживать",
     "decimals": "десятичные дроби",
     "end date": "дата окончания",
@@ -56,6 +58,7 @@
     "log changes minimal delta": "Минимальная разница с последним значением",
     "max. delta": "макс. дельта",
     "months": "месяцы",
+    "monthsShort": "М",
     "name of provider": "имя провайдера",
     "old cumulative total value": "старая совокупная общая стоимость",
     "old meter reading": "старые показания счетчика",
@@ -77,5 +80,7 @@
     "update debounce": "откат обновления",
     "variable costs": "переменные затраты",
     "weeks": "недели",
-    "years": "годы"
+    "weeksShort": "Вт",
+    "years": "годы",
+    "yearsShort": "Да"
 }

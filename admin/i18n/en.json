@@ -73,5 +73,10 @@
     "bonus": "bonus",
     "name of provider": "name of provider",
     "variable costs": "variable costs",
-    "Formula for calculating variable costs": "Formula for calculating variable costs"
+    "Formula for calculating variable costs": "Formula for calculating variable costs",
+    "daysShort": "D",
+    "weeksShort": "W",
+    "monthsShort": "M",
+    "yearsShort": "Y",
+    "costs for historical values": "costs for historical values"
 }

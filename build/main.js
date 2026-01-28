@@ -12,6 +12,7 @@ import { scheduleJob } from 'node-schedule';
 import { SqlInterface } from './lib/sqlInterface.js';
 import { History } from './lib/history.js';
 import { Datapoints } from './lib/datapoints.js';
+import { Cost } from './lib/cost.js';
 class AnalyticsMariadb extends utils.Adapter {
     sourceToDatapoint = {};
     timeoutBoolean = {};
@@ -22,6 +23,7 @@ class AnalyticsMariadb extends utils.Adapter {
     sql;
     datapoints;
     history;
+    cost;
     scheduleUpdateHistoryAtDayChange;
     scheduleSaveValueBeforeDayChange;
     scheduleSaveValueAfterDayChange;
@@ -49,6 +51,8 @@ class AnalyticsMariadb extends utils.Adapter {
                 this.sql = new SqlInterface(this);
                 this.datapoints = new Datapoints(this, utils);
                 await this.datapoints.init();
+                this.cost = new Cost(this, utils);
+                await this.cost.init();
                 this.history = new History(this, utils);
                 await this.history.init();
                 // Historische Werte einmal täglich aktualisieren (_Tag, _Woche, _Monat, _Jahr)
@@ -211,6 +215,13 @@ class AnalyticsMariadb extends utils.Adapter {
                     }
                 }
                 else if (obj.command === 'getCostsContractTypes') {
+                    const data = obj.message.data;
+                    const result = data.map(p => p.id);
+                    if (obj.callback) {
+                        this.sendTo(obj.from, obj.command, result, obj.callback);
+                    }
+                }
+                else if (obj.command === 'getCostContractTypes') {
                     const data = obj.message.data;
                     const result = data.map(p => p.id);
                     if (obj.callback) {

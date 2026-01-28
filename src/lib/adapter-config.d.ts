@@ -1,6 +1,7 @@
 // This file extends the AdapterConfig type from "@iobroker/types"
 import { Interval, SqlInterface } from './sqlInterface.js';
 import { Datapoints } from './datapoints.js';
+import { Cost } from './cost.js';
 
 // Augment the globally declared type ioBroker.AdapterConfig
 declare global {
@@ -60,6 +61,7 @@ declare global {
                 month: number;
                 year: number;
                 debounce: number;
+                idContractType: string;
                 debug: boolean;
             }
 
@@ -79,11 +81,28 @@ declare global {
                 basicPrice: number;
                 bonusPrice: number;
             }
+
+            interface CostList {
+                [key: string]: CostItem
+            }
+
+            interface CostItem {
+                calculation: string,
+                data: {
+                    provider: string;
+                    start: string;
+                    end: string;
+                    variableCosts: { [key: string]: number };
+                    basicPrice: number;
+                    bonusPrice: number;
+                }[];
+            }
         }
 
         interface myAdapter extends ioBroker.Adapter {
             sql: SqlInterface;
             datapoints: Datapoints;
+            cost: Cost;
 
             sourceToDatapoint: Record<string, ioBroker.AdapterConfigTypes.DatapointsItem>;
             timeoutBoolean: Record<string, ioBroker.Timeout>;

@@ -15,6 +15,7 @@ import { Job, scheduleJob } from 'node-schedule';
 import { SqlInterface } from './lib/sqlInterface.js';
 import { History } from './lib/history.js';
 import { Datapoints } from './lib/datapoints.js';
+import { Cost } from './lib/cost.js';
 
 
 class AnalyticsMariadb extends utils.Adapter {
@@ -31,6 +32,7 @@ class AnalyticsMariadb extends utils.Adapter {
     sql: SqlInterface;
     datapoints: Datapoints;
     history: History;
+    cost: Cost;
 
     scheduleUpdateHistoryAtDayChange: Job;
     scheduleSaveValueBeforeDayChange: Job;
@@ -64,6 +66,9 @@ class AnalyticsMariadb extends utils.Adapter {
 
                 this.datapoints = new Datapoints(this, utils);
                 await this.datapoints.init();
+
+                this.cost = new Cost(this, utils)
+                await this.cost.init();
 
                 this.history = new History(this, utils);
                 await this.history.init();
@@ -246,6 +251,14 @@ class AnalyticsMariadb extends utils.Adapter {
                     }
 
                 } else if (obj.command === 'getCostsContractTypes') {
+                    const data = obj.message.data as ioBroker.AdapterConfigTypes.CostContractType[];
+
+                    const result = data.map(p => p.id);
+
+                    if (obj.callback) {
+                        this.sendTo(obj.from, obj.command, result, obj.callback);
+                    }
+                } else if (obj.command === 'getCostContractTypes') {
                     const data = obj.message.data as ioBroker.AdapterConfigTypes.CostContractType[];
 
                     const result = data.map(p => p.id);

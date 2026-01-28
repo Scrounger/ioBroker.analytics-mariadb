@@ -37,14 +37,13 @@ export class History {
                 write: false,
                 def: 0,
             };
+            const commonCost = { ...commonHistory };
             for (const item of list) {
                 const idChannel = item.idChannel || helper.getIdWithoutLastPart(item.id);
-                if (item.idChannel) {
-                    // calculated item
-                    await objectHandler.createChannel(this.adapter, this.utils, `${idChannel}.${this.idChannelHistory}`, 'historical calculated values');
-                }
-                else {
-                    await objectHandler.createChannel(this.adapter, this.utils, `${idChannel}.${this.idChannelHistory}`, 'historical values');
+                await objectHandler.createChannel(this.adapter, this.utils, `${idChannel}.${this.idChannelHistory}`, item.idChannel ? 'historical calculated values' : 'historical values');
+                if (item.idContractType) {
+                    await objectHandler.createChannel(this.adapter, this.utils, `${idChannel}.${this.adapter.cost.idChannelCost}`, 'costs for historical values');
+                    commonCost.unit = this.adapter.cost.getContractType(item.idContractType).currency;
                 }
                 if (typeof item.id === 'string') {
                     // history item
@@ -73,9 +72,16 @@ export class History {
                     if (interval !== Interval.ALL) {
                         await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idChannelHistory}.${interval}`, null, null, commonHistory, undefined, false, false);
                         await objectHandler.createChannel(this.adapter, this.utils, `${idChannel}.${this.idChannelHistory}._${interval}`, `past ${interval}s`);
+                        if (item.idContractType) {
+                            await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.adapter.cost.idChannelCost}.${interval}`, null, null, commonCost, undefined, false, false);
+                            await objectHandler.createChannel(this.adapter, this.utils, `${idChannel}.${this.adapter.cost.idChannelCost}._${interval}`, `past ${interval}s`);
+                        }
                         if (item[interval] > 0) {
                             for (let i = 1; i <= item[interval]; i++) {
                                 await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idChannelHistory}._${interval}.${interval}_${helper.zeroPad(i, 2)}`, null, null, commonHistory, undefined, false, false);
+                                if (item.idContractType) {
+                                    await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.adapter.cost.idChannelCost}._${interval}.${interval}_${helper.zeroPad(i, 2)}`, null, null, commonCost, undefined, false, false);
+                                }
                             }
                         }
                     }
@@ -111,6 +117,9 @@ export class History {
                             continue;
                         }
                         await this._updateNameOfStates(`${idChannel}.${this.idChannelHistory}.${interval}`, name, logPrefix);
+                        if (item.idContractType) {
+                            await this._updateNameOfStates(`${idChannel}.${this.adapter.cost.idChannelCost}.${interval}`, name, logPrefix);
+                        }
                         if (item[interval] > 0) {
                             for (let i = 1; i <= item[interval]; i++) {
                                 if (interval === Interval.day) {
@@ -139,6 +148,9 @@ export class History {
                                     continue;
                                 }
                                 await this._updateNameOfStates(`${idChannel}.${this.idChannelHistory}._${interval}.${interval}_${helper.zeroPad(i, 2)}`, name, logPrefix);
+                                if (item.idContractType) {
+                                    await this._updateNameOfStates(`${idChannel}.${this.adapter.cost.idChannelCost}._${interval}.${interval}_${helper.zeroPad(i, 2)}`, name, logPrefix);
+                                }
                             }
                         }
                     }

@@ -39,10 +39,12 @@
     "contract type": "soort contract",
     "contract types": "contractsoorten",
     "costs default settings": "kosten standaardinstellingen",
+    "costs for historical values": "kosten voor historische waarden",
     "cumulative total value": "cumulatieve totale waarde",
     "cumulative total value De-bounce time": "cumulatieve totale waarde Debouncetijd",
     "currency": "munteenheid",
     "days": "dagen",
+    "daysShort": "D",
     "debug": "Foutopsporing",
     "decimals": "decimalen",
     "end date": "einddatum",
@@ -56,6 +58,7 @@
     "log changes minimal delta": "Minimaal verschil met de laatste waarde",
     "max. delta": "maximaal delta",
     "months": "maanden",
+    "monthsShort": "M",
     "name of provider": "naam aanbieder",
     "old cumulative total value": "oude cumulatieve totale waarde",
     "old meter reading": "oude meterstand",
@@ -77,5 +80,7 @@
     "update debounce": "update debounce",
     "variable costs": "variabele kosten",
     "weeks": "weken",
-    "years": "jaar"
+    "weeksShort": "W",
+    "years": "jaar",
+    "yearsShort": "Y"
 }

@@ -39,10 +39,12 @@
     "contract type": "合同类型",
     "contract types": "合同类型",
     "costs default settings": "成本默认设置",
+    "costs for historical values": "历史价值成本",
     "cumulative total value": "累计总价值",
     "cumulative total value De-bounce time": "累计总值 去抖时间",
     "currency": "货币",
     "days": "天",
+    "daysShort": "D",
     "debug": "调试",
     "decimals": "小数",
     "end date": "结束日期",
@@ -56,6 +58,7 @@
     "log changes minimal delta": "与上次值的最小差异",
     "max. delta": "最大限度。三角洲",
     "months": "月",
+    "monthsShort": "中号",
     "name of provider": "提供者名称",
     "old cumulative total value": "旧累计总价值",
     "old meter reading": "老抄表",
@@ -77,5 +80,7 @@
     "update debounce": "更新去抖",
     "variable costs": "可变成本",
     "weeks": "周",
-    "years": "年"
+    "weeksShort": "瓦",
+    "years": "年",
+    "yearsShort": "是"
 }

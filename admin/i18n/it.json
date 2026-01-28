@@ -39,10 +39,12 @@
     "contract type": "tipo di contratto",
     "contract types": "tipologie contrattuali",
     "costs default settings": "costi impostazioni predefinite",
+    "costs for historical values": "costi per valori storici",
     "cumulative total value": "valore totale cumulativo",
     "cumulative total value De-bounce time": "valore totale cumulativo Tempo di antirimbalzo",
     "currency": "valuta",
     "days": "giorni",
+    "daysShort": "D",
     "debug": "Debug",
     "decimals": "decimali",
     "end date": "data di fine",
@@ -56,6 +58,7 @@
     "log changes minimal delta": "Differenza minima dall'ultimo valore",
     "max. delta": "massimo delta",
     "months": "mesi",
+    "monthsShort": "M",
     "name of provider": "nome del fornitore",
     "old cumulative total value": "vecchio valore totale cumulativo",
     "old meter reading": "vecchia lettura del contatore",
@@ -77,5 +80,7 @@
     "update debounce": "aggiornamento rimbalzo",
     "variable costs": "costi variabili",
     "weeks": "settimane",
-    "years": "anni"
+    "weeksShort": "W",
+    "years": "anni",
+    "yearsShort": "Y"
 }
