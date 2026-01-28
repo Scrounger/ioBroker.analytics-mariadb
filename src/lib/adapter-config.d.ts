@@ -18,6 +18,8 @@ declare global {
             datapointsSqlPresetsList: AdapterConfigTypes.DatapointsSqlPresetsItem[];
             historyList: AdapterConfigTypes.HistoryItem[];
             historyCalcList: AdapterConfigTypes.HistoryItem[];
+            costsContractTypesList: AdapterConfigTypes.CostContractType[];
+            costsContractDataList: AdapterConfigTypes.CostContractData[];
             sqlWriteTimeout: number;
             cronUpdateHistoryAtDayChange: string;
         }
@@ -59,6 +61,23 @@ declare global {
                 year: number;
                 debounce: number;
                 debug: boolean;
+            }
+
+            interface CostContractType {
+                id: string;
+                calcFormula: string;
+                currency: string;
+                debug: boolean;
+            }
+
+            interface CostContractData {
+                idContractType: string;
+                provider: string;
+                start: string;
+                end: string;
+                variableCosts: string[];
+                basicPrice: number;
+                bonusPrice: number;
             }
         }
 

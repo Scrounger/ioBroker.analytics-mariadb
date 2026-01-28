@@ -212,6 +212,7 @@ class AnalyticsMariadb extends utils.Adapter {
                     if (obj.callback) {
                         this.sendTo(obj.from, obj.command, result, obj.callback);
                     }
+
                 } else if (obj.command === 'getDatapointsBooleanSqlPresetsList') {
                     const data = obj.message.data as ioBroker.AdapterConfigTypes.DatapointsSqlPresetsItem[];
 
@@ -220,8 +221,8 @@ class AnalyticsMariadb extends utils.Adapter {
                     if (obj.callback) {
                         this.sendTo(obj.from, obj.command, result, obj.callback);
                     }
-                } else if (obj.command === 'getDatapointsList') {
 
+                } else if (obj.command === 'getDatapointsList') {
                     const dataNumber = obj.message.dataNumber as ioBroker.AdapterConfigTypes.DatapointsItem[];
                     const numberLists = dataNumber.map(item => {
                         return {
@@ -239,6 +240,15 @@ class AnalyticsMariadb extends utils.Adapter {
                     });
 
                     const result = [...numberLists, ...booleanLists];
+
+                    if (obj.callback) {
+                        this.sendTo(obj.from, obj.command, result, obj.callback);
+                    }
+
+                } else if (obj.command === 'getCostsContractTypes') {
+                    const data = obj.message.data as ioBroker.AdapterConfigTypes.CostContractType[];
+
+                    const result = data.map(p => p.id);
 
                     if (obj.callback) {
                         this.sendTo(obj.from, obj.command, result, obj.callback);

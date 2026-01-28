@@ -59,5 +59,19 @@
     "channel id": "channel id",
     "update debounce": "update de-bounce",
     "Time at which the history data is updated after the day change": "Time at which the history data is updated after the day change",
-    "historical calculated values": "historical calculated values"
+    "historical calculated values": "historical calculated values",
+    "Costs": "Costs",
+    "contract type": "contract type",
+    "contract types": "contract types",
+    "contract data": "contract data",
+    "basic fee": "basic fee",
+    "start date": "start date",
+    "end date": "end date",
+    "history default settings": "history default settings",
+    "costs default settings": "costs default settings",
+    "currency": "currency",
+    "bonus": "bonus",
+    "name of provider": "name of provider",
+    "variable costs": "variable costs",
+    "Formula for calculating variable costs": "Formula for calculating variable costs"
 }

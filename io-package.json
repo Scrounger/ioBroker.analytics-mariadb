@@ -173,6 +173,18 @@
         ],
         "historyList": [],
         "historyCalcList": [],
+        "costsContractTypesList": [
+            {
+                "id": "Strom"
+            },
+            {
+                "id": "Wasser"
+            },
+            {
+                "id": "Einspeisung (EEG)"
+            }
+        ],
+        "costsContractDataList": [],
         "sqlWriteTimeout": 5000,
         "cronUpdateHistoryAtDayChange": "3 0 * * *"
     },

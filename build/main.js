@@ -210,6 +210,13 @@ class AnalyticsMariadb extends utils.Adapter {
                         this.sendTo(obj.from, obj.command, result, obj.callback);
                     }
                 }
+                else if (obj.command === 'getCostsContractTypes') {
+                    const data = obj.message.data;
+                    const result = data.map(p => p.id);
+                    if (obj.callback) {
+                        this.sendTo(obj.from, obj.command, result, obj.callback);
+                    }
+                }
                 else {
                     this.log.warn(`${logPrefix} Unknown command: ${JSON.stringify(obj)}`);
                 }

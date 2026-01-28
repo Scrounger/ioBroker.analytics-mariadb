@@ -26,6 +26,10 @@
             type: 'panel',
             '#include': 'history.calculation.jsonConfig.json5',
         },
+        tab_cost: {
+            type: 'panel',
+            '#include': 'cost.jsonConfig.json5',
+        },
         tab_expert: {
             type: 'panel',
             '#include': 'expert.jsonConfig.json5',
