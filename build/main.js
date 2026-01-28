@@ -177,25 +177,29 @@ class AnalyticsMariadb extends utils.Adapter {
         try {
             if (typeof obj === 'object') {
                 if (obj.command === 'getDatapointsNumberSqlPresetsList') {
-                    const result = this.config.datapointsSqlPresetsList.filter(p => p.type === 'number').map(p => p.idPreset);
+                    const data = obj.message.data;
+                    const result = data.filter(p => p.type === 'number').map(p => p.idPreset);
                     if (obj.callback) {
                         this.sendTo(obj.from, obj.command, result, obj.callback);
                     }
                 }
                 else if (obj.command === 'getDatapointsBooleanSqlPresetsList') {
-                    const result = this.config.datapointsSqlPresetsList.filter(p => p.type === 'boolean').map(p => p.idPreset);
+                    const data = obj.message.data;
+                    const result = data.filter(p => p.type === 'boolean').map(p => p.idPreset);
                     if (obj.callback) {
                         this.sendTo(obj.from, obj.command, result, obj.callback);
                     }
                 }
                 else if (obj.command === 'getDatapointsList') {
-                    const numberLists = this.config.datapointsNumberList.map(item => {
+                    const dataNumber = obj.message.dataNumber;
+                    const numberLists = dataNumber.map(item => {
                         return {
                             value: `${item.idChannelTarget}.${this.idTotal}`,
                             label: item.name ? `${item.name} (${item.idChannelTarget}.${this.idTotal})` : `${item.idChannelTarget}.${this.idTotal}`
                         };
                     });
-                    const booleanLists = this.config.datapointsBooleanList.map(item => {
+                    const dataBoolean = obj.message.dataBoolean;
+                    const booleanLists = dataBoolean.map(item => {
                         return {
                             value: `${item.idChannelTarget}.${this.idBooleanValue}`,
                             label: item.name ? `${item.name} (${item.idChannelTarget}.${this.idBooleanValue})` : `${item.idChannelTarget}.${this.idBooleanValue}`

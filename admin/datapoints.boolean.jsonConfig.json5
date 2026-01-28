@@ -85,9 +85,9 @@
                     sort: true,
                     filter: true,
                     noMultiEdit: true,
-                    jsonData: '{}', // ToDo: sollte irgendwann mal der Bug mit globalData und JSON.stringify behoben sein, dann hier anpassen
+                    jsonData: '{"data": ${JSON.stringify(globalData.datapointsSqlPresetsList)}}',
                     command: 'getDatapointsBooleanSqlPresetsList',
-                    validator: '!!data.idPreset',
+                    validator: '!!data.idPreset && !!globalData.datapointsSqlPresetsList.some(preset => preset.idPreset === data.idPreset);',
                     validatorNoSaveOnError: true,
                     validatorErrorText: 'mandatory input',
                     width: 280,
