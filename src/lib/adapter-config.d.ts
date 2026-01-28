@@ -34,12 +34,12 @@ declare global {
                 ignoreReset?: boolean;
                 sqlWhereAppend?: string;
                 debug: boolean;
-                type?: 'number' | 'boolean';        // not used in AdapterConfig
+                type?: ioBroker.CommonType;        // not used in AdapterConfig
             }
 
             interface DatapointsSqlPresetsItem {
                 idPreset: string;
-                type: 'number' | 'boolean';
+                type: ioBroker.CommonType;
                 name: string;
                 debounceTime: number;
                 changesRelogInterval: number;

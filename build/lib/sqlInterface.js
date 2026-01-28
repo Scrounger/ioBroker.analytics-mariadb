@@ -39,7 +39,7 @@ export class SqlInterface {
         }
     }
     async getCounter(item, interval, logPrefixAppend, timestampStart = 0, timestampEnd = 0) {
-        const logPrefix = `[${this.logPrefix}.getCounter] [${interval}] - '${item.idSql}':`;
+        const logPrefix = `[${this.logPrefix}.getCounter] ${logPrefixAppend}:`;
         try {
             const query = `
                 WITH dp AS (
@@ -115,7 +115,7 @@ export class SqlInterface {
             this.adapter.itemDebug(item, `${logPrefix} start: ${moment(timestampStart).format('DD.MM.YYYY - HH:mm')}, end: ${moment(timestampEnd).format('DD.MM.YYYY - HH:mm')}, query: ${query}`);
             const data = await this.retrieve(QueryType.QUERY, query, item, logPrefixAppend);
             if (data) {
-                if (interval)
+                if (interval) {
                     // can only have one row as result
                     if (data.length === 1) {
                         return data[0];
@@ -124,6 +124,7 @@ export class SqlInterface {
                         this.log.error(`${logPrefix} unexpected number of data rows: ${data.length} (data: ${JSON.stringify(data)})`);
                         return null;
                     }
+                }
             }
         }
         catch (error) {
@@ -134,7 +135,7 @@ export class SqlInterface {
     async storeState(item, state) {
         const logPrefix = `[${this.logPrefix}.storeState] - '${item.idSql}':`;
         try {
-            this.retrieve(QueryType.STORESTATE, {
+            await this.retrieve(QueryType.STORESTATE, {
                 id: `${this.adapter.namespace}.${item.idSql}`,
                 state: {
                     ts: moment().valueOf(),
@@ -167,7 +168,7 @@ export class SqlInterface {
                     return null;
                 }
                 else {
-                    if (data && data.result) {
+                    if (data && (data.result || data.success)) {
                         return data.result;
                     }
                     else {

@@ -52,10 +52,21 @@ class AnalyticsMariadb extends utils.Adapter {
                 this.history = new History(this, utils);
                 await this.history.init();
                 // Historische Werte einmal täglich aktualisieren (_Tag, _Woche, _Monat, _Jahr)
-                this.scheduleUpdateHistoryAtDayChange = scheduleJob(this.config.cronUpdateHistoryAtDayChange, this.history.updateStates);
+                this.scheduleUpdateHistoryAtDayChange = scheduleJob(this.config.cronUpdateHistoryAtDayChange, async () => {
+                    this.log.debug(`${logPrefix} cron job to update name of history states at day change started...`);
+                    await this.history.updateNameOfStates();
+                    this.log.debug(`${logPrefix} cron job to update history values at day change started...`);
+                    await this.history.updateStates();
+                });
                 // Beim Tageswechsel, Wert kurz vor und nach 0:00 in Datenbank schreiben, damit der Verbrauch zwischen Tageswechsel korrekt erfasst wird
-                this.scheduleSaveValueBeforeDayChange = scheduleJob('55 59 23 * * *', this.datapoints.writeValuesAtDayChangeToDatabase);
-                this.scheduleSaveValueAfterDayChange = scheduleJob('5 0 0 * * *', this.datapoints.writeValuesAtDayChangeToDatabase);
+                this.scheduleSaveValueBeforeDayChange = scheduleJob('55 59 23 * * *', async () => {
+                    this.log.debug(`${logPrefix} cron job to to save values in database before day change started...`);
+                    await this.datapoints.writeValuesAtDayChangeToDatabase();
+                });
+                this.scheduleSaveValueAfterDayChange = scheduleJob('5 0 0 * * *', async () => {
+                    this.log.debug(`${logPrefix} cron job to to save values in database after day change started...`);
+                    await this.datapoints.writeValuesAtDayChangeToDatabase();
+                });
             }
             else {
                 this.log.error(`${logPrefix} No SQL instance configured in adapter configuration!`);

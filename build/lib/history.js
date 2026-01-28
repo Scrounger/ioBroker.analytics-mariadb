@@ -163,10 +163,16 @@ export class History {
         }
     }
     async updateStates() {
-        await this._updateStates(false);
+        const logPrefix = `[${this.logPrefix}.updateStates]:`;
+        try {
+            await this._updateStates(false);
+        }
+        catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
     }
     async _updateStates(isAdapterStart) {
-        const logPrefix = `[${this.logPrefix}.updateStates]:`;
+        const logPrefix = `[${this.logPrefix}._updateStates]:`;
         try {
             for (const item of this.adapter.config.historyList) {
                 const currentState = await this.adapter.getStateAsync(item.id);
@@ -252,14 +258,14 @@ export class History {
             }
             else if (datapointItem.type === 'boolean') {
                 const data = await this.adapter.sql.getCounter(datapointItem, interval, logPrefixAppend, range.start.valueOf(), range.end.valueOf());
-                if (data && data.start && data.end) {
+                if (data && ((data.start && data.end) || range.start.isSame(moment(), 'day'))) {
                     result = data.count;
                 }
             }
             else {
                 this.log.error(`${logPrefix} state '${item.id}' has unsupported type '${datapointItem.type}', cannot processing functions'`);
             }
-            this.adapter.setStateChangedAsync(id, result, true);
+            await this.adapter.setStateChangedAsync(id, result, true);
             this.adapter.itemDebug(item, `${logPrefix} start: ${moment(range.start).format('DD.MM.YYYY - HH:mm')}, end: ${moment(range.end).format('DD.MM.YYYY - HH:mm')}, result: ${result}`);
         }
         catch (error) {
@@ -294,7 +300,7 @@ export class History {
                     if (result) {
                         this.adapter.itemDebug(item, `${logPrefix} ${interval} - calculation: ${formula} = ${result}`);
                     }
-                    this.adapter.setStateChangedAsync(`${item.idChannel}.${this.idChannelHistory}.${interval}`, mathjs.round(result, item.decimals), true);
+                    await this.adapter.setStateChangedAsync(`${item.idChannel}.${this.idChannelHistory}.${interval}`, mathjs.round(result, item.decimals), true);
                 }
             }
         }

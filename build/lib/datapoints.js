@@ -260,9 +260,9 @@ export class Datapoints {
             if (list && list.length > 0) {
                 for (const item of list) {
                     if (item.enable) {
-                        let state = await this.adapter.getStateAsync(item.idSql);
+                        const state = await this.adapter.getStateAsync(item.idSql);
                         this.adapter.log.info(`${logPrefix} '${item.idSql}' - save state to database`);
-                        this.adapter.sql.storeState(item, state);
+                        await this.adapter.sql.storeState(item, state);
                     }
                 }
             }

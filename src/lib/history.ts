@@ -103,7 +103,7 @@ export class History {
         }
     }
 
-    private async updateNameOfStates(): Promise<void> {
+    public async updateNameOfStates(): Promise<void> {
         const logPrefix = `[${this.logPrefix}.updateNameOfStates]:`
 
         try {
@@ -178,12 +178,18 @@ export class History {
         }
     }
 
-    public async updateStates() {
-        await this._updateStates(false);
+    public async updateStates(): Promise<void> {
+        const logPrefix = `[${this.logPrefix}.updateStates]:`
+
+        try {
+            await this._updateStates(false);
+        } catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
     }
 
-    private async _updateStates(isAdapterStart: boolean) {
-        const logPrefix = `[${this.logPrefix}.updateStates]:`
+    private async _updateStates(isAdapterStart: boolean): Promise<void> {
+        const logPrefix = `[${this.logPrefix}._updateStates]:`
 
         try {
             for (const item of this.adapter.config.historyList) {
@@ -201,8 +207,8 @@ export class History {
         }
     }
 
-    private async updateThisYear(item: ioBroker.AdapterConfigTypes.HistoryItem, currentState: ioBroker.State, isAdapterStart: boolean = false) {
-        const logPrefix = `[${this.logPrefix}.updateState] - '${item.id}':`
+    private async updateThisYear(item: ioBroker.AdapterConfigTypes.HistoryItem, currentState: ioBroker.State, isAdapterStart: boolean = false): Promise<void> {
+        const logPrefix = `[${this.logPrefix}.updateState] - '${item.id as string}':`
 
         try {
             const datapointItem = this.adapter.datapoints.getByIdTarget(item.id as string);
@@ -228,8 +234,8 @@ export class History {
         }
     }
 
-    private async updateThePast(item: ioBroker.AdapterConfigTypes.HistoryItem, isAdapterStart: boolean = false) {
-        const logPrefix = `[${this.logPrefix}.updateStatesOfThePast] - '${item.id}':`
+    private async updateThePast(item: ioBroker.AdapterConfigTypes.HistoryItem, isAdapterStart: boolean = false): Promise<void> {
+        const logPrefix = `[${this.logPrefix}.updateStatesOfThePast] - '${item.id as string}':`
 
         try {
             const datapointItem = this.adapter.datapoints.getByIdTarget(item.id as string);
@@ -257,7 +263,7 @@ export class History {
         }
     }
 
-    private async updateHistory(id: string, item: ioBroker.AdapterConfigTypes.HistoryItem, datapointItem: ioBroker.AdapterConfigTypes.DatapointsItem, interval: string, i: number | null, currentState: ioBroker.State | null) {
+    private async updateHistory(id: string, item: ioBroker.AdapterConfigTypes.HistoryItem, datapointItem: ioBroker.AdapterConfigTypes.DatapointsItem, interval: string, i: number | null, currentState: ioBroker.State | null): Promise<void> {
         const logPrefixAppend = `[${datapointItem.idChannelTarget}] [${helper.getIdLastPart(id)}]`
         const logPrefix = `[${this.logPrefix}.updateStateHistory] ${logPrefixAppend}:`
 
@@ -281,15 +287,15 @@ export class History {
             } else if (datapointItem.type === 'boolean') {
                 const data = await this.adapter.sql.getCounter(datapointItem, interval, logPrefixAppend, range.start.valueOf(), range.end.valueOf());
 
-                if (data && data.start && data.end) {
+                if (data && ((data.start && data.end) || range.start.isSame(moment(), 'day'))) {
                     result = data.count;
                 }
 
             } else {
-                this.log.error(`${logPrefix} state '${item.id}' has unsupported type '${datapointItem.type}', cannot processing functions'`);
+                this.log.error(`${logPrefix} state '${item.id as string}' has unsupported type '${datapointItem.type}', cannot processing functions'`);
             }
 
-            this.adapter.setStateChangedAsync(id, result, true);
+            await this.adapter.setStateChangedAsync(id, result, true);
 
             this.adapter.itemDebug(item, `${logPrefix} start: ${moment(range.start).format('DD.MM.YYYY - HH:mm')}, end: ${moment(range.end).format('DD.MM.YYYY - HH:mm')}, result: ${result}`);
 
@@ -298,7 +304,7 @@ export class History {
         }
     }
 
-    private async updateCalculatedStates(item: ioBroker.AdapterConfigTypes.HistoryItem, isAdapterStart: boolean) {
+    private async updateCalculatedStates(item: ioBroker.AdapterConfigTypes.HistoryItem, isAdapterStart: boolean): Promise<void> {
         const logPrefix = `[${this.logPrefix}.updateCalculatedStates] - '${item.idChannel}':`
 
         try {
@@ -336,7 +342,7 @@ export class History {
                         this.adapter.itemDebug(item, `${logPrefix} ${interval} - calculation: ${formula} = ${result}`);
                     }
 
-                    this.adapter.setStateChangedAsync(`${item.idChannel}.${this.idChannelHistory}.${interval}`, mathjs.round(result, item.decimals), true);
+                    await this.adapter.setStateChangedAsync(`${item.idChannel}.${this.idChannelHistory}.${interval}`, mathjs.round(result, item.decimals), true);
                 }
             }
         } catch (error) {
@@ -345,7 +351,7 @@ export class History {
     }
 
     public async onStateChange(item: ioBroker.AdapterConfigTypes.HistoryItem, currentState: ioBroker.State): Promise<void> {
-        const logPrefix = `[${this.logPrefix}.onStateChange] - '${item.id}':`
+        const logPrefix = `[${this.logPrefix}.onStateChange] - '${item.id as string}':`
 
         try {
             await this.updateThisYear(item, currentState);

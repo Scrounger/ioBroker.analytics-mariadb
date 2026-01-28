@@ -61,7 +61,7 @@ export class SqlInterface {
     }
 
     public async getCounter(item: ioBroker.AdapterConfigTypes.DatapointsItem, interval: string, logPrefixAppend: string, timestampStart: number = 0, timestampEnd: number = 0,): Promise<SqlCounter | null> {
-        const logPrefix = `[${this.logPrefix}.getCounter] [${interval}] - '${item.idSql}':`
+        const logPrefix = `[${this.logPrefix}.getCounter] ${logPrefixAppend}:`
 
         try {
             const query = `
@@ -119,7 +119,7 @@ export class SqlInterface {
                 WITH dp AS (
                 SELECT id
                 FROM ${this.dbName}.datapoints
-                WHERE name = '${this.adapter.namespace}.${item.id}'
+                WHERE name = '${this.adapter.namespace}.${item.id as string}'
                 )
                 SELECT
                     DATE_FORMAT(FROM_UNIXTIME(result.start / 1000), '%d.%m.%Y - %H:%i') as 'start',
@@ -145,7 +145,7 @@ export class SqlInterface {
             const data = await this.retrieve(QueryType.QUERY, query, item, logPrefixAppend);
 
             if (data) {
-                if (interval)
+                if (interval) {
                     // can only have one row as result
                     if (data.length === 1) {
                         return data[0] as SqlTotal;
@@ -153,6 +153,7 @@ export class SqlInterface {
                         this.log.error(`${logPrefix} unexpected number of data rows: ${data.length} (data: ${JSON.stringify(data)})`);
                         return null;
                     }
+                }
             }
         } catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
@@ -165,7 +166,7 @@ export class SqlInterface {
         const logPrefix = `[${this.logPrefix}.storeState] - '${item.idSql}':`
 
         try {
-            this.retrieve(QueryType.STORESTATE, {
+            await this.retrieve(QueryType.STORESTATE, {
                 id: `${this.adapter.namespace}.${item.idSql}`,
                 state: {
                     ts: moment().valueOf(),
@@ -204,7 +205,7 @@ export class SqlInterface {
                     this.log.error(`${logPrefix} data error: ${data.error}`);
                     return null;
                 } else {
-                    if (data && data.result) {
+                    if (data && (data.result || data.success)) {
                         return data.result
                     } else {
                         this.log.error(`${logPrefix} no result exists in data: ${JSON.stringify(data)}`);

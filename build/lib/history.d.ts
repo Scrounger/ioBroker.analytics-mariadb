@@ -7,7 +7,7 @@ export declare class History {
     constructor(adapter: ioBroker.myAdapter, utils: typeof import("@iobroker/adapter-core"));
     init(): Promise<void>;
     private createStates;
-    private updateNameOfStates;
+    updateNameOfStates(): Promise<void>;
     private _updateNameOfStates;
     updateStates(): Promise<void>;
     private _updateStates;
