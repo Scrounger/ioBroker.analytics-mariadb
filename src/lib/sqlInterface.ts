@@ -108,8 +108,11 @@ export class SqlInterface {
                 if (data.length === 1) {
                     return data[0] as SqlCounter;
                 } else {
-                    this.log.error(`${logPrefix} unexpected number of data rows: ${data.length} (data: ${JSON.stringify(data)})`);
-                    return null;
+                    if (data.length === 0) {
+                        this.log.warn(`${logPrefix} no data for this range available. You can use a sql append role to supress this warning.`);
+                    } else {
+                        this.log.error(`${logPrefix} unexpected number of data rows: ${data.length} (data: ${JSON.stringify(data)})`);
+                    }
                 }
             }
         } catch (error) {
@@ -119,8 +122,12 @@ export class SqlInterface {
         return null;
     }
 
-    public async getTotal(item: ioBroker.AdapterConfigTypes.HistoryItem, interval: string, timestampStart: number, timestampEnd: number, logPrefixAppend: string): Promise<SqlTotal | null> {
-        const logPrefix = `[${this.logPrefix}.getTotal] ${logPrefixAppend}:`
+    /**
+     * @deprecated old function
+     * 
+     */
+    public async getTotal2(item: ioBroker.AdapterConfigTypes.HistoryItem, interval: string, timestampStart: number, timestampEnd: number, logPrefixAppend: string): Promise<SqlTotal | null> {
+        const logPrefix = `[${this.logPrefix}.getTotal2] ${logPrefixAppend}:`
 
         try {
             const query = `
@@ -158,7 +165,76 @@ export class SqlInterface {
                     if (data.length === 1) {
                         return data[0] as SqlTotal;
                     } else {
-                        this.log.error(`${logPrefix} unexpected number of data rows: ${data.length} (data: ${JSON.stringify(data)})`);
+                        if (data.length === 0) {
+                            this.log.warn(`${logPrefix} no data for this range available. You can use a sql append role to supress this warning.`);
+                        } else {
+                            this.log.error(`${logPrefix} unexpected number of data rows: ${data.length} (data: ${JSON.stringify(data)})`);
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
+
+        return null;
+    }
+
+    public async getTotal(item: ioBroker.AdapterConfigTypes.HistoryItem, interval: string, timestampStart: number, timestampEnd: number, logPrefixAppend: string): Promise<SqlTotal | null> {
+        const logPrefix = `[${this.logPrefix}.getTotal] ${logPrefixAppend}:`
+
+        try {
+            const query = `
+                            WITH state AS (
+                                SELECT id
+                                FROM ${this.dbName}.datapoints
+                                WHERE name = '${this.adapter.namespace}.${item.id as string}'
+                                LIMIT 1
+                            )
+                            SELECT
+                                DATE_FORMAT(FROM_UNIXTIME(start.ts / 1000), '%d.%m.%Y - %H:%i') AS 'start',
+                                start.val AS 'min',
+                                DATE_FORMAT(FROM_UNIXTIME(end.ts / 1000), '%d.%m.%Y - %H:%i') AS 'end',
+                                end.val AS 'max',
+                                end.val - start.val AS 'delta'
+                            FROM
+                            (
+                                SELECT ts, val
+                                FROM ${this.dbName}.ts_number
+                                WHERE id = (SELECT id FROM state)
+                                AND ts >= ${timestampStart}
+                                AND val IS NOT NULL
+                                ORDER BY ts ASC
+                                LIMIT 1
+                            ) start
+                            CROSS JOIN
+                            (
+                                SELECT ts, val
+                                FROM ${this.dbName}.ts_number
+                                WHERE id = (SELECT id FROM state)
+                                AND ts <  ${moment(timestampEnd).endOf('day').valueOf()}
+                                AND val IS NOT NULL
+                                ORDER BY ts DESC
+                                LIMIT 1
+                            ) end;
+                        `;
+
+            this.adapter.itemDebug(item, `${logPrefix} ${interval === Interval.ALL ? '' : `start: ${moment(timestampStart).format(`${this.adapter.dateFormat} - HH:mm`)}, end: ${moment(timestampEnd).format(`${this.adapter.dateFormat} - HH:mm`)}`}, query: ${query}`);
+
+            const data = await this.retrieve(QueryType.QUERY, query, item, logPrefixAppend);
+
+            if (data) {
+                if (interval) {
+                    // can only have one row as result
+                    if (data.length === 1) {
+                        return data[0] as SqlTotal;
+                    } else {
+                        if (data.length === 0) {
+                            this.log.warn(`${logPrefix} no data for this range available. Change the settings for this interval to supress this warning`);
+                        } else {
+                            this.log.error(`${logPrefix} unexpected number of data rows: ${data.length} (data: ${JSON.stringify(data)})`);
+                        }
+
                         return null;
                     }
                 }
@@ -305,7 +381,7 @@ export class SqlInterface {
                 await this.adapter.setState('info.requests', peakRps, true);
                 await this.adapter.setState('info.duration', mathjs.round(peakDuration, 3), true);
 
-                this.log.debug(`${logPrefix} update metrics: rps: ${peakRps}, duration: ${mathjs.round(peakDuration, 3)}s, metircs data: ${this.metrics.length} entries`);
+                this.log.silly(`${logPrefix} update metrics: rps: ${peakRps}, duration: ${mathjs.round(peakDuration, 3)}s, metircs data: ${this.metrics.length} entries`);
 
                 return;
             }

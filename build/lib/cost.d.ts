@@ -1,3 +1,4 @@
+import moment from "moment";
 export declare class Cost {
     private logPrefix;
     private adapter;
@@ -9,4 +10,5 @@ export declare class Cost {
     init(): Promise<void>;
     private prepareAndCheckCostList;
     getContractType(idContractType: string): ioBroker.AdapterConfigTypes.CostContractType;
+    getCostOfRange(item: ioBroker.AdapterConfigTypes.HistoryItem, rangeStart: moment.Moment, rangeEnde: moment.Moment, interval?: string): Promise<void>;
 }

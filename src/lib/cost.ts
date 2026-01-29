@@ -1,5 +1,6 @@
 import moment from "moment";
 
+import * as helper from './helper.js';
 
 export class Cost {
     private logPrefix: string = 'Cost'
@@ -82,5 +83,47 @@ export class Cost {
 
     public getContractType(idContractType: string): ioBroker.AdapterConfigTypes.CostContractType {
         return this.adapter.config.costsContractTypesList.find(item => item.id = idContractType);
+    }
+
+    public async getCostOfRange(item: ioBroker.AdapterConfigTypes.HistoryItem, rangeStart: moment.Moment, rangeEnde: moment.Moment, interval: string = undefined) {
+        const logPrefixAppend = `[${helper.getIdWithoutLastPart(item.id as string)}]${interval ? ` [${interval}] ` : ' [manual] '}[${item.idContractType}]`
+        const logPrefix = `[${this.logPrefix}.getCostOfRange] ${logPrefixAppend}:`
+
+        try {
+            const contractDataOfRange = this.costList[item.idContractType].data.filter((x) => {
+                const contractStart = moment(x.start, this.adapter.dateFormat, true);
+                const contractEnd = moment(x.end, this.adapter.dateFormat, true);
+
+                return rangeStart.isSameOrBefore(contractEnd) && rangeEnde.isSameOrAfter(contractStart)
+            });
+
+            if (contractDataOfRange && contractDataOfRange.length > 0) {
+                this.log.warn(`${logPrefix} time period from ${rangeStart.format(this.adapter.dateFormat)} to ${rangeEnde.format(this.adapter.dateFormat)} - contract data: ${JSON.stringify(contractDataOfRange)}`);
+            }
+
+            for (const data of contractDataOfRange) {
+                const cStart = moment(data.start, this.adapter.dateFormat, true);
+                const cEnd = moment(data.end, this.adapter.dateFormat, true);
+
+                let start = cStart;
+                let end = cEnd;
+
+                if (rangeStart.isAfter(cStart)) {
+                    start = rangeStart;
+                }
+
+                if (rangeEnde.isBefore(cEnd)) {
+                    end = rangeEnde;
+                }
+
+                this.log.warn(`${logPrefix} time period from ${start.format(this.adapter.dateFormat)} to ${end.format(this.adapter.dateFormat)} - contract data: ${JSON.stringify(data)}`);
+
+                // const consumption = await this.adapter.sql.getTotal2(item, interval, start.startOf('day').valueOf(), end.endOf('day').valueOf(), logPrefixAppend);
+
+            }
+
+        } catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
     }
 }

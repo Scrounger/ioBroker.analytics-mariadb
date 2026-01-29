@@ -63,14 +63,17 @@ class AnalyticsMariadb extends utils.Adapter {
                     await this.history.updateStates();
                 });
                 // Beim Tageswechsel, Wert kurz vor und nach 0:00 in Datenbank schreiben, damit der Verbrauch zwischen Tageswechsel korrekt erfasst wird
-                this.scheduleSaveValueBeforeDayChange = scheduleJob('58 59 23 * * *', async () => {
+                this.scheduleSaveValueBeforeDayChange = scheduleJob('59 59 23 * * *', async () => {
                     this.log.debug(`${logPrefix} cron job to to save values in database before day change started...`);
                     await this.datapoints.writeValuesAtDayChangeToDatabase();
                 });
-                this.scheduleSaveValueAfterDayChange = scheduleJob('2 0 0 * * *', async () => {
+                this.scheduleSaveValueAfterDayChange = scheduleJob('1 0 0 * * *', async () => {
                     this.log.debug(`${logPrefix} cron job to to save values in database after day change started...`);
                     await this.datapoints.writeValuesAtDayChangeToDatabase();
                 });
+                // const item = this.config.historyList[0];
+                // item.debug = true;
+                // await this.cost.getCostOfRange(item, moment('01.01.2022', 'DD.MM.YYYY'), moment('31.12.2022', 'DD.MM.YYYY').endOf('day'));
             }
             else {
                 this.log.error(`${logPrefix} No SQL instance configured in adapter configuration!`);

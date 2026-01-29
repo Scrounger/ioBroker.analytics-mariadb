@@ -200,7 +200,7 @@ export class History {
         }
     }
     async updateThisYear(item, currentState, isAdapterStart = false) {
-        const logPrefix = `[${this.logPrefix}.updateState] - '${item.id}':`;
+        const logPrefix = `[${this.logPrefix}.updateThisYear] - '${helper.getIdWithoutLastPart(item.id)}':`;
         try {
             const datapointItem = this.adapter.datapoints.getByIdTarget(item.id);
             if (datapointItem && datapointItem.enable) {
@@ -214,6 +214,9 @@ export class History {
                         }
                     }
                 }
+                if (isAdapterStart) {
+                    this.log.info(`${logPrefix} history states of this year updated`);
+                }
             }
             else {
                 this.log.debug(`${logPrefix} is disabled, no history processing available`);
@@ -224,7 +227,7 @@ export class History {
         }
     }
     async updateThePast(item, isAdapterStart = false) {
-        const logPrefix = `[${this.logPrefix}.updateStatesOfThePast] - '${item.id}':`;
+        const logPrefix = `[${this.logPrefix}.updateStatesOfThePast] - '${helper.getIdWithoutLastPart(item.id)}':`;
         try {
             const datapointItem = this.adapter.datapoints.getByIdTarget(item.id);
             if (datapointItem && datapointItem.enable) {
@@ -241,6 +244,7 @@ export class History {
                         }
                     }
                 }
+                this.log.info(`${logPrefix} history states of the past updated`);
             }
             else {
                 this.log.debug(`${logPrefix} is disabled, no history processing available`);
@@ -258,7 +262,7 @@ export class History {
             let result = null;
             if (datapointItem.type === 'number') {
                 const data = await this.adapter.sql.getTotal(item, interval, range.start.valueOf(), range.end.valueOf(), logPrefixAppend);
-                if (data && data.start && data.end) {
+                if (data && data.start && data.end && data.delta !== null) {
                     if (i === null) {
                         // values of this year -> taking current state value for delta calculation
                         result = mathjs.round(currentState.val - data.min, item.decimals);
@@ -266,6 +270,9 @@ export class History {
                     else {
                         result = mathjs.round(data.delta, item.decimals);
                     }
+                    // if (item.idContractType) {
+                    //     await this.adapter.cost.getCostOfRange(item, range.start, range.end, helper.getIdLastPart(id));
+                    // }
                 }
             }
             else if (datapointItem.type === 'boolean') {
@@ -303,7 +310,13 @@ export class History {
                     const calcArray = [];
                     for (const id of item.id) {
                         const state = await this.adapter.getStateAsync(`${helper.getIdWithoutLastPart(id)}.${this.idChannelHistory}.${interval}`);
-                        calcArray.push(state.val);
+                        if (state && state.val) {
+                            calcArray.push(state.val);
+                        }
+                        else {
+                            this.log.warn(`${logPrefix} [${interval}] no data available, using 0 instead`);
+                            calcArray.push(0);
+                        }
                     }
                     const formula = item.formula.replace(/\[(\d+)\]/g, (_, index) => {
                         return calcArray[Number(index)];
