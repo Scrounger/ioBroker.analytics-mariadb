@@ -67,7 +67,7 @@ export class SqlInterface {
                     n.val = 1
                 ORDER BY ts DESC;
             `;
-            this.adapter.itemDebug(item, `${logPrefix} start: ${moment(timestampStart).format('DD.MM.YYYY - HH:mm')}, end: ${moment(timestampEnd).format('DD.MM.YYYY - HH:mm')}, query: ${query}`);
+            this.adapter.itemDebug(item, `${logPrefix} ${interval === Interval.ALL ? '' : `start: ${moment(timestampStart).format(`${this.adapter.dateFormat} - HH:mm`)}, end: ${moment(timestampEnd).format(`${this.adapter.dateFormat} - HH:mm`)}`}, query: ${query}`);
             const data = await this.retrieve(QueryType.QUERY, query, item, logPrefixAppend);
             if (data) {
                 // can only have one row
@@ -112,7 +112,7 @@ export class SqlInterface {
                     AND ts <  ${timestampEnd}
                 ) result;
             `;
-            this.adapter.itemDebug(item, `${logPrefix} start: ${moment(timestampStart).format('DD.MM.YYYY - HH:mm')}, end: ${moment(timestampEnd).format('DD.MM.YYYY - HH:mm')}, query: ${query}`);
+            this.adapter.itemDebug(item, `${logPrefix} ${interval === Interval.ALL ? '' : `start: ${moment(timestampStart).format(`${this.adapter.dateFormat} - HH:mm`)}, end: ${moment(timestampEnd).format(`${this.adapter.dateFormat} - HH:mm`)}`}, query: ${query}`);
             const data = await this.retrieve(QueryType.QUERY, query, item, logPrefixAppend);
             if (data) {
                 if (interval) {

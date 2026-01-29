@@ -107,7 +107,7 @@ declare global {
             sourceToDatapoint: Record<string, ioBroker.AdapterConfigTypes.DatapointsItem>;
             timeoutBoolean: Record<string, ioBroker.Timeout>;
 
-            itemDebug(item: ioBroker.AdapterConfigTypes.DatapointsItem | ioBroker.AdapterConfigTypes.HistoryItem, message: string): void
+            itemDebug(item: ioBroker.AdapterConfigTypes.DatapointsItem | ioBroker.AdapterConfigTypes.HistoryItem | ioBroker.AdapterConfigTypes.CostContractType, message: string): void
         }
     }
 }

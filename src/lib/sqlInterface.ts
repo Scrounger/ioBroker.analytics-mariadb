@@ -91,7 +91,7 @@ export class SqlInterface {
                 ORDER BY ts DESC;
             `;
 
-            this.adapter.itemDebug(item, `${logPrefix} start: ${moment(timestampStart).format('DD.MM.YYYY - HH:mm')}, end: ${moment(timestampEnd).format('DD.MM.YYYY - HH:mm')}, query: ${query}`);
+            this.adapter.itemDebug(item, `${logPrefix} ${interval === Interval.ALL ? '' : `start: ${moment(timestampStart).format(`${this.adapter.dateFormat} - HH:mm`)}, end: ${moment(timestampEnd).format(`${this.adapter.dateFormat} - HH:mm`)}`}, query: ${query}`);
 
             const data = await this.retrieve(QueryType.QUERY, query, item, logPrefixAppend);
 
@@ -140,7 +140,7 @@ export class SqlInterface {
                 ) result;
             `;
 
-            this.adapter.itemDebug(item, `${logPrefix} start: ${moment(timestampStart).format('DD.MM.YYYY - HH:mm')}, end: ${moment(timestampEnd).format('DD.MM.YYYY - HH:mm')}, query: ${query}`);
+            this.adapter.itemDebug(item, `${logPrefix} ${interval === Interval.ALL ? '' : `start: ${moment(timestampStart).format(`${this.adapter.dateFormat} - HH:mm`)}, end: ${moment(timestampEnd).format(`${this.adapter.dateFormat} - HH:mm`)}`}, query: ${query}`);
 
             const data = await this.retrieve(QueryType.QUERY, query, item, logPrefixAppend);
 
