@@ -4,7 +4,7 @@ export declare class Datapoints {
     private utils;
     private log;
     idTotal: string;
-    private idOldValue;
+    idOldValue: string;
     private idStorageValue;
     idBooleanValue: string;
     constructor(adapter: ioBroker.myAdapter, utils: typeof import("@iobroker/adapter-core"));

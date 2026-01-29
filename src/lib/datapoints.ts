@@ -13,7 +13,7 @@ export class Datapoints {
     private log: ioBroker.Logger;
 
     public idTotal = 'total';
-    private idOldValue = 'oldValue';
+    public idOldValue = 'oldValue';
     private idStorageValue = 'storageValue';
     public idBooleanValue = 'value'
 
@@ -112,7 +112,7 @@ export class Datapoints {
 
             // oldValue & storageValue must have the same value as total at state creation
             const totalState = await this.adapter.getStateAsync(`${idChannel}.${this.idTotal}`);
-            await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idOldValue}`, 'old meter reading', totalState.val, sourceObj?.common as ioBroker.StateCommon, item, false, true);
+            await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idOldValue}`, 'old meter reading', totalState.val, sourceObj?.common as ioBroker.StateCommon, item, true, true);
             await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idStorageValue}`, 'helper cumulative total value', totalState.val, sourceObj?.common as ioBroker.StateCommon, item, false, true);
 
             if (item.enable) {

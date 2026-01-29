@@ -22,7 +22,6 @@ export class Cost {
         const logPrefix = `[${this.logPrefix}.init]:`
 
         try {
-
             for (const type of this.adapter.config.costsContractTypesList) {
                 const costItem: ioBroker.AdapterConfigTypes.CostItem = {
                     calculation: type.calcFormula,
@@ -36,7 +35,12 @@ export class Cost {
                         })),
                         basicPrice: c.basicPrice,
                         bonusPrice: c.bonusPrice,
-                    }))
+                    })).sort((a, b) => {
+                        const dateA = moment(a.start, 'DD.MM.YYYY');
+                        const dateB = moment(b.start, 'DD.MM.YYYY');
+
+                        return dateA.diff(dateB);
+                    })
                 }
 
                 this.costList[type.id] = costItem;

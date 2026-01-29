@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import * as helper from './helper.js';
 
-export async function createChannel(adapter: ioBroker.Adapter, utils: typeof import("@iobroker/adapter-core"), idChannel: string, name: string | ioBroker.Translated): Promise<void> {
+export async function createChannel(adapter: ioBroker.myAdapter, utils: typeof import("@iobroker/adapter-core"), idChannel: string, name: string | ioBroker.Translated): Promise<void> {
     const logPrefix = '[objectHandler.createChannel]:';
 
     try {
@@ -41,7 +41,7 @@ export async function createChannel(adapter: ioBroker.Adapter, utils: typeof imp
     }
 }
 
-export async function createOrUpdateState(adapter: ioBroker.Adapter, utils: typeof import("@iobroker/adapter-core"), id: string, name: string | ioBroker.Translated, initVal: ioBroker.StateValue, sourceCommon: ioBroker.StateCommon, item: ioBroker.AdapterConfigTypes.DatapointsItem | undefined = undefined, sql: boolean = false, expert: boolean = false): Promise<void> {
+export async function createOrUpdateState(adapter: ioBroker.myAdapter, utils: typeof import("@iobroker/adapter-core"), id: string, name: string | ioBroker.Translated, initVal: ioBroker.StateValue, sourceCommon: ioBroker.StateCommon, item: ioBroker.AdapterConfigTypes.DatapointsItem | undefined = undefined, sql: boolean = false, expert: boolean = false): Promise<void> {
     const logPrefix = '[objectHandler.createOrUpdateState]:';
 
     try {
@@ -70,7 +70,7 @@ export async function createOrUpdateState(adapter: ioBroker.Adapter, utils: type
         common.role = sourceCommon.role && sourceCommon.role !== 'state' && sourceCommon.role !== 'value' ? sourceCommon.role : assignPredefinedRoles(common, id, adapter);
 
         if (item && sql) {
-            const sqlPreset = getSqlPreset(item, adapter, sourceCommon.type);
+            const sqlPreset = getSqlPreset(item, adapter, sourceCommon.type, id);
 
             if (sqlPreset) {
                 common.custom = common.custom || {};
@@ -127,11 +127,11 @@ function isChannelCommonEqual(objCommon: ioBroker.ChannelCommon, myCommon: ioBro
  * @param adapter
  * @returns
  */
-function isStateCommonEqual(objCommon: ioBroker.StateCommon, myCommon: ioBroker.StateCommon, sql: boolean, adapter: ioBroker.Adapter): boolean {
+function isStateCommonEqual(objCommon: ioBroker.StateCommon, myCommon: ioBroker.StateCommon, sql: boolean, adapter: ioBroker.myAdapter): boolean {
     return (_.isEqual(objCommon.name, myCommon.name) || myCommon.name === null) && _.isEqual(objCommon.role, myCommon.role) && _.isEqual(objCommon.unit, myCommon.unit) && _.isEqual(objCommon.expert, myCommon.expert) && (!sql || (objCommon.custom && objCommon.custom[adapter.config.sqlInstance] && _.isEqual(objCommon.custom[adapter.config.sqlInstance], myCommon.custom[adapter.config.sqlInstance])));
 }
 
-function assignPredefinedRoles(common: ioBroker.StateCommon, id: string, adapter: ioBroker.Adapter): string {
+function assignPredefinedRoles(common: ioBroker.StateCommon, id: string, adapter: ioBroker.myAdapter): string {
     //https://github.com/ioBroker/ioBroker.docs/blob/master/docs/en/dev/stateroles.md
 
     const logPrefix = '[myIob.assignPredefinedRoles]:';
@@ -271,7 +271,7 @@ function assignPredefinedRoles(common: ioBroker.StateCommon, id: string, adapter
      * @param prefix
      * @returns
      */
-function deepDiffBetweenObjects(object: any, base: any, adapter: ioBroker.Adapter, allowedKeys: any = undefined, prefix: string = ''): any {
+function deepDiffBetweenObjects(object: any, base: any, adapter: ioBroker.myAdapter, allowedKeys: any = undefined, prefix: string = ''): any {
     const logPrefix = '[myIob.deepDiffBetweenObjects]:';
 
     try {
@@ -332,7 +332,7 @@ function deepDiffBetweenObjects(object: any, base: any, adapter: ioBroker.Adapte
     return object;
 };
 
-function getSqlPreset(item: ioBroker.AdapterConfigTypes.DatapointsItem, adapter: ioBroker.Adapter, type: ioBroker.CommonType): { enabled: boolean; storageType: string; counter: boolean; aliasId: string; debounceTime: number; blockTime: number; changesOnly: boolean; changesRelogInterval: number; changesMinDelta: number; ignoreBelowNumber: string; disableSkippedValueLogging: boolean; retention: number; customRetentionDuration: number; maxLength: number; enableDebugLogs: boolean; debounce: number; ignoreZero: boolean; } {
+function getSqlPreset(item: ioBroker.AdapterConfigTypes.DatapointsItem, adapter: ioBroker.myAdapter, type: ioBroker.CommonType, id: string): { enabled: boolean; storageType: string; counter: boolean; aliasId: string; debounceTime: number; blockTime: number; changesOnly: boolean; changesRelogInterval: number; changesMinDelta: number; ignoreBelowNumber: string; disableSkippedValueLogging: boolean; retention: number; customRetentionDuration: number; maxLength: number; enableDebugLogs: boolean; debounce: number; ignoreZero: boolean; } {
     const logPrefix = '[objectHandler.getSqlPreset]:';
 
     try {
@@ -347,11 +347,11 @@ function getSqlPreset(item: ioBroker.AdapterConfigTypes.DatapointsItem, adapter:
                 debounceTime: preset.debounceTime,
                 blockTime: 0,
                 changesOnly: true,
-                changesRelogInterval: preset.changesRelogInterval,
+                changesRelogInterval: id.endsWith(`.${adapter.datapoints.idOldValue}`) ? 0 : preset.changesRelogInterval,
                 changesMinDelta: type === 'number' ? preset.changesMinDelta : 0,
                 ignoreBelowNumber: "",
                 disableSkippedValueLogging: true,
-                retention: preset.retention,
+                retention: id.endsWith(`.${adapter.datapoints.idOldValue}`) ? 2678400 : preset.retention,
                 customRetentionDuration: 365,
                 maxLength: 0,
                 enableDebugLogs: false,

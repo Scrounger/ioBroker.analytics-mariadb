@@ -91,7 +91,7 @@ export class Datapoints {
             await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idTotal}`, 'cumulative total value', sourceState.val, sourceObj?.common, item, true, false);
             // oldValue & storageValue must have the same value as total at state creation
             const totalState = await this.adapter.getStateAsync(`${idChannel}.${this.idTotal}`);
-            await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idOldValue}`, 'old meter reading', totalState.val, sourceObj?.common, item, false, true);
+            await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idOldValue}`, 'old meter reading', totalState.val, sourceObj?.common, item, true, true);
             await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idStorageValue}`, 'helper cumulative total value', totalState.val, sourceObj?.common, item, false, true);
             if (item.enable) {
                 item.type = sourceObj?.common.type;

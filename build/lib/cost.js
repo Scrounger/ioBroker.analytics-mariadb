@@ -27,7 +27,11 @@ export class Cost {
                         })),
                         basicPrice: c.basicPrice,
                         bonusPrice: c.bonusPrice,
-                    }))
+                    })).sort((a, b) => {
+                        const dateA = moment(a.start, 'DD.MM.YYYY');
+                        const dateB = moment(b.start, 'DD.MM.YYYY');
+                        return dateA.diff(dateB);
+                    })
                 };
                 this.costList[type.id] = costItem;
             }
