@@ -63,11 +63,11 @@ class AnalyticsMariadb extends utils.Adapter {
                     await this.history.updateStates();
                 });
                 // Beim Tageswechsel, Wert kurz vor und nach 0:00 in Datenbank schreiben, damit der Verbrauch zwischen Tageswechsel korrekt erfasst wird
-                this.scheduleSaveValueBeforeDayChange = scheduleJob('55 59 23 * * *', async () => {
+                this.scheduleSaveValueBeforeDayChange = scheduleJob('58 59 23 * * *', async () => {
                     this.log.debug(`${logPrefix} cron job to to save values in database before day change started...`);
                     await this.datapoints.writeValuesAtDayChangeToDatabase();
                 });
-                this.scheduleSaveValueAfterDayChange = scheduleJob('5 0 0 * * *', async () => {
+                this.scheduleSaveValueAfterDayChange = scheduleJob('2 0 0 * * *', async () => {
                     this.log.debug(`${logPrefix} cron job to to save values in database after day change started...`);
                     await this.datapoints.writeValuesAtDayChangeToDatabase();
                 });

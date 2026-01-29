@@ -57,6 +57,7 @@
     "log changes interval(s)": "Grave os mesmos valores (segundos)",
     "log changes minimal delta": "Diferença mínima do último valor",
     "max. delta": "máx. delta",
+    "metrics min. update interval": "métricas mín. intervalo de atualização",
     "months": "meses",
     "monthsShort": "M",
     "name of provider": "nome do provedor",

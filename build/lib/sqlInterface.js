@@ -1,4 +1,5 @@
 import moment from "moment";
+import * as mathjs from 'mathjs';
 export var Interval;
 (function (Interval) {
     Interval["day"] = "day";
@@ -18,6 +19,7 @@ export class SqlInterface {
     log;
     sqlInstance;
     dbName;
+    metrics = [];
     constructor(adapter) {
         this.adapter = adapter;
         this.log = adapter.log;
@@ -162,7 +164,9 @@ export class SqlInterface {
                     this.log.error(`${logPrefix} sql error: ${result}`);
                     return null;
                 });
-                this.adapter.itemDebug(item, `${logPrefix} duration: ${moment().diff(now, 'milliseconds') / 1000}s, data: ${JSON.stringify(data)}`);
+                const duration = moment().diff(now, 'milliseconds');
+                this.adapter.itemDebug(item, `${logPrefix} duration: ${duration / 1000}s, data: ${JSON.stringify(data)}`);
+                await this.metricsHandler(now.valueOf(), duration);
                 if (data.error) {
                     this.log.error(`${logPrefix} data error: ${data.error}`);
                     return null;
@@ -184,5 +188,70 @@ export class SqlInterface {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
         return null;
+    }
+    async metricsHandler(now, duration) {
+        const logPrefix = `[${this.logPrefix}.metricsHandler]:`;
+        try {
+            const cutoff = Date.now() - 30000;
+            while (this.metrics.length && this.metrics[0].timestamp < cutoff) {
+                this.metrics.shift();
+            }
+            this.metrics.push({
+                timestamp: now,
+                duration: duration,
+            });
+            const requestsState = await this.adapter.getStateAsync('info.requests');
+            const durationState = await this.adapter.getStateAsync('info.duration');
+            if (moment().diff(moment(requestsState.ts), 'second') >= this.adapter.config.metricsMinUpdateInterval || moment().diff(moment(durationState.ts), 'second') >= this.adapter.config.metricsMinUpdateInterval) {
+                void this.getMetricsAbsolutePeaks();
+            }
+        }
+        catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
+    }
+    getMetricsPeaksPerSecond() {
+        const logPrefix = `[${this.logPrefix}.getPeaksPerSecond]:`;
+        try {
+            const result = {};
+            for (const m of this.metrics) {
+                const second = Math.floor(m.timestamp / 1000);
+                if (!result[second]) {
+                    result[second] = { requests: 0, peakDuration: 0 };
+                }
+                result[second].requests++;
+                if (m.duration > result[second].peakDuration) {
+                    result[second].peakDuration = m.duration;
+                }
+            }
+            return result;
+        }
+        catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
+        return null;
+    }
+    async getMetricsAbsolutePeaks() {
+        const logPrefix = `[${this.logPrefix}.getAbsolutePeaks]:`;
+        try {
+            const perSecond = this.getMetricsPeaksPerSecond();
+            let peakRps = 0;
+            let peakDuration = 0;
+            if (perSecond) {
+                for (const sec in perSecond) {
+                    peakRps = Math.max(peakRps, perSecond[sec].requests);
+                    peakDuration = Math.max(peakDuration, perSecond[sec].peakDuration / 1000);
+                }
+                await this.adapter.setState('info.requests', peakRps, true);
+                await this.adapter.setState('info.duration', mathjs.round(peakDuration, 3), true);
+                this.log.debug(`${logPrefix} update metrics: rps: ${peakRps}, duration: ${mathjs.round(peakDuration, 3)}s, metircs data: ${this.metrics.length} entries`);
+                return;
+            }
+        }
+        catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
+        await this.adapter.setState('info.requests', 0, true);
+        await this.adapter.setState('info.duration', 0, true);
     }
 }

@@ -186,8 +186,46 @@
         ],
         "costsContractDataList": [],
         "sqlWriteTimeout": 5000,
-        "cronUpdateHistoryAtDayChange": "3 0 * * *"
+        "cronUpdateHistoryAtDayChange": "3 0 * * *",
+        "metricsMinUpdateInterval": 5
     },
     "objects": [],
-    "instanceObjects": []
+    "instanceObjects": [
+        {
+            "_id": "info",
+            "type": "channel",
+            "common": {
+                "name": "Information"
+            },
+            "native": {}
+        },
+        {
+            "_id": "info.requests",
+            "type": "state",
+            "common": {
+                "role": "value",
+                "name": "max. requests per seconds",
+                "type": "number",
+                "read": true,
+                "write": false,
+                "def": 0,
+                "unit": "rps"
+            },
+            "native": {}
+        },
+        {
+            "_id": "info.duration",
+            "type": "state",
+            "common": {
+                "role": "value",
+                "name": "max. requests duration",
+                "type": "number",
+                "read": true,
+                "write": false,
+                "def": 0,
+                "unit": "s"
+            },
+            "native": {}
+        }
+    ]
 }

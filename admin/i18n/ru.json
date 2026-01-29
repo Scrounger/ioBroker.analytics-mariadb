@@ -57,6 +57,7 @@
     "log changes interval(s)": "Запишите одинаковые значения (секунды)",
     "log changes minimal delta": "Минимальная разница с последним значением",
     "max. delta": "макс. дельта",
+    "metrics min. update interval": "метрики мин. интервал обновления",
     "months": "месяцы",
     "monthsShort": "М",
     "name of provider": "имя провайдера",

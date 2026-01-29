@@ -14,13 +14,13 @@ export class Cost {
     async init() {
         const logPrefix = `[${this.logPrefix}.init]:`;
         try {
-            await this.prepareAndCheckCostList();
+            this.prepareAndCheckCostList();
         }
         catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
     }
-    async prepareAndCheckCostList() {
+    prepareAndCheckCostList() {
         const logPrefix = `[${this.logPrefix}.prepareAndCheckCostList]:`;
         try {
             for (const type of this.adapter.config.costsContractTypesList) {

@@ -262,7 +262,7 @@ export class Datapoints {
                     if (item.enable) {
                         const state = await this.adapter.getStateAsync(item.idSql);
                         this.adapter.log.info(`${logPrefix} '${item.idSql}' - save state to database`);
-                        await this.adapter.sql.storeState(item, state);
+                        void this.adapter.sql.storeState(item, state);
                     }
                 }
             }

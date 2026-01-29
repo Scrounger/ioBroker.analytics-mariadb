@@ -57,6 +57,7 @@
     "log changes interval(s)": "Registreer dezelfde waarden (seconden)",
     "log changes minimal delta": "Minimaal verschil met de laatste waarde",
     "max. delta": "maximaal delta",
+    "metrics min. update interval": "metrische gegevens min. update-interval",
     "months": "maanden",
     "monthsShort": "M",
     "name of provider": "naam aanbieder",

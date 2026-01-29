@@ -7,6 +7,6 @@ export declare class Cost {
     private costList;
     constructor(adapter: ioBroker.myAdapter, utils: typeof import("@iobroker/adapter-core"));
     init(): Promise<void>;
-    prepareAndCheckCostList(): Promise<void>;
+    private prepareAndCheckCostList;
     getContractType(idContractType: string): ioBroker.AdapterConfigTypes.CostContractType;
 }

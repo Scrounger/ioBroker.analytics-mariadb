@@ -57,6 +57,7 @@
     "log changes interval(s)": "记录相同的值（秒）",
     "log changes minimal delta": "与上次值的最小差异",
     "max. delta": "最大限度。三角洲",
+    "metrics min. update interval": "指标最小值更新间隔",
     "months": "月",
     "monthsShort": "中号",
     "name of provider": "提供者名称",

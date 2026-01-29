@@ -78,5 +78,6 @@
     "weeksShort": "W",
     "monthsShort": "M",
     "yearsShort": "Y",
-    "costs for historical values": "costs for historical values"
+    "costs for historical values": "costs for historical values",
+    "metrics min. update interval": "metrics min. update interval"
 }

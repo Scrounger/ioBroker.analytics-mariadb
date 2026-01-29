@@ -23,6 +23,7 @@ declare global {
             costsContractDataList: AdapterConfigTypes.CostContractData[];
             sqlWriteTimeout: number;
             cronUpdateHistoryAtDayChange: string;
+            metricsMinUpdateInterval: number;
         }
 
         namespace AdapterConfigTypes {
