@@ -170,7 +170,7 @@ export class Datapoints {
                     // beim Start des Adapter's die Werte aktualisieren
                     await this.adapter.setStateChangedAsync(`${item.idChannelTarget}.${this.idBooleanValue}`, sourceState);
 
-                    const counter = (await this.adapter.sql.getCounter(item, Interval.ALL, `[${item.idChannelTarget}] [${Interval.ALL}]`));
+                    const counter = await this.adapter.sql.getCounter(item, Interval.ALL, `[${item.idChannelTarget}] [${Interval.ALL}]`);
                     if (counter) {
                         await this.adapter.setStateChangedAsync(`${item.idChannelTarget}.${this.idTotal}`, counter.count, true);
                     }

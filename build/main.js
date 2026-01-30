@@ -71,9 +71,9 @@ class AnalyticsMariadb extends utils.Adapter {
                     this.log.debug(`${logPrefix} cron job to to save values in database after day change started...`);
                     await this.datapoints.writeValuesAtDayChangeToDatabase();
                 });
-                // const item = this.config.historyList[0];
+                // const item = { ... this.config.historyList[0] };
                 // item.debug = true;
-                // await this.cost.getCostOfRange(item, moment('01.01.2022', 'DD.MM.YYYY'), moment('31.12.2022', 'DD.MM.YYYY').endOf('day'));
+                // await this.cost.getCostOfRange(item, moment('29.11.2022', 'DD.MM.YYYY'), moment('25.06.2023', 'DD.MM.YYYY').endOf('day'));
             }
             else {
                 this.log.error(`${logPrefix} No SQL instance configured in adapter configuration!`);

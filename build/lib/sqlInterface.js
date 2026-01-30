@@ -20,12 +20,14 @@ export class SqlInterface {
     sqlInstance;
     dbName;
     metrics = [];
+    lastMetricTs = null;
     constructor(adapter) {
         this.adapter = adapter;
         this.log = adapter.log;
         this.sqlInstance = adapter.config.sqlInstance;
         // eslint-disable-next-line @typescript-eslint/no-floating-promises
         this.getDatabaseName();
+        this.lastMetricTs = moment().valueOf();
     }
     async getDatabaseName() {
         const logPrefix = `[${this.logPrefix}.getDatabaseName]:`;
@@ -125,18 +127,16 @@ export class SqlInterface {
             this.adapter.itemDebug(item, `${logPrefix} ${interval === Interval.ALL ? '' : `start: ${moment(timestampStart).format(`${this.adapter.dateFormat} - HH:mm`)}, end: ${moment(timestampEnd).format(`${this.adapter.dateFormat} - HH:mm`)}`}, query: ${query}`);
             const data = await this.retrieve(QueryType.QUERY, query, item, logPrefixAppend);
             if (data) {
-                if (interval) {
-                    // can only have one row as result
-                    if (data.length === 1) {
-                        return data[0];
+                // can only have one row as result
+                if (data.length === 1) {
+                    return data[0];
+                }
+                else {
+                    if (data.length === 0) {
+                        this.log.warn(`${logPrefix} no data for this range available. You can use a sql append role to supress this warning.`);
                     }
                     else {
-                        if (data.length === 0) {
-                            this.log.warn(`${logPrefix} no data for this range available. You can use a sql append role to supress this warning.`);
-                        }
-                        else {
-                            this.log.error(`${logPrefix} unexpected number of data rows: ${data.length} (data: ${JSON.stringify(data)})`);
-                        }
+                        this.log.error(`${logPrefix} unexpected number of data rows: ${data.length} (data: ${JSON.stringify(data)})`);
                     }
                 }
             }
@@ -146,7 +146,7 @@ export class SqlInterface {
         }
         return null;
     }
-    async getTotal(item, interval, timestampStart, timestampEnd, logPrefixAppend) {
+    async getTotal(item, datapointItem, interval, timestampStart, timestampEnd, logPrefixAppend) {
         const logPrefix = `[${this.logPrefix}.getTotal] ${logPrefixAppend}:`;
         try {
             const query = `
@@ -169,6 +169,7 @@ export class SqlInterface {
                                 WHERE id = (SELECT id FROM state)
                                 AND ts >= ${timestampStart}
                                 AND val IS NOT NULL
+                                ${datapointItem.sqlWhereAppend ? datapointItem.sqlWhereAppend : ''}
                                 ORDER BY ts ASC
                                 LIMIT 1
                             ) start
@@ -179,6 +180,7 @@ export class SqlInterface {
                                 WHERE id = (SELECT id FROM state)
                                 AND ts <  ${moment(timestampEnd).endOf('day').valueOf()}
                                 AND val IS NOT NULL
+                                ${datapointItem.sqlWhereAppend ? datapointItem.sqlWhereAppend : ''}
                                 ORDER BY ts DESC
                                 LIMIT 1
                             ) end;
@@ -186,20 +188,18 @@ export class SqlInterface {
             this.adapter.itemDebug(item, `${logPrefix} ${interval === Interval.ALL ? '' : `start: ${moment(timestampStart).format(`${this.adapter.dateFormat} - HH:mm`)}, end: ${moment(timestampEnd).format(`${this.adapter.dateFormat} - HH:mm`)}`}, query: ${query}`);
             const data = await this.retrieve(QueryType.QUERY, query, item, logPrefixAppend);
             if (data) {
-                if (interval) {
-                    // can only have one row as result
-                    if (data.length === 1) {
-                        return data[0];
+                // can only have one row as result
+                if (data.length === 1) {
+                    return data[0];
+                }
+                else {
+                    if (data.length === 0) {
+                        this.log.warn(`${logPrefix} no data for this range available. Change the settings for this interval to supress this warning`);
                     }
                     else {
-                        if (data.length === 0) {
-                            this.log.warn(`${logPrefix} no data for this range available. Change the settings for this interval to supress this warning`);
-                        }
-                        else {
-                            this.log.error(`${logPrefix} unexpected number of data rows: ${data.length} (data: ${JSON.stringify(data)})`);
-                        }
-                        return null;
+                        this.log.error(`${logPrefix} unexpected number of data rows: ${data.length} (data: ${JSON.stringify(data)})`);
                     }
+                    return null;
                 }
             }
         }
@@ -240,6 +240,9 @@ export class SqlInterface {
                 });
                 const duration = moment().diff(now, 'milliseconds');
                 this.adapter.itemDebug(item, `${logPrefix} duration: ${duration / 1000}s, data: ${JSON.stringify(data)}`);
+                if (duration / 1000 > 1) {
+                    this.log.warn(`${logPrefix} query took ${duration / 1000}s which is longer than 1s (query: ${typeof query === 'string' ? query : JSON.stringify(query)})`);
+                }
                 await this.metricsHandler(now.valueOf(), duration);
                 if (data.error) {
                     this.log.error(`${logPrefix} data error: ${data.error}`);
@@ -274,9 +277,7 @@ export class SqlInterface {
                 timestamp: now,
                 duration: duration,
             });
-            const requestsState = await this.adapter.getStateAsync('info.requests');
-            const durationState = await this.adapter.getStateAsync('info.duration');
-            if (moment().diff(moment(requestsState.ts), 'second') >= this.adapter.config.metricsMinUpdateInterval || moment().diff(moment(durationState.ts), 'second') >= this.adapter.config.metricsMinUpdateInterval) {
+            if (moment().diff(moment(this.lastMetricTs), 'second') >= this.adapter.config.metricsMinUpdateInterval) {
                 void this.getMetricsAbsolutePeaks();
             }
         }
@@ -318,7 +319,8 @@ export class SqlInterface {
                 }
                 await this.adapter.setState('info.requests', peakRps, true);
                 await this.adapter.setState('info.duration', mathjs.round(peakDuration, 3), true);
-                this.log.silly(`${logPrefix} update metrics: rps: ${peakRps}, duration: ${mathjs.round(peakDuration, 3)}s, metircs data: ${this.metrics.length} entries`);
+                this.log.debug(`${logPrefix} update metrics: rps: ${peakRps}, duration: ${mathjs.round(peakDuration, 3)}s, metircs data: ${this.metrics.length} entries`);
+                this.lastMetricTs = moment().valueOf();
                 return;
             }
         }

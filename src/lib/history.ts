@@ -298,9 +298,10 @@ export class History {
             const range = this.getDatesFromInterval(interval, i);
 
             let result = null;
+            let costResult = null;
 
             if (datapointItem.type === 'number') {
-                const data = await this.adapter.sql.getTotal(item, interval, range.start.valueOf(), range.end.valueOf(), logPrefixAppend);
+                const data = await this.adapter.sql.getTotal(item, datapointItem, interval, range.start.valueOf(), range.end.valueOf(), logPrefixAppend);
 
                 if (data && data.start && data.end && data.delta !== null) {
                     if (i === null) {
@@ -310,9 +311,9 @@ export class History {
                         result = mathjs.round(data.delta, item.decimals);
                     }
 
-                    // if (item.idContractType) {
-                    //     await this.adapter.cost.getCostOfRange(item, range.start, range.end, helper.getIdLastPart(id));
-                    // }
+                    if (item.idContractType) {
+                        costResult = await this.adapter.cost.getCostOfRange(item, datapointItem, range.start, range.end, helper.getIdLastPart(id));
+                    }
                 }
 
             } else if (datapointItem.type === 'boolean') {
@@ -327,6 +328,10 @@ export class History {
             }
 
             await this.adapter.setStateChangedAsync(id, result, true);
+
+            if (item.idContractType) {
+                await this.adapter.setStateChangedAsync(`${id.replace(`.${this.idChannelHistory}.`, `.${this.adapter.cost.idChannelCost}.`)}`, costResult ? costResult.sum : null, true);
+            }
 
             this.adapter.itemDebug(item, `${logPrefix} start: ${moment(range.start).format('DD.MM.YYYY - HH:mm')}, end: ${moment(range.end).format('DD.MM.YYYY - HH:mm')}, result: ${result}`);
 

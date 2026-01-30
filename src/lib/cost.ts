@@ -1,6 +1,17 @@
 import moment from "moment";
+import * as mathjs from 'mathjs'
 
 import * as helper from './helper.js';
+
+
+export interface CostResult {
+    consumption?: number;
+    variableCosts?: number;
+    basicPrice?: number;
+    bonus?: number;
+    days?: number
+    sum?: number;
+}
 
 export class Cost {
     private logPrefix: string = 'Cost'
@@ -85,11 +96,13 @@ export class Cost {
         return this.adapter.config.costsContractTypesList.find(item => item.id = idContractType);
     }
 
-    public async getCostOfRange(item: ioBroker.AdapterConfigTypes.HistoryItem, rangeStart: moment.Moment, rangeEnde: moment.Moment, interval: string = undefined) {
+    public async getCostOfRange(item: ioBroker.AdapterConfigTypes.HistoryItem, datapointItem: ioBroker.AdapterConfigTypes.DatapointsItem, rangeStart: moment.Moment, rangeEnde: moment.Moment, interval: string = undefined): Promise<CostResult> {
         const logPrefixAppend = `[${helper.getIdWithoutLastPart(item.id as string)}]${interval ? ` [${interval}] ` : ' [manual] '}[${item.idContractType}]`
         const logPrefix = `[${this.logPrefix}.getCostOfRange] ${logPrefixAppend}:`
 
         try {
+            const result: CostResult = {};
+
             const contractDataOfRange = this.costList[item.idContractType].data.filter((x) => {
                 const contractStart = moment(x.start, this.adapter.dateFormat, true);
                 const contractEnd = moment(x.end, this.adapter.dateFormat, true);
@@ -98,29 +111,66 @@ export class Cost {
             });
 
             if (contractDataOfRange && contractDataOfRange.length > 0) {
-                this.log.warn(`${logPrefix} time period from ${rangeStart.format(this.adapter.dateFormat)} to ${rangeEnde.format(this.adapter.dateFormat)} - contract data: ${JSON.stringify(contractDataOfRange)}`);
-            }
+                this.adapter.itemDebug(item, `${logPrefix} time period from ${rangeStart.format(this.adapter.dateFormat)} to ${rangeEnde.format(this.adapter.dateFormat)} - contract data: ${JSON.stringify(contractDataOfRange)}`);
 
-            for (const data of contractDataOfRange) {
-                const cStart = moment(data.start, this.adapter.dateFormat, true);
-                const cEnd = moment(data.end, this.adapter.dateFormat, true);
+                for (const data of contractDataOfRange) {
+                    const cStart = moment(data.start, this.adapter.dateFormat, true);
+                    const cEnd = moment(data.end, this.adapter.dateFormat, true);
 
-                let start = cStart;
-                let end = cEnd;
+                    let start = cStart;
+                    let end = cEnd;
 
-                if (rangeStart.isAfter(cStart)) {
-                    start = rangeStart;
+                    if (rangeStart.isAfter(cStart)) {
+                        start = rangeStart;
+                    }
+
+                    if (rangeEnde.isBefore(cEnd)) {
+                        end = rangeEnde;
+                    }
+
+                    this.adapter.itemDebug(item, `${logPrefix} time period from ${start.format(this.adapter.dateFormat)} to ${end.format(this.adapter.dateFormat)} - contract data: ${JSON.stringify(data)}`);
+
+                    const consumption = await this.adapter.sql.getTotal(item, datapointItem, interval, start.startOf('day').valueOf(), end.endOf('day').valueOf(), logPrefixAppend);
+
+                    if (consumption && consumption.delta !== null) {
+                        const daysOfRange = end.diff(start, 'days') + 1;
+                        this.calculationOfRange(this.costList[item.idContractType].calculation, data, consumption.delta, daysOfRange, result, logPrefixAppend);
+
+                        this.adapter.itemDebug(item, `${logPrefix} time period from ${start.format(this.adapter.dateFormat)} to ${end.format(this.adapter.dateFormat)} - calculation result: ${JSON.stringify(result)}`);
+                    }
                 }
 
-                if (rangeEnde.isBefore(cEnd)) {
-                    end = rangeEnde;
-                }
+                result.sum = mathjs.round(result.variableCosts + result.basicPrice - result.bonus, 2);
 
-                this.log.warn(`${logPrefix} time period from ${start.format(this.adapter.dateFormat)} to ${end.format(this.adapter.dateFormat)} - contract data: ${JSON.stringify(data)}`);
+                this.adapter.itemDebug(item, `${logPrefix} time period from ${rangeStart.format(this.adapter.dateFormat)} to ${rangeEnde.format(this.adapter.dateFormat)} - total calculation result: ${JSON.stringify(result)}`);
 
-                // const consumption = await this.adapter.sql.getTotal2(item, interval, start.startOf('day').valueOf(), end.endOf('day').valueOf(), logPrefixAppend);
-
+                return result;
             }
+        } catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
+
+        return null;
+    }
+
+    private calculationOfRange(formula: string, data: ioBroker.AdapterConfigTypes.CostItemData, consumptionOfRange: number, daysOfRange: number, result: CostResult, logPrefixAppend: string) {
+        const logPrefix = `[${this.logPrefix}.calculationOfRange] ${logPrefixAppend}:`
+
+        try {
+            const calc = formula.replace(/#([a-zA-Z0-9_]+)/g, (_, key) => {
+                if (key === 'val') {
+                    return consumptionOfRange.toString();
+                } else {
+                    return data.variableCosts[key].toString();
+                }
+            });
+
+            result.consumption = (result.consumption || 0) + consumptionOfRange;
+            result.days = (result.days || 0) + daysOfRange;
+
+            result.variableCosts = (result.variableCosts || 0) + mathjs.evaluate(calc);
+            result.basicPrice = (result.basicPrice || 0) + (data.basicPrice / 365) * daysOfRange;
+            result.bonus = (result.bonus || 0) + (data.bonusPrice / 365) * daysOfRange;
 
         } catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);

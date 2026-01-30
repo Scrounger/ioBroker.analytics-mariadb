@@ -26,6 +26,7 @@
     "Got it!": "зрозумів",
     "History": "історія",
     "History calculated": "Історія підрахована",
+    "SQL \"WHERE\" append": "Додавання SQL \"WHERE\".",
     "This selection is only possible with a running instance!": "Цей вибір можливий лише з запущеним екземпляром!",
     "Time at which the history data is updated after the day change": "Час, коли дані історії оновлюються після зміни дня",
     "You like the adapter? Then support me.": "Вам подобається адаптер? Тоді підтримай мене.",

@@ -95,7 +95,7 @@
                 {
                     attr: 'sqlWhereAppend',
                     type: 'text',
-                    title: 'SQL WHERE append',
+                    title: 'SQL \"WHERE\" append',
                 },
                 {
                     attr: 'debug',

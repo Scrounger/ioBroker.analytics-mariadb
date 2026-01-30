@@ -89,14 +89,16 @@ declare global {
 
             interface CostItem {
                 calculation: string,
-                data: {
-                    provider: string;
-                    start: string;
-                    end: string;
-                    variableCosts: { [key: string]: number };
-                    basicPrice: number;
-                    bonusPrice: number;
-                }[];
+                data: CostItemData[];
+            }
+
+            interface CostItemData {
+                provider: string;
+                start: string;
+                end: string;
+                variableCosts: { [key: string]: number };
+                basicPrice: number;
+                bonusPrice: number;
             }
         }
 

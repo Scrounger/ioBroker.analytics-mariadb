@@ -44,6 +44,8 @@ export class SqlInterface {
 
     private metrics: SqlMetric[] = [];
 
+    private lastMetricTs: number = null;
+
     constructor(adapter: ioBroker.myAdapter) {
         this.adapter = adapter;
         this.log = adapter.log;
@@ -51,6 +53,8 @@ export class SqlInterface {
 
         // eslint-disable-next-line @typescript-eslint/no-floating-promises
         this.getDatabaseName();
+
+        this.lastMetricTs = moment().valueOf();
     }
 
     public async getDatabaseName(): Promise<void> {
@@ -160,18 +164,17 @@ export class SqlInterface {
             const data = await this.retrieve(QueryType.QUERY, query, item, logPrefixAppend);
 
             if (data) {
-                if (interval) {
-                    // can only have one row as result
-                    if (data.length === 1) {
-                        return data[0] as SqlTotal;
+                // can only have one row as result
+                if (data.length === 1) {
+                    return data[0] as SqlTotal;
+                } else {
+                    if (data.length === 0) {
+                        this.log.warn(`${logPrefix} no data for this range available. You can use a sql append role to supress this warning.`);
                     } else {
-                        if (data.length === 0) {
-                            this.log.warn(`${logPrefix} no data for this range available. You can use a sql append role to supress this warning.`);
-                        } else {
-                            this.log.error(`${logPrefix} unexpected number of data rows: ${data.length} (data: ${JSON.stringify(data)})`);
-                        }
+                        this.log.error(`${logPrefix} unexpected number of data rows: ${data.length} (data: ${JSON.stringify(data)})`);
                     }
                 }
+
             }
         } catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
@@ -180,7 +183,7 @@ export class SqlInterface {
         return null;
     }
 
-    public async getTotal(item: ioBroker.AdapterConfigTypes.HistoryItem, interval: string, timestampStart: number, timestampEnd: number, logPrefixAppend: string): Promise<SqlTotal | null> {
+    public async getTotal(item: ioBroker.AdapterConfigTypes.HistoryItem, datapointItem: ioBroker.AdapterConfigTypes.DatapointsItem, interval: string, timestampStart: number, timestampEnd: number, logPrefixAppend: string): Promise<SqlTotal | null> {
         const logPrefix = `[${this.logPrefix}.getTotal] ${logPrefixAppend}:`
 
         try {
@@ -204,6 +207,7 @@ export class SqlInterface {
                                 WHERE id = (SELECT id FROM state)
                                 AND ts >= ${timestampStart}
                                 AND val IS NOT NULL
+                                ${datapointItem.sqlWhereAppend ? datapointItem.sqlWhereAppend : ''}
                                 ORDER BY ts ASC
                                 LIMIT 1
                             ) start
@@ -214,6 +218,7 @@ export class SqlInterface {
                                 WHERE id = (SELECT id FROM state)
                                 AND ts <  ${moment(timestampEnd).endOf('day').valueOf()}
                                 AND val IS NOT NULL
+                                ${datapointItem.sqlWhereAppend ? datapointItem.sqlWhereAppend : ''}
                                 ORDER BY ts DESC
                                 LIMIT 1
                             ) end;
@@ -224,19 +229,17 @@ export class SqlInterface {
             const data = await this.retrieve(QueryType.QUERY, query, item, logPrefixAppend);
 
             if (data) {
-                if (interval) {
-                    // can only have one row as result
-                    if (data.length === 1) {
-                        return data[0] as SqlTotal;
+                // can only have one row as result
+                if (data.length === 1) {
+                    return data[0] as SqlTotal;
+                } else {
+                    if (data.length === 0) {
+                        this.log.warn(`${logPrefix} no data for this range available. Change the settings for this interval to supress this warning`);
                     } else {
-                        if (data.length === 0) {
-                            this.log.warn(`${logPrefix} no data for this range available. Change the settings for this interval to supress this warning`);
-                        } else {
-                            this.log.error(`${logPrefix} unexpected number of data rows: ${data.length} (data: ${JSON.stringify(data)})`);
-                        }
-
-                        return null;
+                        this.log.error(`${logPrefix} unexpected number of data rows: ${data.length} (data: ${JSON.stringify(data)})`);
                     }
+
+                    return null;
                 }
             }
         } catch (error) {
@@ -284,7 +287,12 @@ export class SqlInterface {
                     });
 
                 const duration = moment().diff(now, 'milliseconds');
+
                 this.adapter.itemDebug(item, `${logPrefix} duration: ${duration / 1000}s, data: ${JSON.stringify(data)}`);
+
+                if (duration / 1000 > 1) {
+                    this.log.warn(`${logPrefix} query took ${duration / 1000}s which is longer than 1s (query: ${typeof query === 'string' ? query : JSON.stringify(query)})`);
+                }
 
                 await this.metricsHandler(now.valueOf(), duration);
 
@@ -323,13 +331,9 @@ export class SqlInterface {
                 duration: duration,
             });
 
-            const requestsState = await this.adapter.getStateAsync('info.requests');
-            const durationState = await this.adapter.getStateAsync('info.duration');
-
-            if (moment().diff(moment(requestsState.ts), 'second') >= this.adapter.config.metricsMinUpdateInterval || moment().diff(moment(durationState.ts), 'second') >= this.adapter.config.metricsMinUpdateInterval) {
+            if (moment().diff(moment(this.lastMetricTs), 'second') >= this.adapter.config.metricsMinUpdateInterval) {
                 void this.getMetricsAbsolutePeaks();
             }
-
         } catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
@@ -381,8 +385,9 @@ export class SqlInterface {
                 await this.adapter.setState('info.requests', peakRps, true);
                 await this.adapter.setState('info.duration', mathjs.round(peakDuration, 3), true);
 
-                this.log.silly(`${logPrefix} update metrics: rps: ${peakRps}, duration: ${mathjs.round(peakDuration, 3)}s, metircs data: ${this.metrics.length} entries`);
+                this.log.debug(`${logPrefix} update metrics: rps: ${peakRps}, duration: ${mathjs.round(peakDuration, 3)}s, metircs data: ${this.metrics.length} entries`);
 
+                this.lastMetricTs = moment().valueOf();
                 return;
             }
         } catch (error) {
