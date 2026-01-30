@@ -3,7 +3,7 @@ export interface CostResult {
     consumption?: number;
     variableCosts?: number;
     basicPrice?: number;
-    bonus?: number;
+    bonusPrice?: number;
     days?: number;
     sum?: number;
 }

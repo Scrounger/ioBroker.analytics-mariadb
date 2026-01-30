@@ -146,7 +146,7 @@
                 {
                     attr: 'basicPrice',
                     type: 'number',
-                    title: 'basic fee',
+                    title: 'basic fee per year',
                     width: 120,
                     min: 0,
                     default: 0,
@@ -155,7 +155,7 @@
                 {
                     attr: 'bonusPrice',
                     type: 'number',
-                    title: 'bonus',
+                    title: 'bonus per year',
                     width: 120,
                     min: 0,
                     default: 0,

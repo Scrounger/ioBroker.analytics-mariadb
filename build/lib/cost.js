@@ -97,7 +97,15 @@ export class Cost {
                         this.adapter.itemDebug(item, `${logPrefix} time period from ${start.format(this.adapter.dateFormat)} to ${end.format(this.adapter.dateFormat)} - calculation result: ${JSON.stringify(result)}`);
                     }
                 }
-                result.sum = mathjs.round(result.variableCosts + result.basicPrice - result.bonus, 2);
+                if (item.costSumOptions?.length > 0) {
+                    result.sum = mathjs.round((item.costSumOptions?.includes('variableCosts') ? result.variableCosts : 0)
+                        + (item.costSumOptions?.includes('basicPrice') ? result.basicPrice : 0)
+                        - (item.costSumOptions?.includes('bonusPrice') ? result.bonusPrice : 0), 2);
+                }
+                else {
+                    this.log.warn(`${logPrefix} no cost sum options in the adapter settings defined`);
+                    result.sum = null;
+                }
                 this.adapter.itemDebug(item, `${logPrefix} time period from ${rangeStart.format(this.adapter.dateFormat)} to ${rangeEnde.format(this.adapter.dateFormat)} - total calculation result: ${JSON.stringify(result)}`);
                 return result;
             }
@@ -122,7 +130,7 @@ export class Cost {
             result.days = (result.days || 0) + daysOfRange;
             result.variableCosts = (result.variableCosts || 0) + mathjs.evaluate(calc);
             result.basicPrice = (result.basicPrice || 0) + (data.basicPrice / 365) * daysOfRange;
-            result.bonus = (result.bonus || 0) + (data.bonusPrice / 365) * daysOfRange;
+            result.bonusPrice = (result.bonusPrice || 0) + (data.bonusPrice / 365) * daysOfRange;
         }
         catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);

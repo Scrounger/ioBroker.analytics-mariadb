@@ -332,6 +332,8 @@ export class SqlInterface {
             });
 
             if (moment().diff(moment(this.lastMetricTs), 'second') >= this.adapter.config.metricsMinUpdateInterval) {
+                this.lastMetricTs = moment().valueOf();
+
                 void this.getMetricsAbsolutePeaks();
             }
         } catch (error) {
@@ -387,7 +389,6 @@ export class SqlInterface {
 
                 this.log.debug(`${logPrefix} update metrics: rps: ${peakRps}, duration: ${mathjs.round(peakDuration, 3)}s, metircs data: ${this.metrics.length} entries`);
 
-                this.lastMetricTs = moment().valueOf();
                 return;
             }
         } catch (error) {

@@ -80,5 +80,8 @@
     "yearsShort": "Y",
     "costs for historical values": "costs for historical values",
     "metrics min. update interval": "metrics min. update interval",
-    "SQL \"WHERE\" append": "SQL \"WHERE\" append"
+    "SQL \"WHERE\" append": "SQL \"WHERE\" append",
+    "Total costs": "Total costs",
+    "basic fee per year": "basic fee per year",
+    "bonus per year": "bonus per year"
 }

@@ -63,6 +63,7 @@ declare global {
                 year: number;
                 debounce: number;
                 idContractType: string;
+                costSumOptions: string[];
                 debug: boolean;
             }
 
