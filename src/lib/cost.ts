@@ -42,7 +42,9 @@ export class Cost {
     }
 
     public getContractType(idContractType: string): ioBroker.AdapterConfigTypes.CostContractType {
-        return this.adapter.config.costsContractTypesList.find(item => item.id === idContractType);
+        return this.adapter.config.costsContractTypesList.find(
+            item => item.id === idContractType
+        );
     }
 
     private prepareAndCheckCostList(): void {
@@ -134,12 +136,20 @@ export class Cost {
 
                     if (consumption && consumption.delta !== null) {
                         const daysOfRange = end.diff(start, 'days') + 1;
-                        this.calculationOfRange(this.costList[item.idContractType].calculation, data, consumption.delta, daysOfRange, result, logPrefixAppend);
+                        let delta = consumption.delta;
+
+                        if (end.isAfter(moment()) || end.isSame(moment(), 'day')) {
+                            const state = await this.adapter.getStateAsync(item.id as string);
+                            delta = (state.val as number) - consumption.min;
+
+                            this.log.warn(`${logPrefix} time period from ${start.format(this.adapter.dateFormat)} to ${end.format(this.adapter.dateFormat)} using state, not database value (delta: ${mathjs.round(delta, item.decimals)}, database delta: ${mathjs.round(consumption.delta, 3)})`);
+                        }
+
+                        this.calculationOfRange(this.costList[item.idContractType].calculation, data, delta, daysOfRange, result, logPrefixAppend);
 
                         this.adapter.itemDebug(item, `${logPrefix} time period from ${start.format(this.adapter.dateFormat)} to ${end.format(this.adapter.dateFormat)} - calculation result: ${JSON.stringify(result)}`);
                     }
                 }
-
 
                 if (item.costSumOptions?.length > 0) {
                     result.sum = mathjs.round(

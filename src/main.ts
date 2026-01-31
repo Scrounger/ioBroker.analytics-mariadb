@@ -189,14 +189,23 @@ class AnalyticsMariadb extends utils.Adapter {
                     }
                 } else if (state.from.includes(this.namespace)) {
                     // adapter states changed
+                    const targetId = id.replace(`${this.namespace}.`, '');
 
-                    const item = this.config.historyList.find(
-                        item => item.id === id.replace(`${this.namespace}.`, '') ||
-                            item.id === id.replace(`${this.namespace}.`, '').replace(`.${this.datapoints.idTotal}`, `.${this.datapoints.idBooleanValue}`)
+                    const historyItem = this.config.historyList.find(
+                        item => item.id === targetId ||
+                            item.id === targetId.replace(`.${this.datapoints.idTotal}`, `.${this.datapoints.idBooleanValue}`)
                     );
 
-                    if (item && this.history) {
-                        await this.history.onStateChange(item, state);
+                    if (historyItem && this.history) {
+                        await this.history.onStateChange(historyItem, state);
+                    }
+
+                    const billingList = this.billing.getListByIdTarget(targetId, true);
+
+                    if (billingList && billingList.length > 0) {
+                        for (const billingItem of billingList) {
+                            await this.billing.onStateChange(billingItem, historyItem);
+                        }
                     }
                 }
             } else {

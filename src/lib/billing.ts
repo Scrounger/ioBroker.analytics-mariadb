@@ -35,6 +35,12 @@ export class Billing {
         }
     }
 
+    public getListByIdTarget(idTarget: string, futureOnly: boolean = false): ioBroker.AdapterConfigTypes.billingItem[] {
+        return this.adapter.config.billingList.filter(
+            item => futureOnly ? item.id === idTarget && (moment(item.end).isAfter(moment()) || moment(item.end).isSame(moment())) : item.id === idTarget
+        );
+    }
+
     private async createStates(isAdapterStart: boolean): Promise<void> {
         const logPrefix = `[${this.logPrefix}.createStates]:`
 
@@ -73,7 +79,7 @@ export class Billing {
         }
     }
 
-    public async updateState(item: ioBroker.AdapterConfigTypes.billingItem, historyItem: ioBroker.AdapterConfigTypes.HistoryItem, datapointItem: ioBroker.AdapterConfigTypes.DatapointsItem): Promise<void> {
+    private async updateState(item: ioBroker.AdapterConfigTypes.billingItem, historyItem: ioBroker.AdapterConfigTypes.HistoryItem, datapointItem: ioBroker.AdapterConfigTypes.DatapointsItem): Promise<void> {
         const logPrefix = `[${this.logPrefix}.updateState]:`
 
         try {
@@ -93,7 +99,7 @@ export class Billing {
 
                         let res = result.sum - item.prePayment;
 
-                        if (end.isAfter(moment())) {
+                        if (end.isAfter(moment()) || end.isSame(moment(), 'day')) {
                             const daysUntilNow = moment().diff(start, 'days') + 1;
 
                             res = mathjs.round(result.sum - ((item.prePayment / daysOfPeriod) * daysUntilNow), 3);
@@ -107,6 +113,18 @@ export class Billing {
             }
         } catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack} `);
+        }
+    }
+
+    public async onStateChange(item: ioBroker.AdapterConfigTypes.billingItem, historyItem: ioBroker.AdapterConfigTypes.HistoryItem): Promise<void> {
+        const logPrefix = `[${this.logPrefix}.onStateChange] - '${item.id as string}':`
+
+        try {
+            await this.updateState(item, historyItem, this.adapter.datapoints.getByIdTarget(item.id));
+
+            this.log.warn(`${logPrefix} ${item.id} - state changed, billing data updated`);
+        } catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
     }
 }

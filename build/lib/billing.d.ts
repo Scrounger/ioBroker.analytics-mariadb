@@ -10,6 +10,8 @@ export declare class Billing {
     private costList;
     constructor(adapter: ioBroker.myAdapter, utils: typeof import("@iobroker/adapter-core"));
     init(): Promise<void>;
+    getListByIdTarget(idTarget: string, futureOnly?: boolean): ioBroker.AdapterConfigTypes.billingItem[];
     private createStates;
-    updateState(item: ioBroker.AdapterConfigTypes.billingItem, historyItem: ioBroker.AdapterConfigTypes.HistoryItem, datapointItem: ioBroker.AdapterConfigTypes.DatapointsItem): Promise<void>;
+    private updateState;
+    onStateChange(item: ioBroker.AdapterConfigTypes.billingItem, historyItem: ioBroker.AdapterConfigTypes.HistoryItem): Promise<void>;
 }

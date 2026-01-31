@@ -26,6 +26,9 @@ export class Billing {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
     }
+    getListByIdTarget(idTarget, futureOnly = false) {
+        return this.adapter.config.billingList.filter(item => futureOnly ? item.id === idTarget && (moment(item.end).isAfter(moment()) || moment(item.end).isSame(moment())) : item.id === idTarget);
+    }
     async createStates(isAdapterStart) {
         const logPrefix = `[${this.logPrefix}.createStates]:`;
         try {
@@ -68,7 +71,7 @@ export class Billing {
                     if (item.prePayment) {
                         const daysOfPeriod = end.diff(start, 'days') + 1;
                         let res = result.sum - item.prePayment;
-                        if (end.isAfter(moment())) {
+                        if (end.isAfter(moment()) || end.isSame(moment(), 'day')) {
                             const daysUntilNow = moment().diff(start, 'days') + 1;
                             res = mathjs.round(result.sum - ((item.prePayment / daysOfPeriod) * daysUntilNow), 3);
                         }
@@ -81,6 +84,16 @@ export class Billing {
         }
         catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack} `);
+        }
+    }
+    async onStateChange(item, historyItem) {
+        const logPrefix = `[${this.logPrefix}.onStateChange] - '${item.id}':`;
+        try {
+            await this.updateState(item, historyItem, this.adapter.datapoints.getByIdTarget(item.id));
+            this.log.warn(`${logPrefix} ${item.id} - state changed, billing data updated`);
+        }
+        catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
     }
 }

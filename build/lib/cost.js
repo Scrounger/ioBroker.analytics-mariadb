@@ -93,7 +93,13 @@ export class Cost {
                     const consumption = await this.adapter.sql.getTotal(item, datapointItem, interval, start.startOf('day').valueOf(), end.endOf('day').valueOf(), logPrefixAppend);
                     if (consumption && consumption.delta !== null) {
                         const daysOfRange = end.diff(start, 'days') + 1;
-                        this.calculationOfRange(this.costList[item.idContractType].calculation, data, consumption.delta, daysOfRange, result, logPrefixAppend);
+                        let delta = consumption.delta;
+                        if (end.isAfter(moment()) || end.isSame(moment(), 'day')) {
+                            const state = await this.adapter.getStateAsync(item.id);
+                            delta = state.val - consumption.min;
+                            this.log.warn(`${logPrefix} time period from ${start.format(this.adapter.dateFormat)} to ${end.format(this.adapter.dateFormat)} using state, not database value (delta: ${mathjs.round(delta, item.decimals)}, database delta: ${mathjs.round(consumption.delta, 3)})`);
+                        }
+                        this.calculationOfRange(this.costList[item.idContractType].calculation, data, delta, daysOfRange, result, logPrefixAppend);
                         this.adapter.itemDebug(item, `${logPrefix} time period from ${start.format(this.adapter.dateFormat)} to ${end.format(this.adapter.dateFormat)} - calculation result: ${JSON.stringify(result)}`);
                     }
                 }

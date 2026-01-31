@@ -26,7 +26,7 @@ export class Datapoints {
         }
     }
     getByIdTarget(idTarget) {
-        return Object.values(this.adapter.sourceToDatapoint).find((item) => item.idChannelTarget === helper.getIdWithoutLastPart(idTarget));
+        return Object.values(this.adapter.sourceToDatapoint).find(item => item.idChannelTarget === helper.getIdWithoutLastPart(idTarget));
     }
     async createStates(isAdapterStart) {
         const logPrefix = `[${this.logPrefix}.createStates]:`;

@@ -36,7 +36,7 @@ export class Datapoints {
 
     public getByIdTarget(idTarget: string): ioBroker.AdapterConfigTypes.DatapointsItem {
         return Object.values(this.adapter.sourceToDatapoint).find(
-            (item) => item.idChannelTarget === helper.getIdWithoutLastPart(idTarget)
+            item => item.idChannelTarget === helper.getIdWithoutLastPart(idTarget)
         );
     }
 
