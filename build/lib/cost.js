@@ -4,13 +4,11 @@ import * as helper from './helper.js';
 export class Cost {
     logPrefix = 'Cost';
     adapter;
-    utils;
     log;
     idChannelCost = 'cost';
     costList = {};
-    constructor(adapter, utils) {
+    constructor(adapter) {
         this.adapter = adapter;
-        this.utils = utils;
         this.log = adapter.log;
     }
     async init() {
@@ -97,7 +95,7 @@ export class Cost {
                         if (end.isAfter(moment()) || end.isSame(moment(), 'day')) {
                             const state = await this.adapter.getStateAsync(item.id);
                             delta = state.val - consumption.min;
-                            this.log.warn(`${logPrefix} time period from ${start.format(this.adapter.dateFormat)} to ${end.format(this.adapter.dateFormat)} using state, not database value (delta: ${mathjs.round(delta, item.decimals)}, database delta: ${mathjs.round(consumption.delta, 3)})`);
+                            this.log.silly(`${logPrefix} time period from ${start.format(this.adapter.dateFormat)} to ${end.format(this.adapter.dateFormat)} using state, not database value (delta: ${mathjs.round(delta, item.decimals)}, database delta: ${mathjs.round(consumption.delta, 3)})`);
                         }
                         this.calculationOfRange(this.costList[item.idContractType].calculation, data, delta, daysOfRange, result, logPrefixAppend);
                         this.adapter.itemDebug(item, `${logPrefix} time period from ${start.format(this.adapter.dateFormat)} to ${end.format(this.adapter.dateFormat)} - calculation result: ${JSON.stringify(result)}`);
@@ -112,7 +110,7 @@ export class Cost {
                     this.log.warn(`${logPrefix} no cost sum options in the adapter settings defined`);
                     result.sum = null;
                 }
-                this.adapter.itemDebug(item, `${logPrefix} time period from ${rangeStart.format(this.adapter.dateFormat)} to ${rangeEnde.format(this.adapter.dateFormat)} - total calculation result: ${JSON.stringify(result)}`);
+                this.adapter.itemDebug(item, `${logPrefix} start: ${rangeStart.format('DD.MM.YYYY - HH:mm')}, end: ${rangeEnde.format('DD.MM.YYYY - HH:mm')}, sum: ${result.sum}`);
                 return result;
             }
         }

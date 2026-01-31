@@ -29,6 +29,7 @@ class AnalyticsMariadb extends utils.Adapter {
     scheduleUpdateHistoryAtDayChange;
     scheduleSaveValueBeforeDayChange;
     scheduleSaveValueAfterDayChange;
+    initComplete = false;
     constructor(options = {}) {
         super({
             ...options,
@@ -53,12 +54,13 @@ class AnalyticsMariadb extends utils.Adapter {
                 this.sql = new SqlInterface(this);
                 this.datapoints = new Datapoints(this, utils);
                 await this.datapoints.init();
-                this.cost = new Cost(this, utils);
+                this.cost = new Cost(this);
                 await this.cost.init();
                 this.history = new History(this, utils);
                 await this.history.init();
                 this.billing = new Billing(this, utils);
                 await this.billing.init();
+                this.initComplete = true;
                 // Historische Werte einmal täglich aktualisieren (_Tag, _Woche, _Monat, _Jahr)
                 this.scheduleUpdateHistoryAtDayChange = scheduleJob(this.config.cronUpdateHistoryAtDayChange, async () => {
                     this.log.debug(`${logPrefix} cron job to update name of history states at day change started...`);
@@ -149,28 +151,33 @@ class AnalyticsMariadb extends utils.Adapter {
         const logPrefix = '[onStateChange]:';
         try {
             if (state) {
-                if (!state.from.includes(this.namespace)) {
-                    // source states changed
-                    const item = this.sourceToDatapoint[id];
-                    if (item) {
-                        await this.datapoints.onStateChange(item, id, state);
+                if (this.initComplete) {
+                    if (!state.from.includes(this.namespace)) {
+                        // source states changed
+                        const item = this.sourceToDatapoint[id];
+                        if (item) {
+                            await this.datapoints.onStateChange(item, id, state);
+                        }
+                        else {
+                            this.log.warn(`${logPrefix} state '${id}' changed but is not in configured source list, ignoring change.`);
+                        }
                     }
-                    else {
-                        this.log.warn(`${logPrefix} state '${id}' changed but is not in configured source list, ignoring change.`);
-                    }
-                }
-                else if (state.from.includes(this.namespace)) {
-                    // adapter states changed
-                    const targetId = id.replace(`${this.namespace}.`, '');
-                    const historyItem = this.config.historyList.find(item => item.id === targetId ||
-                        item.id === targetId.replace(`.${this.datapoints.idTotal}`, `.${this.datapoints.idBooleanValue}`));
-                    if (historyItem && this.history) {
-                        await this.history.onStateChange(historyItem, state);
-                    }
-                    const billingList = this.billing.getListByIdTarget(targetId, true);
-                    if (billingList && billingList.length > 0) {
-                        for (const billingItem of billingList) {
-                            await this.billing.onStateChange(billingItem, historyItem);
+                    else if (state.from.includes(this.namespace)) {
+                        // adapter states changed
+                        const targetId = id.replace(`${this.namespace}.`, '');
+                        // Update History and costs if enabled
+                        const historyItem = this.history.getByIdTarget(targetId || targetId.replace(`.${this.datapoints.idTotal}`, `.${this.datapoints.idBooleanValue}`));
+                        if (historyItem) {
+                            await this.history.onStateChange(historyItem, state);
+                        }
+                        if (historyItem) {
+                            // Update Billing if enabled
+                            const billingList = this.billing.getListByIdTarget(targetId, true);
+                            if (billingList && billingList.length > 0) {
+                                for (const billingItem of billingList) {
+                                    await this.billing.onStateChange(billingItem, historyItem);
+                                }
+                            }
                         }
                     }
                 }
@@ -183,6 +190,9 @@ class AnalyticsMariadb extends utils.Adapter {
         catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
+    }
+    isBetweenDayChange(start, end) {
+        return moment().isSameOrAfter(moment(start, 'HH:mm')) || moment().isSameOrBefore(moment(end, 'HH:mm'));
     }
     // If you need to accept messages in your adapter, uncomment the following block and the corresponding line in the constructor.
     // /**

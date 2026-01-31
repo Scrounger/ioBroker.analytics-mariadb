@@ -203,7 +203,7 @@ export class History {
         }
     }
     async updateThisYear(item, currentState, isAdapterStart = false) {
-        const logPrefix = `[${this.logPrefix}.updateThisYear] - '${helper.getIdWithoutLastPart(item.id)}':`;
+        const logPrefix = `[${this.logPrefix}.updateThisYear] [${helper.getIdWithoutLastPart(item.id)}]:`;
         try {
             const datapointItem = this.adapter.datapoints.getByIdTarget(item.id);
             if (datapointItem && datapointItem.enable) {
@@ -218,7 +218,7 @@ export class History {
                     }
                 }
                 if (isAdapterStart) {
-                    this.log.info(`${logPrefix} history states of this year updated`);
+                    this.log.info(`${logPrefix} history${item.idContractType ? ' and costs ' : ' '}states of this year updated`);
                 }
             }
             else {
@@ -230,7 +230,7 @@ export class History {
         }
     }
     async updateThePast(item, isAdapterStart = false) {
-        const logPrefix = `[${this.logPrefix}.updateStatesOfThePast] - '${helper.getIdWithoutLastPart(item.id)}':`;
+        const logPrefix = `[${this.logPrefix}.updateStatesOfThePast] [${helper.getIdWithoutLastPart(item.id)}]:`;
         try {
             const datapointItem = this.adapter.datapoints.getByIdTarget(item.id);
             if (datapointItem && datapointItem.enable) {
@@ -245,6 +245,7 @@ export class History {
                         else {
                             this.adapter.log.debug(`${logPrefix} history for interval '${interval}' is disabled`);
                         }
+                        this.log.debug(`${logPrefix} [${interval}] history ${item.idContractType ? ' and costs ' : ' '} for interval updated`);
                     }
                 }
                 this.log.info(`${logPrefix} history states of the past updated`);
@@ -341,9 +342,10 @@ export class History {
         }
     }
     async onStateChange(item, currentState) {
-        const logPrefix = `[${this.logPrefix}.onStateChange] - '${item.id}':`;
+        const logPrefix = `[${this.logPrefix}.onStateChange] [${helper.getIdWithoutLastPart(item.id)}]:`;
         try {
             await this.updateThisYear(item, currentState);
+            this.log.debug(`${logPrefix} history${item.idContractType ? ' and costs ' : ' '}states of this year updated`);
         }
         catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);

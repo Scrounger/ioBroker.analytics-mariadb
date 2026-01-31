@@ -17,16 +17,14 @@ export class Cost {
     private logPrefix: string = 'Cost'
 
     private adapter: ioBroker.myAdapter;
-    private utils: typeof import("@iobroker/adapter-core")
     private log: ioBroker.Logger;
 
     public idChannelCost = 'cost';
 
     private costList: ioBroker.AdapterConfigTypes.CostList = {};
 
-    constructor(adapter: ioBroker.myAdapter, utils: typeof import("@iobroker/adapter-core")) {
+    constructor(adapter: ioBroker.myAdapter) {
         this.adapter = adapter;
-        this.utils = utils;
         this.log = adapter.log;
     }
 
@@ -142,7 +140,7 @@ export class Cost {
                             const state = await this.adapter.getStateAsync(item.id as string);
                             delta = (state.val as number) - consumption.min;
 
-                            this.log.warn(`${logPrefix} time period from ${start.format(this.adapter.dateFormat)} to ${end.format(this.adapter.dateFormat)} using state, not database value (delta: ${mathjs.round(delta, item.decimals)}, database delta: ${mathjs.round(consumption.delta, 3)})`);
+                            this.log.silly(`${logPrefix} time period from ${start.format(this.adapter.dateFormat)} to ${end.format(this.adapter.dateFormat)} using state, not database value (delta: ${mathjs.round(delta, item.decimals)}, database delta: ${mathjs.round(consumption.delta, 3)})`);
                         }
 
                         this.calculationOfRange(this.costList[item.idContractType].calculation, data, delta, daysOfRange, result, logPrefixAppend);
@@ -162,7 +160,7 @@ export class Cost {
                     result.sum = null;
                 }
 
-                this.adapter.itemDebug(item, `${logPrefix} time period from ${rangeStart.format(this.adapter.dateFormat)} to ${rangeEnde.format(this.adapter.dateFormat)} - total calculation result: ${JSON.stringify(result)}`);
+                this.adapter.itemDebug(item, `${logPrefix} start: ${rangeStart.format('DD.MM.YYYY - HH:mm')}, end: ${rangeEnde.format('DD.MM.YYYY - HH:mm')}, sum: ${result.sum}`);
 
                 return result;
             }

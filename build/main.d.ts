@@ -20,6 +20,7 @@ declare class AnalyticsMariadb extends utils.Adapter {
     scheduleUpdateHistoryAtDayChange: Job;
     scheduleSaveValueBeforeDayChange: Job;
     scheduleSaveValueAfterDayChange: Job;
+    initComplete: boolean;
     constructor(options?: Partial<utils.AdapterOptions>);
     /**
      * Is called when databases are connected and adapter received configuration.
@@ -39,6 +40,7 @@ declare class AnalyticsMariadb extends utils.Adapter {
      * @param state - State object
      */
     private onStateChange;
+    private isBetweenDayChange;
     private onMessage;
     itemDebug(item: ioBroker.AdapterConfigTypes.DatapointsItem | ioBroker.AdapterConfigTypes.HistoryItem | ioBroker.AdapterConfigTypes.CostContractType, message: string): void;
 }

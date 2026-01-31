@@ -16,8 +16,6 @@ export class Billing {
     private idCosts = 'cost';
     private idBackPayment = 'backpayment';
 
-    private costList: ioBroker.AdapterConfigTypes.CostList = {};
-
     constructor(adapter: ioBroker.myAdapter, utils: typeof import("@iobroker/adapter-core")) {
         this.adapter = adapter;
         this.utils = utils;
@@ -42,13 +40,15 @@ export class Billing {
     }
 
     private async createStates(isAdapterStart: boolean): Promise<void> {
-        const logPrefix = `[${this.logPrefix}.createStates]:`
+        let logPrefix = `[${this.logPrefix}.createStates]:`
 
         try {
             const list = this.adapter.config.billingList;
 
             if (list && list.length > 0) {
                 for (const item of list) {
+                    logPrefix = `[${this.logPrefix}.updateState] [${helper.getIdWithoutLastPart(item.id)}] [${moment(item.start).format(this.adapter.dateFormat)} - ${moment(item.end).format(this.adapter.dateFormat)}]:`
+
                     let idChannel = `${helper.getIdWithoutLastPart(item.id)}.${this.idChannelBilling}`
 
                     await objectHandler.createChannel(this.adapter, this.utils, idChannel, 'billing period');
@@ -72,6 +72,8 @@ export class Billing {
                     }
 
                     await this.updateState(item, historyItem, datapointItem);
+
+                    this.log.debug(`${logPrefix} '${item.provider}' billing states created and updated`);
                 }
             }
         } catch (error) {
@@ -80,10 +82,10 @@ export class Billing {
     }
 
     private async updateState(item: ioBroker.AdapterConfigTypes.billingItem, historyItem: ioBroker.AdapterConfigTypes.HistoryItem, datapointItem: ioBroker.AdapterConfigTypes.DatapointsItem): Promise<void> {
-        const logPrefix = `[${this.logPrefix}.updateState]:`
+        const logPrefix = `[${this.logPrefix}.updateState] [${helper.getIdWithoutLastPart(item.id)}] [${moment(item.start).format(this.adapter.dateFormat)} - ${moment(item.end).format(this.adapter.dateFormat)}]:`
 
         try {
-            if (datapointItem.enable) {
+            if (datapointItem && datapointItem.enable) {
                 const start = moment(item.start);
                 const end = moment(item.end);
                 const idChannel = `${helper.getIdWithoutLastPart(item.id)}.${this.idChannelBilling}.${start.format('YYYY_MM_DD').replace(/[./]/g, "_")}_to_${end.format('YYYY_MM_DD').replace(/[./]/g, "_")}`;
@@ -117,12 +119,13 @@ export class Billing {
     }
 
     public async onStateChange(item: ioBroker.AdapterConfigTypes.billingItem, historyItem: ioBroker.AdapterConfigTypes.HistoryItem): Promise<void> {
-        const logPrefix = `[${this.logPrefix}.onStateChange] - '${item.id as string}':`
+        const logPrefix = `[${this.logPrefix}.onStateChange] [${helper.getIdWithoutLastPart(item.id)}] [${moment(item.start).format(this.adapter.dateFormat)} - ${moment(item.end).format(this.adapter.dateFormat)}]:`
 
         try {
             await this.updateState(item, historyItem, this.adapter.datapoints.getByIdTarget(item.id));
 
-            this.log.warn(`${logPrefix} ${item.id} - state changed, billing data updated`);
+            this.log.debug(`${logPrefix} '${item.provider}' billing data updated`);
+
         } catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }

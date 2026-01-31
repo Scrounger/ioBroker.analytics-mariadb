@@ -320,7 +320,7 @@ export class SqlInterface {
                 }
                 await this.adapter.setState('info.requests', peakRps, true);
                 await this.adapter.setState('info.duration', mathjs.round(peakDuration, 3), true);
-                this.log.debug(`${logPrefix} update metrics: rps: ${peakRps}, duration: ${mathjs.round(peakDuration, 3)}s, metircs data: ${this.metrics.length} entries`);
+                this.log.silly(`${logPrefix} update metrics: rps: ${peakRps}, duration: ${mathjs.round(peakDuration, 3)}s, metircs data: ${this.metrics.length} entries`);
                 return;
             }
         }

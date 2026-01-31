@@ -260,12 +260,26 @@ export class Datapoints {
             if (list && list.length > 0) {
                 for (const item of list) {
                     if (item.enable) {
-                        const state = await this.adapter.getStateAsync(item.idSql);
-                        this.adapter.log.info(`${logPrefix} '${item.idSql}' - save state to database`);
-                        void this.adapter.sql.storeState(item, state);
+                        void this.writeItemAtDayChangeToDatabase(item);
                     }
                 }
             }
+        }
+        catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
+    }
+    /**
+     * Write item asynchronously to database at day change
+     *
+     * @param item Datapoint item
+     */
+    async writeItemAtDayChangeToDatabase(item) {
+        const logPrefix = `[${this.logPrefix}.writeItemAtDayChangeToDatabase]':`;
+        try {
+            const state = await this.adapter.getStateAsync(item.idSql);
+            this.adapter.log.info(`${logPrefix} '${item.idSql}' - save state to database`);
+            void this.adapter.sql.storeState(item, state);
         }
         catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);

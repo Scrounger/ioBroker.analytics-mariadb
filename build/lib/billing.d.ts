@@ -7,7 +7,6 @@ export declare class Billing {
     private idConsumption;
     private idCosts;
     private idBackPayment;
-    private costList;
     constructor(adapter: ioBroker.myAdapter, utils: typeof import("@iobroker/adapter-core"));
     init(): Promise<void>;
     getListByIdTarget(idTarget: string, futureOnly?: boolean): ioBroker.AdapterConfigTypes.billingItem[];

@@ -234,7 +234,7 @@ export class History {
     }
 
     private async updateThisYear(item: ioBroker.AdapterConfigTypes.HistoryItem, currentState: ioBroker.State, isAdapterStart: boolean = false): Promise<void> {
-        const logPrefix = `[${this.logPrefix}.updateThisYear] - '${helper.getIdWithoutLastPart(item.id as string)}':`
+        const logPrefix = `[${this.logPrefix}.updateThisYear] [${helper.getIdWithoutLastPart(item.id as string)}]:`
 
         try {
             const datapointItem = this.adapter.datapoints.getByIdTarget(item.id as string);
@@ -254,7 +254,7 @@ export class History {
                 }
 
                 if (isAdapterStart) {
-                    this.log.info(`${logPrefix} history states of this year updated`);
+                    this.log.info(`${logPrefix} history${item.idContractType ? ' and costs ' : ' '}states of this year updated`);
                 }
             } else {
                 this.log.debug(`${logPrefix} is disabled, no history processing available`);
@@ -265,7 +265,7 @@ export class History {
     }
 
     private async updateThePast(item: ioBroker.AdapterConfigTypes.HistoryItem, isAdapterStart: boolean = false): Promise<void> {
-        const logPrefix = `[${this.logPrefix}.updateStatesOfThePast] - '${helper.getIdWithoutLastPart(item.id as string)}':`
+        const logPrefix = `[${this.logPrefix}.updateStatesOfThePast] [${helper.getIdWithoutLastPart(item.id as string)}]:`
 
         try {
             const datapointItem = this.adapter.datapoints.getByIdTarget(item.id as string);
@@ -283,6 +283,8 @@ export class History {
                         } else {
                             this.adapter.log.debug(`${logPrefix} history for interval '${interval}' is disabled`);
                         }
+
+                        this.log.debug(`${logPrefix} [${interval}] history ${item.idContractType ? ' and costs ' : ' '} for interval updated`);
                     }
                 }
 
@@ -399,10 +401,12 @@ export class History {
     }
 
     public async onStateChange(item: ioBroker.AdapterConfigTypes.HistoryItem, currentState: ioBroker.State): Promise<void> {
-        const logPrefix = `[${this.logPrefix}.onStateChange] - '${item.id as string}':`
+        const logPrefix = `[${this.logPrefix}.onStateChange] [${helper.getIdWithoutLastPart(item.id as string)}]:`
 
         try {
             await this.updateThisYear(item, currentState);
+
+            this.log.debug(`${logPrefix} history${item.idContractType ? ' and costs ' : ' '}states of this year updated`);
         } catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }

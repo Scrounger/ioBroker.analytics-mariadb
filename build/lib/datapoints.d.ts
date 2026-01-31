@@ -18,4 +18,10 @@ export declare class Datapoints {
     onObjectChange(id: string): Promise<void>;
     onStateChange(item: ioBroker.AdapterConfigTypes.DatapointsItem, id: string, state: ioBroker.State): Promise<void>;
     writeValuesAtDayChangeToDatabase(): Promise<void>;
+    /**
+     * Write item asynchronously to database at day change
+     *
+     * @param item Datapoint item
+     */
+    private writeItemAtDayChangeToDatabase;
 }

@@ -11,7 +11,6 @@ export class Billing {
     idConsumption = 'consumption';
     idCosts = 'cost';
     idBackPayment = 'backpayment';
-    costList = {};
     constructor(adapter, utils) {
         this.adapter = adapter;
         this.utils = utils;
@@ -30,11 +29,12 @@ export class Billing {
         return this.adapter.config.billingList.filter(item => futureOnly ? item.id === idTarget && (moment(item.end).isAfter(moment()) || moment(item.end).isSame(moment())) : item.id === idTarget);
     }
     async createStates(isAdapterStart) {
-        const logPrefix = `[${this.logPrefix}.createStates]:`;
+        let logPrefix = `[${this.logPrefix}.createStates]:`;
         try {
             const list = this.adapter.config.billingList;
             if (list && list.length > 0) {
                 for (const item of list) {
+                    logPrefix = `[${this.logPrefix}.updateState] [${helper.getIdWithoutLastPart(item.id)}] [${moment(item.start).format(this.adapter.dateFormat)} - ${moment(item.end).format(this.adapter.dateFormat)}]:`;
                     let idChannel = `${helper.getIdWithoutLastPart(item.id)}.${this.idChannelBilling}`;
                     await objectHandler.createChannel(this.adapter, this.utils, idChannel, 'billing period');
                     const start = moment(item.start);
@@ -50,6 +50,7 @@ export class Billing {
                         await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idBackPayment}`, 'back payment', null, { ...sourceObj?.common, ...{ role: 'state', unit: this.adapter.cost.getContractType(historyItem.idContractType).currency } });
                     }
                     await this.updateState(item, historyItem, datapointItem);
+                    this.log.debug(`${logPrefix} '${item.provider}' billing states created and updated`);
                 }
             }
         }
@@ -58,9 +59,9 @@ export class Billing {
         }
     }
     async updateState(item, historyItem, datapointItem) {
-        const logPrefix = `[${this.logPrefix}.updateState]:`;
+        const logPrefix = `[${this.logPrefix}.updateState] [${helper.getIdWithoutLastPart(item.id)}] [${moment(item.start).format(this.adapter.dateFormat)} - ${moment(item.end).format(this.adapter.dateFormat)}]:`;
         try {
-            if (datapointItem.enable) {
+            if (datapointItem && datapointItem.enable) {
                 const start = moment(item.start);
                 const end = moment(item.end);
                 const idChannel = `${helper.getIdWithoutLastPart(item.id)}.${this.idChannelBilling}.${start.format('YYYY_MM_DD').replace(/[./]/g, "_")}_to_${end.format('YYYY_MM_DD').replace(/[./]/g, "_")}`;
@@ -87,10 +88,10 @@ export class Billing {
         }
     }
     async onStateChange(item, historyItem) {
-        const logPrefix = `[${this.logPrefix}.onStateChange] - '${item.id}':`;
+        const logPrefix = `[${this.logPrefix}.onStateChange] [${helper.getIdWithoutLastPart(item.id)}] [${moment(item.start).format(this.adapter.dateFormat)} - ${moment(item.end).format(this.adapter.dateFormat)}]:`;
         try {
             await this.updateState(item, historyItem, this.adapter.datapoints.getByIdTarget(item.id));
-            this.log.warn(`${logPrefix} ${item.id} - state changed, billing data updated`);
+            this.log.debug(`${logPrefix} '${item.provider}' billing data updated`);
         }
         catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
