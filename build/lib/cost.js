@@ -22,6 +22,9 @@ export class Cost {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
     }
+    getContractType(idContractType) {
+        return this.adapter.config.costsContractTypesList.find(item => item.id === idContractType);
+    }
     prepareAndCheckCostList() {
         const logPrefix = `[${this.logPrefix}.prepareAndCheckCostList]:`;
         try {
@@ -62,9 +65,6 @@ export class Cost {
         catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
-    }
-    getContractType(idContractType) {
-        return this.adapter.config.costsContractTypesList.find(item => item.id = idContractType);
     }
     async getCostOfRange(item, datapointItem, rangeStart, rangeEnde, interval = undefined) {
         const logPrefixAppend = `[${helper.getIdWithoutLastPart(item.id)}]${interval ? ` [${interval}] ` : ' [manual] '}[${item.idContractType}]`;

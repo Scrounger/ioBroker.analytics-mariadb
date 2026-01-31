@@ -30,6 +30,10 @@
             type: 'panel',
             '#include': 'cost.jsonConfig.json5',
         },
+        tab_billing: {
+            type: 'panel',
+            '#include': 'billing.jsonConfig.json5',
+        },
         tab_expert: {
             type: 'panel',
             '#include': 'expert.jsonConfig.json5',

@@ -41,6 +41,10 @@ export class Cost {
         }
     }
 
+    public getContractType(idContractType: string): ioBroker.AdapterConfigTypes.CostContractType {
+        return this.adapter.config.costsContractTypesList.find(item => item.id === idContractType);
+    }
+
     private prepareAndCheckCostList(): void {
         const logPrefix = `[${this.logPrefix}.prepareAndCheckCostList]:`
 
@@ -90,10 +94,6 @@ export class Cost {
         } catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
-    }
-
-    public getContractType(idContractType: string): ioBroker.AdapterConfigTypes.CostContractType {
-        return this.adapter.config.costsContractTypesList.find(item => item.id = idContractType);
     }
 
     public async getCostOfRange(item: ioBroker.AdapterConfigTypes.HistoryItem, datapointItem: ioBroker.AdapterConfigTypes.DatapointsItem, rangeStart: moment.Moment, rangeEnde: moment.Moment, interval: string = undefined): Promise<CostResult> {

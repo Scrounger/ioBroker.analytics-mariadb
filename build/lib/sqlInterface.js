@@ -269,7 +269,7 @@ export class SqlInterface {
     async metricsHandler(now, duration) {
         const logPrefix = `[${this.logPrefix}.metricsHandler]:`;
         try {
-            const cutoff = Date.now() - 30000;
+            const cutoff = Date.now() - 60000;
             while (this.metrics.length && this.metrics[0].timestamp < cutoff) {
                 this.metrics.shift();
             }

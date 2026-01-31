@@ -53,6 +53,7 @@
                     validator: '!!data.id && (globalData.datapointsNumberList.some(dp => data.id.includes(dp.idChannelTarget)) || globalData.datapointsBooleanList.some(dp => data.id.includes(dp.idChannelTarget)));',
                     validatorNoSaveOnError: true,
                     validatorErrorText: 'mandatory input',
+                    disabled: '!globalData.datapointsNumberList.find(dp => data.id.includes(dp.idChannelTarget)).enable || !globalData.datapointsBooleanList.find(dp => data.id.includes(dp.idChannelTarget)).enable',
                 },
                 {
                     attr: 'decimals',
@@ -63,6 +64,7 @@
                     step: 1,
                     default: 3,
                     width: 85,
+                    disabled: '!globalData.datapointsNumberList.find(dp => data.id.includes(dp.idChannelTarget)).enable || !globalData.datapointsBooleanList.find(dp => data.id.includes(dp.idChannelTarget)).enable',
                 },
                 {
                     attr: 'day',
@@ -77,6 +79,7 @@
                     },
                     width: 72,
                     tooltip: 'days',
+                    disabled: '!globalData.datapointsNumberList.find(dp => data.id.includes(dp.idChannelTarget)).enable || !globalData.datapointsBooleanList.find(dp => data.id.includes(dp.idChannelTarget)).enable',
                 },
                 {
                     attr: 'week',
@@ -91,6 +94,7 @@
                     },
                     width: 72,
                     tooltip: 'weeks',
+                    disabled: '!globalData.datapointsNumberList.find(dp => data.id.includes(dp.idChannelTarget)).enable || !globalData.datapointsBooleanList.find(dp => data.id.includes(dp.idChannelTarget)).enable',
                 },
                 {
                     attr: 'month',
@@ -105,6 +109,7 @@
                     },
                     width: 72,
                     tooltip: 'months',
+                    disabled: '!globalData.datapointsNumberList.find(dp => data.id.includes(dp.idChannelTarget)).enable || !globalData.datapointsBooleanList.find(dp => data.id.includes(dp.idChannelTarget)).enable',
                 },
                 {
                     attr: 'year',
@@ -119,6 +124,7 @@
                     },
                     width: 72,
                     tooltip: 'years',
+                    disabled: '!globalData.datapointsNumberList.find(dp => data.id.includes(dp.idChannelTarget)).enable || !globalData.datapointsBooleanList.find(dp => data.id.includes(dp.idChannelTarget)).enable',
                 },
                 {
                     attr: 'debounce',
@@ -133,6 +139,7 @@
                         alsoDependsOn: ['historyDefaultUpdateDeBounce'],
                     },
                     width: 100,
+                    disabled: '!globalData.datapointsNumberList.find(dp => data.id.includes(dp.idChannelTarget)).enable || !globalData.datapointsBooleanList.find(dp => data.id.includes(dp.idChannelTarget)).enable',
                 },
                 {
                     attr: 'idContractType',
@@ -148,6 +155,7 @@
                     validatorErrorText: 'mandatory input',
                     hidden: '!data.id.endsWith(".total") || data.id === undefined || data.id === "" || data.id === null',
                     width: 200,
+                    disabled: '!globalData.datapointsNumberList.find(dp => data.id.includes(dp.idChannelTarget)).enable || !globalData.datapointsBooleanList.find(dp => data.id.includes(dp.idChannelTarget)).enable',
                 },
                 {
                     attr: 'costSumOptions',
@@ -164,6 +172,7 @@
                     validatorErrorText: 'you have to select minimum one option',
                     hidden: '(!data.id.endsWith(".total") || !data.idContractType) || (data.id === undefined || data.id === "" || data.id === null)',
                     width: 180,
+                    disabled: '!globalData.datapointsNumberList.find(dp => data.id.includes(dp.idChannelTarget)).enable || !globalData.datapointsBooleanList.find(dp => data.id.includes(dp.idChannelTarget)).enable',
                 },
                 {
                     attr: 'debug',
@@ -171,6 +180,7 @@
                     title: 'debug',
                     default: false,
                     width: 0,
+                    disabled: '!globalData.datapointsNumberList.find(dp => data.id.includes(dp.idChannelTarget)).enable || !globalData.datapointsBooleanList.find(dp => data.id.includes(dp.idChannelTarget)).enable',
                 },
             ],
         },

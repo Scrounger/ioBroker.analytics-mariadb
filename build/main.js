@@ -13,6 +13,7 @@ import { SqlInterface } from './lib/sqlInterface.js';
 import { History } from './lib/history.js';
 import { Datapoints } from './lib/datapoints.js';
 import { Cost } from './lib/cost.js';
+import { Billing } from './lib/billing.js';
 class AnalyticsMariadb extends utils.Adapter {
     sourceToDatapoint = {};
     timeoutBoolean = {};
@@ -24,6 +25,7 @@ class AnalyticsMariadb extends utils.Adapter {
     datapoints;
     history;
     cost;
+    billing;
     scheduleUpdateHistoryAtDayChange;
     scheduleSaveValueBeforeDayChange;
     scheduleSaveValueAfterDayChange;
@@ -55,6 +57,8 @@ class AnalyticsMariadb extends utils.Adapter {
                 await this.cost.init();
                 this.history = new History(this, utils);
                 await this.history.init();
+                this.billing = new Billing(this, utils);
+                await this.billing.init();
                 // Historische Werte einmal täglich aktualisieren (_Tag, _Woche, _Monat, _Jahr)
                 this.scheduleUpdateHistoryAtDayChange = scheduleJob(this.config.cronUpdateHistoryAtDayChange, async () => {
                     this.log.debug(`${logPrefix} cron job to update name of history states at day change started...`);
@@ -227,6 +231,19 @@ class AnalyticsMariadb extends utils.Adapter {
                 else if (obj.command === 'getCostContractTypes') {
                     const data = obj.message.data;
                     const result = data.map(p => p.id);
+                    if (obj.callback) {
+                        this.sendTo(obj.from, obj.command, result, obj.callback);
+                    }
+                }
+                else if (obj.command === 'getBillingList') {
+                    const data = obj.message.data;
+                    const result = data.filter(x => x.idContractType).map(item => {
+                        const dpItem = this.datapoints.getByIdTarget(item.id);
+                        return {
+                            value: `${item.id}`,
+                            label: dpItem ? `${dpItem.name} (${item.idContractType})` : `${item.id}`
+                        };
+                    });
                     if (obj.callback) {
                         this.sendTo(obj.from, obj.command, result, obj.callback);
                     }

@@ -25,6 +25,9 @@ export class History {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
     }
+    getByIdTarget(idTarget) {
+        return this.adapter.config.historyList.find(item => item.id === idTarget);
+    }
     async createStates(isAdapterStart) {
         const logPrefix = `[${this.logPrefix}.createStates]:`;
         try {

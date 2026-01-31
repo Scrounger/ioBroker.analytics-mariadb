@@ -16,6 +16,7 @@ import { SqlInterface } from './lib/sqlInterface.js';
 import { History } from './lib/history.js';
 import { Datapoints } from './lib/datapoints.js';
 import { Cost } from './lib/cost.js';
+import { Billing } from './lib/billing.js';
 
 
 class AnalyticsMariadb extends utils.Adapter {
@@ -33,6 +34,7 @@ class AnalyticsMariadb extends utils.Adapter {
     datapoints: Datapoints;
     history: History;
     cost: Cost;
+    billing: Billing;
 
     scheduleUpdateHistoryAtDayChange: Job;
     scheduleSaveValueBeforeDayChange: Job;
@@ -73,6 +75,9 @@ class AnalyticsMariadb extends utils.Adapter {
                 this.history = new History(this, utils);
                 await this.history.init();
 
+                this.billing = new Billing(this, utils);
+                await this.billing.init();
+
                 // Historische Werte einmal täglich aktualisieren (_Tag, _Woche, _Monat, _Jahr)
                 this.scheduleUpdateHistoryAtDayChange = scheduleJob(this.config.cronUpdateHistoryAtDayChange, async () => {
                     this.log.debug(`${logPrefix} cron job to update name of history states at day change started...`);
@@ -91,7 +96,6 @@ class AnalyticsMariadb extends utils.Adapter {
                     this.log.debug(`${logPrefix} cron job to to save values in database after day change started...`);
                     await this.datapoints.writeValuesAtDayChangeToDatabase();
                 });
-
 
                 // const item = { ... this.config.historyList[0] };
                 // item.debug = true;
@@ -268,6 +272,20 @@ class AnalyticsMariadb extends utils.Adapter {
                     const data = obj.message.data as ioBroker.AdapterConfigTypes.CostContractType[];
 
                     const result = data.map(p => p.id);
+
+                    if (obj.callback) {
+                        this.sendTo(obj.from, obj.command, result, obj.callback);
+                    }
+                } else if (obj.command === 'getBillingList') {
+                    const data = obj.message.data as ioBroker.AdapterConfigTypes.HistoryItem[];
+
+                    const result = data.filter(x => x.idContractType).map(item => {
+                        const dpItem = this.datapoints.getByIdTarget(item.id as string);
+                        return {
+                            value: `${item.id}`,
+                            label: dpItem ? `${dpItem.name} (${item.idContractType})` : `${item.id}`
+                        }
+                    });
 
                     if (obj.callback) {
                         this.sendTo(obj.from, obj.command, result, obj.callback);

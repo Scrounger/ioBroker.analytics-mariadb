@@ -1,6 +1,7 @@
 // This file extends the AdapterConfig type from "@iobroker/types"
 import { Interval, SqlInterface } from './sqlInterface.js';
 import { Datapoints } from './datapoints.js';
+import { History } from './history.js';
 import { Cost } from './cost.js';
 
 // Augment the globally declared type ioBroker.AdapterConfig
@@ -21,6 +22,7 @@ declare global {
             historyCalcList: AdapterConfigTypes.HistoryItem[];
             costsContractTypesList: AdapterConfigTypes.CostContractType[];
             costsContractDataList: AdapterConfigTypes.CostContractData[];
+            billingList: AdapterConfigTypes.billingItem[];
             sqlWriteTimeout: number;
             cronUpdateHistoryAtDayChange: string;
             metricsMinUpdateInterval: number;
@@ -101,11 +103,20 @@ declare global {
                 basicPrice: number;
                 bonusPrice: number;
             }
+
+            interface billingItem {
+                id: string;
+                provider: string;
+                start: string;
+                end: string;
+                prePayment: number;
+            }
         }
 
         interface myAdapter extends ioBroker.Adapter {
             sql: SqlInterface;
             datapoints: Datapoints;
+            history: History;
             cost: Cost;
 
             sourceToDatapoint: Record<string, ioBroker.AdapterConfigTypes.DatapointsItem>;

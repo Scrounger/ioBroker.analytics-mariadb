@@ -33,6 +33,10 @@ export class History {
         }
     }
 
+    public getByIdTarget(idTarget: string): ioBroker.AdapterConfigTypes.HistoryItem {
+        return this.adapter.config.historyList.find(item => item.id === idTarget);
+    }
+
     private async createStates(isAdapterStart: boolean): Promise<void> {
         const logPrefix = `[${this.logPrefix}.createStates]:`
 

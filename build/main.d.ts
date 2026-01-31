@@ -4,6 +4,7 @@ import { SqlInterface } from './lib/sqlInterface.js';
 import { History } from './lib/history.js';
 import { Datapoints } from './lib/datapoints.js';
 import { Cost } from './lib/cost.js';
+import { Billing } from './lib/billing.js';
 declare class AnalyticsMariadb extends utils.Adapter {
     sourceToDatapoint: Record<string, ioBroker.AdapterConfigTypes.DatapointsItem>;
     timeoutBoolean: Record<string, ioBroker.Timeout>;
@@ -15,6 +16,7 @@ declare class AnalyticsMariadb extends utils.Adapter {
     datapoints: Datapoints;
     history: History;
     cost: Cost;
+    billing: Billing;
     scheduleUpdateHistoryAtDayChange: Job;
     scheduleSaveValueBeforeDayChange: Job;
     scheduleSaveValueAfterDayChange: Job;

@@ -185,6 +185,7 @@
             }
         ],
         "costsContractDataList": [],
+        "billingList": [],
         "sqlWriteTimeout": 5000,
         "cronUpdateHistoryAtDayChange": "3 0 * * *",
         "metricsMinUpdateInterval": 5

@@ -6,6 +6,7 @@ export declare class History {
     private idChannelHistory;
     constructor(adapter: ioBroker.myAdapter, utils: typeof import("@iobroker/adapter-core"));
     init(): Promise<void>;
+    getByIdTarget(idTarget: string): ioBroker.AdapterConfigTypes.HistoryItem;
     private createStates;
     updateNameOfStates(): Promise<void>;
     private _updateNameOfStates;
