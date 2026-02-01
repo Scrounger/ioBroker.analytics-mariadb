@@ -152,20 +152,6 @@
                     tooltip: 'years',
                 },
                 {
-                    attr: 'debounce',
-                    type: 'number',
-                    title: 'De-bounce time',
-                    unit: 's',
-                    min: 0,
-                    max: 1800,
-                    step: 1,
-                    defaultFunc: {
-                        func: 'globalData.historyDefaultUpdateDeBounce',
-                        alsoDependsOn: ['historyDefaultUpdateDeBounce'],
-                    },
-                    width: 100,
-                },
-                {
                     attr: 'idContractType',
                     type: 'autocompleteSendTo',
                     title: 'Costs',

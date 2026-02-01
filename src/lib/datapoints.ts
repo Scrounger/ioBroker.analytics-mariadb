@@ -17,7 +17,7 @@ export class Datapoints {
     private idStorageValue = 'storageValue';
     public idBooleanValue = 'value'
 
-    public timeoutList: { [id: string]: ioBroker.Timeout } = {};
+    public timeoutDebounceList: { [id: string]: ioBroker.Timeout } = {};
 
     constructor(adapter: ioBroker.myAdapter, utils: typeof import("@iobroker/adapter-core")) {
         this.adapter = adapter;
@@ -196,12 +196,12 @@ export class Datapoints {
                     state.val = state.val as number;
                     oldState.val = oldState.val as number;
 
-                    if (this.timeoutList[id]) {
-                        this.adapter.clearTimeout(this.timeoutList[id]);
-                        delete this.timeoutList[id];
+                    if (this.timeoutDebounceList[id]) {
+                        this.adapter.clearTimeout(this.timeoutDebounceList[id]);
+                        delete this.timeoutDebounceList[id];
                     }
 
-                    if (state.lc - total.lc > this.adapter.config.totalDebounceTime * 1000 || force) {
+                    if (state.lc - total.lc > (item.debounce * 1000) || force) {
                         // entprellen
                         const storageState = await this.adapter.getStateAsync(`${item.idChannelTarget}.${this.idStorageValue}`);
                         storageState.val = storageState.val as number;
@@ -219,18 +219,18 @@ export class Datapoints {
 
                         if (delta >= item.maxDelta && item.maxDelta !== 0) {
                             // wenn delta > maxDelta ist, wird ignoriert (kann z.B. bei springenden Scale Faktoren passieren)
-                            this.log.warn(`${logPrefix} delta ${mathjs.round(delta, 5)} is bigger than configured max. delta ${item.maxDelta} (val: ${state.val} oldVal: ${oldState.val} storageVal: ${storageState.val}) -> ignore on this run`);
+                            this.log.warn(`${logPrefix} delta ${mathjs.round(delta, 5)} is bigger than configured max. delta ${item.maxDelta} (val: ${state.val}, oldVal: ${oldState.val}, storageVal: ${storageState.val}) -> ignore on this run`);
                             return;
                         }
 
                         if (item.ignoreReset) {
                             if (delta <= 0) {
                                 // delta ist kleiner 0, d.h. Wert liegt unter altem Wert
-                                this.log.warn(`${logPrefix} delta ${mathjs.round(delta, 5)} is <= 0 and ignore reset is active (val: ${state.val} oldVal: ${oldState.val} storageVal: ${storageState.val}) -> ignore on this run`);
+                                this.log.warn(`${logPrefix} delta ${mathjs.round(delta, 5)} is <= 0 and ignore reset is active (val: ${state.val}, oldVal: ${oldState.val}, storageVal: ${storageState.val}) -> ignore on this run`);
                                 return;
                             } else if (oldState.val < storageState.val) {
                                 // solange oldVal nicht über altem gespeichertem Wert liegt wird ignoriert
-                                this.log.warn(`${logPrefix} oldVal ${oldState.val} < storageVal ${storageState.val} and ignore reset is active (val: ${state.val} oldVal: ${oldState.val} storageVal: ${storageState.val}) -> ignore on this run`);
+                                this.log.warn(`${logPrefix} oldVal ${oldState.val} < storageVal ${storageState.val} and ignore reset is active (val: ${state.val}, oldVal: ${oldState.val}, storageVal: ${storageState.val}) -> ignore on this run`);
                                 return;
                             }
                         }
@@ -244,7 +244,7 @@ export class Datapoints {
                                 const oldValInDatabase = await this.adapter.sql.getLastValue(item, logPrefix);
 
                                 if (oldValInDatabase && sum < oldValInDatabase) {
-                                    this.log.warn(`${logPrefix} new total value ${sum} is lower than value in database ${oldValInDatabase} (val: ${state.val} oldVal: ${oldState.val}, delta: ${mathjs.round(delta, 5)}) -> ignore on this run`);
+                                    this.log.warn(`${logPrefix} new total value ${sum} is lower than value in database ${oldValInDatabase} (val: ${state.val}, oldVal: ${oldState.val}, delta: ${mathjs.round(delta, 5)}) -> ignore on this run`);
                                     return;
                                 }
                             }
@@ -253,7 +253,7 @@ export class Datapoints {
                             this.adapter.itemDebug(item, `${logPrefix} set new total value: (old total: ${total.val} + delta: ${mathjs.round(delta, 5)}) = ${sum}`);
 
                         } else {
-                            this.log.warn(`${logPrefix} calculated new total value ${sum} is lower than oldVal ${oldState.val} (val: ${state.val} oldVal: ${oldState.val} storageVal: ${storageState.val}, delta: ${mathjs.round(delta, 5)}) -> got a reset`);
+                            this.log.warn(`${logPrefix} calculated new total value ${sum} is lower than oldVal ${oldState.val} (val: ${state.val}, oldVal: ${oldState.val}, storageVal: ${storageState.val}, delta: ${mathjs.round(delta, 5)}) -> got a reset`);
                         }
 
                         await this.adapter.setState(`${item.idChannelTarget}.${this.idStorageValue}`, sum, true);
@@ -261,14 +261,10 @@ export class Datapoints {
                         // Falls der Zähler innerhalb der Entprellzeit geändert wurde, aber danach keine neuen Werte schickt
                         // muss der Wert aktualisiert werden, da sonst der Wert nicht mehr stimmt (z.B. PV Produktion)
                         if (this.adapter.initComplete) {
-                            // if (this.timeoutList[id]) {
-                            //     this.adapter.clearTimeout(this.timeoutList[id]);
-                            // }
-
-                            this.timeoutList[id] = this.adapter.setTimeout(async () => {
+                            this.timeoutDebounceList[id] = this.adapter.setTimeout(async () => {
                                 await this.updateState(item, id, state, true);
                                 this.log.warn(`${logPrefix} no new value after debounce time -> recheck after timeout done`);
-                            }, 2 * (this.adapter.config.totalDebounceTime * 1000));
+                            }, 1.5 * item.debounce * 1000);
                         }
                     }
                 } else {
@@ -316,7 +312,7 @@ export class Datapoints {
                         this.adapter.clearTimeout(this.adapter.timeoutBoolean[id]);
                     }
 
-                    this.adapter.timeoutBoolean[idTarget] = this.adapter.setTimeout(async () => {
+                    this.adapter.timeoutBoolean[id] = this.adapter.setTimeout(async () => {
                         // we need a timeout, because sql need some time to write the new value in the database
                         const counter = (await this.adapter.sql.getCounter(item, Interval.ALL, `'${item.idChannelTarget}.${this.idTotal}'`));
                         if (counter) {
@@ -326,7 +322,7 @@ export class Datapoints {
                         this.adapter.clearTimeout(this.adapter.timeoutBoolean[id]);
                         delete this.adapter.timeoutBoolean[id];
 
-                    }, this.adapter.config.sqlWriteTimeout);
+                    }, (item.debounce || this.adapter.config.sqlWriteTimeout) * 1000);
                 }
 
                 await this.adapter.setState(idTarget, state);

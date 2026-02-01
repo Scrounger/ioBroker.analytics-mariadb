@@ -127,21 +127,6 @@
                     disabled: '!globalData.datapointsNumberList.find(dp => data.id.includes(dp.idChannelTarget)).enable || !globalData.datapointsBooleanList.find(dp => data.id.includes(dp.idChannelTarget)).enable',
                 },
                 {
-                    attr: 'debounce',
-                    type: 'number',
-                    title: 'De-bounce time',
-                    unit: 's',
-                    min: 0,
-                    max: 1800,
-                    step: 1,
-                    defaultFunc: {
-                        func: 'globalData.historyDefaultUpdateDeBounce',
-                        alsoDependsOn: ['historyDefaultUpdateDeBounce'],
-                    },
-                    width: 100,
-                    disabled: '!globalData.datapointsNumberList.find(dp => data.id.includes(dp.idChannelTarget)).enable || !globalData.datapointsBooleanList.find(dp => data.id.includes(dp.idChannelTarget)).enable',
-                },
-                {
                     attr: 'idContractType',
                     type: 'autocompleteSendTo',
                     title: 'Costs',

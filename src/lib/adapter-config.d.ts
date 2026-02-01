@@ -9,12 +9,11 @@ declare global {
     namespace ioBroker {
         interface AdapterConfig {
             sqlInstance: string;
-            totalDebounceTime: number;
+            datapointsDefaultUpdateDeBounce: number;
             historyDefaultDays: number;
             historyDefaultWeeks: number;
             historyDefaultMonths: number;
             historyDefaultYears: number;
-            historyDefaultUpdateDeBounce: number;
             datapointsNumberList: AdapterConfigTypes.DatapointsItem[];
             datapointsBooleanList: AdapterConfigTypes.DatapointsItem[];
             datapointsSqlPresetsList: AdapterConfigTypes.DatapointsSqlPresetsItem[];
@@ -38,6 +37,7 @@ declare global {
                 idPreset: string;
                 maxDelta?: number;
                 ignoreReset?: boolean;
+                debounce: number;
                 sqlWhereAppend?: string;
                 debug: boolean;
                 type?: ioBroker.CommonType;        // not used in AdapterConfig
@@ -63,7 +63,6 @@ declare global {
                 week: number;
                 month: number;
                 year: number;
-                debounce: number;
                 idContractType: string;
                 costSumOptions: string[];
                 debug: boolean;

@@ -139,10 +139,9 @@ class AnalyticsMariadb extends utils.Adapter {
                 this.scheduleSaveValueAfterDayChange.cancel();
             }
 
-            for (const item in this.datapoints.timeoutList) {
-                this.clearTimeout(this.datapoints.timeoutList[item]);
+            for (const item in this.datapoints.timeoutDebounceList) {
+                this.clearTimeout(this.datapoints.timeoutDebounceList[item]);
             }
-
 
             callback();
         } catch (error) {

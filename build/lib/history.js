@@ -210,11 +210,7 @@ export class History {
                 for (const interval of Object.keys(Interval)) {
                     if (interval !== Interval.ALL) {
                         const id = `${helper.getIdWithoutLastPart(item.id)}.${this.idChannelHistory}.${interval}`;
-                        const lastState = await this.adapter.getStateAsync(id);
-                        const debounce = moment(currentState.lc).diff(moment(lastState.lc), 'second');
-                        if (isAdapterStart || debounce >= (item.debounce || this.adapter.config.historyDefaultUpdateDeBounce)) {
-                            await this.updateHistory(id, item, datapointItem, interval, null, currentState);
-                        }
+                        await this.updateHistory(id, item, datapointItem, interval, null, currentState);
                     }
                 }
                 if (isAdapterStart) {

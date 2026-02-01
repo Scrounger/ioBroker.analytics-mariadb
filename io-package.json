@@ -89,7 +89,7 @@
     },
     "native": {
         "sqlInstance": "",
-        "totalDebounceTime": 5,
+        "datapointsDefaultUpdateDeBounce": 5,
         "historyDefaultDays": 8,
         "historyDefaultWeeks": 4,
         "historyDefaultMonths": 14,

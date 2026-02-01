@@ -58,6 +58,7 @@
                     validatorNoSaveOnError: true,
                     validatorErrorText: 'mandatory input',
                     customFilter: { common: { type: ['boolean'] } },
+                    disabled: '!data.enable',
                 },
                 {
                     attr: 'idChannelTarget',
@@ -69,6 +70,7 @@
                     validator: '!!data.idChannelTarget',
                     validatorNoSaveOnError: true,
                     validatorErrorText: 'mandatory input',
+                    disabled: '!data.enable',
                 },
                 {
                     attr: 'name',
@@ -77,6 +79,7 @@
                     sort: true,
                     filter: true,
                     default: '',
+                    disabled: '!data.enable',
                 },
                 {
                     attr: 'idPreset',
@@ -91,11 +94,28 @@
                     validatorNoSaveOnError: true,
                     validatorErrorText: 'mandatory input',
                     width: 280,
+                    disabled: '!data.enable',
+                },
+                {
+                    attr: 'debounce',
+                    type: 'number',
+                    title: 'De-bounce time',
+                    unit: 's',
+                    min: 0,
+                    max: 60,
+                    step: 1,
+                    defaultFunc: {
+                        func: 'globalData.datapointsDefaultUpdateDeBounce',
+                        alsoDependsOn: ['datapointsDefaultUpdateDeBounce'],
+                    },
+                    width: 100,
+                    disabled: '!data.enable',
                 },
                 {
                     attr: 'sqlWhereAppend',
                     type: 'text',
                     title: 'SQL \"WHERE\" append',
+                    disabled: '!data.enable',
                 },
                 {
                     attr: 'debug',
@@ -103,6 +123,7 @@
                     title: 'debug',
                     default: false,
                     width: 0,
+                    disabled: '!data.enable',
                 },
             ],
         },
