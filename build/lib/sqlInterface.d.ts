@@ -38,6 +38,7 @@ export declare class SqlInterface {
      */
     getTotal2(item: ioBroker.AdapterConfigTypes.HistoryItem, interval: string, timestampStart: number, timestampEnd: number, logPrefixAppend: string): Promise<SqlTotal | null>;
     getTotal(item: ioBroker.AdapterConfigTypes.HistoryItem, datapointItem: ioBroker.AdapterConfigTypes.DatapointsItem, interval: string, timestampStart: number, timestampEnd: number, logPrefixAppend: string): Promise<SqlTotal | null>;
+    getLastValue(item: ioBroker.AdapterConfigTypes.DatapointsItem, logPrefixAppend: string): Promise<number | null>;
     storeState(item: ioBroker.AdapterConfigTypes.DatapointsItem, state: ioBroker.State): Promise<any>;
     private retrieve;
     private metricsHandler;

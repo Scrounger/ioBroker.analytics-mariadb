@@ -119,6 +119,8 @@ declare global {
             history: History;
             cost: Cost;
 
+            initComplete: boolean;
+
             sourceToDatapoint: Record<string, ioBroker.AdapterConfigTypes.DatapointsItem>;
             timeoutBoolean: Record<string, ioBroker.Timeout>;
 

@@ -40,7 +40,7 @@ class AnalyticsMariadb extends utils.Adapter {
     scheduleSaveValueBeforeDayChange: Job;
     scheduleSaveValueAfterDayChange: Job;
 
-    initComplete: boolean = false;
+    public initComplete: boolean = false;
 
     public constructor(options: Partial<utils.AdapterOptions> = {}) {
         super({
@@ -138,6 +138,11 @@ class AnalyticsMariadb extends utils.Adapter {
             if (this.scheduleSaveValueAfterDayChange) {
                 this.scheduleSaveValueAfterDayChange.cancel();
             }
+
+            for (const item in this.datapoints.timeoutList) {
+                this.clearTimeout(this.datapoints.timeoutList[item]);
+            }
+
 
             callback();
         } catch (error) {

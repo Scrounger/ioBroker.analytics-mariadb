@@ -50,6 +50,7 @@ export class SqlInterface {
                     SELECT id
                     FROM ${this.dbName}.datapoints
                     WHERE name = '${this.adapter.namespace}.${item.idSql}'
+                    LIMIT 1
                 )
                 SELECT
                     DATE_FORMAT(Min(FROM_UNIXTIME(ts / 1000)),'%d.%m.%Y - %H:%i') AS 'start',
@@ -102,9 +103,10 @@ export class SqlInterface {
         try {
             const query = `
                 WITH dp AS (
-                SELECT id
-                FROM ${this.dbName}.datapoints
-                WHERE name = '${this.adapter.namespace}.${item.id}'
+                    SELECT id
+                    FROM ${this.dbName}.datapoints
+                    WHERE name = '${this.adapter.namespace}.${item.id}'
+                    LIMIT 1
                 )
                 SELECT
                     DATE_FORMAT(FROM_UNIXTIME(result.start / 1000), '%d.%m.%Y - %H:%i') as 'start',
@@ -200,6 +202,47 @@ export class SqlInterface {
                         this.log.error(`${logPrefix} unexpected number of data rows: ${data.length} (data: ${JSON.stringify(data)})`);
                     }
                     return null;
+                }
+            }
+        }
+        catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
+        return null;
+    }
+    async getLastValue(item, logPrefixAppend) {
+        const logPrefix = `[${this.logPrefix}.getLastValue] ${logPrefixAppend}:`;
+        try {
+            const query = `
+                WITH dp AS (
+                    SELECT id
+                    FROM ${this.dbName}.datapoints
+                    WHERE name = '${this.adapter.namespace}.${item.idSql}' 
+                    LIMIT 1
+                )
+                Select 
+                    *
+                FROM 
+                    ${this.dbName}.ts_number
+                WHERE 
+                    id = (SELECT id FROM dp)
+                ORDER BY ts DESC
+                LIMIT 1
+            `;
+            this.adapter.itemDebug(item, `${logPrefix} query: ${query}`);
+            const data = await this.retrieve(QueryType.QUERY, query, item, logPrefixAppend);
+            if (data) {
+                // can only have one row as result
+                if (data.length === 1) {
+                    return data[0].val;
+                }
+                else {
+                    if (data.length === 0) {
+                        this.log.warn(`${logPrefix} no data available. You can use a sql append role to supress this warning.`);
+                    }
+                    else {
+                        this.log.error(`${logPrefix} unexpected number of data rows: ${data.length} (data: ${JSON.stringify(data)})`);
+                    }
                 }
             }
         }
