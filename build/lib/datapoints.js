@@ -105,8 +105,8 @@ export class Datapoints {
                 await this.adapter.subscribeObjectsAsync(`${idChannel}.${this.idOldValue}`);
                 if (isAdapterStart) {
                     // beim Start des Adapter's die Werte aktualisieren
-                    await this.updateState(item, item.idSource, sourceState, isAdapterStart);
-                    // old value nach verarbeiteter Änderung setzen
+                    await this.updateStateNumber(item, item.idSource, sourceState, isAdapterStart);
+                    // old value nach verarbeiteter Änderung setzen, hier da fkt return hat
                     await this.adapter.setStateChangedAsync(`${item.idChannelTarget}.${this.idOldValue}`, sourceState);
                 }
             }
@@ -135,62 +135,55 @@ export class Datapoints {
                 await this.adapter.subscribeStatesAsync(`${idChannel}.${this.idTotal}`); // react on total changes is needed, because it's changed from the adapter
                 await this.adapter.subscribeObjectsAsync(`${idChannel}.${this.idTotal}`);
                 await this.adapter.subscribeObjectsAsync(`${idChannel}.${this.idBooleanValue}`);
-                if (isAdapterStart) {
-                    // beim Start des Adapter's die Werte aktualisieren
-                    await this.adapter.setStateChangedAsync(`${item.idChannelTarget}.${this.idBooleanValue}`, sourceState);
-                    const counter = await this.adapter.sql.getCounter(item, Interval.ALL, `[${item.idChannelTarget}] [${Interval.ALL}]`);
-                    if (counter) {
-                        await this.adapter.setStateChangedAsync(`${item.idChannelTarget}.${this.idTotal}`, counter.count, true);
-                    }
-                }
+                await this.updateStateBoolean(item, `${idChannel}.${this.idBooleanValue}`, sourceState, isAdapterStart);
             }
         }
         catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
     }
-    async updateState(item, id, state, force = false) {
-        const logPrefix = `[${this.logPrefix}.updateState] - '${id}':`;
+    async updateStateNumber(item, idSource, sourceState, force = false) {
+        const logPrefix = `[${this.logPrefix}.updateStateNumber] - '${idSource}':`;
         try {
             if (item.enable) {
                 const total = await this.adapter.getStateAsync(`${item.idChannelTarget}.${this.idTotal}`);
                 const oldState = await this.adapter.getStateAsync(`${item.idChannelTarget}.${this.idOldValue}`);
-                if (state.val !== null || oldState.val !== null) {
+                if (sourceState.val !== null || oldState.val !== null) {
                     total.val = total.val;
-                    state.val = state.val;
+                    sourceState.val = sourceState.val;
                     oldState.val = oldState.val;
-                    if (this.timeoutDebounceList[id]) {
-                        this.adapter.clearTimeout(this.timeoutDebounceList[id]);
-                        delete this.timeoutDebounceList[id];
+                    if (this.timeoutDebounceList[idSource]) {
+                        this.adapter.clearTimeout(this.timeoutDebounceList[idSource]);
+                        delete this.timeoutDebounceList[idSource];
                     }
-                    if (state.lc - total.lc > (item.debounce * 1000) || force) {
+                    if (sourceState.lc - total.lc > (item.debounce * 1000) || force) {
                         // entprellen
                         const storageState = await this.adapter.getStateAsync(`${item.idChannelTarget}.${this.idStorageValue}`);
                         storageState.val = storageState.val;
                         let delta = 0;
                         if ((oldState.val > storageState.val)) {
                             // Rückfalllösung, wenn z.B. Skript oder LXC beendet wurde / crasht
-                            delta = (state.val - storageState.val);
-                            this.adapter.itemDebug(item, `${logPrefix} calculated delta from storage: (val: ${state.val} - storageVal: ${storageState.val}) = ${mathjs.round(delta, 5)}`);
+                            delta = (sourceState.val - storageState.val);
+                            this.adapter.itemDebug(item, `${logPrefix} calculated delta from storage: (val: ${sourceState.val} - storageVal: ${storageState.val}) = ${mathjs.round(delta, 5)}`);
                         }
                         else {
-                            delta = (state.val - oldState.val);
-                            this.adapter.itemDebug(item, `${logPrefix} calculated delta: (val: ${state.val} - oldVal: ${oldState.val}) = ${mathjs.round(delta, 5)}`);
+                            delta = (sourceState.val - oldState.val);
+                            this.adapter.itemDebug(item, `${logPrefix} calculated delta: (val: ${sourceState.val} - oldVal: ${oldState.val}) = ${mathjs.round(delta, 5)}`);
                         }
                         if (delta >= item.maxDelta && item.maxDelta !== 0) {
                             // wenn delta > maxDelta ist, wird ignoriert (kann z.B. bei springenden Scale Faktoren passieren)
-                            this.log.warn(`${logPrefix} delta ${mathjs.round(delta, 5)} is bigger than configured max. delta ${item.maxDelta} (val: ${state.val}, oldVal: ${oldState.val}, storageVal: ${storageState.val}) -> ignore on this run`);
+                            this.log.warn(`${logPrefix} delta ${mathjs.round(delta, 5)} is bigger than configured max. delta ${item.maxDelta} (val: ${sourceState.val}, oldVal: ${oldState.val}, storageVal: ${storageState.val}) -> ignore on this run`);
                             return;
                         }
                         if (item.ignoreReset) {
                             if (delta <= 0) {
                                 // delta ist kleiner 0, d.h. Wert liegt unter altem Wert
-                                this.log.warn(`${logPrefix} delta ${mathjs.round(delta, 5)} is <= 0 and ignore reset is active (val: ${state.val}, oldVal: ${oldState.val}, storageVal: ${storageState.val}) -> ignore on this run`);
+                                this.log.warn(`${logPrefix} delta ${mathjs.round(delta, 5)} is <= 0 and ignore reset is active (val: ${sourceState.val}, oldVal: ${oldState.val}, storageVal: ${storageState.val}) -> ignore on this run`);
                                 return;
                             }
                             else if (oldState.val < storageState.val) {
                                 // solange oldVal nicht über altem gespeichertem Wert liegt wird ignoriert
-                                this.log.warn(`${logPrefix} oldVal ${oldState.val} < storageVal ${storageState.val} and ignore reset is active (val: ${state.val}, oldVal: ${oldState.val}, storageVal: ${storageState.val}) -> ignore on this run`);
+                                this.log.warn(`${logPrefix} oldVal ${oldState.val} < storageVal ${storageState.val} and ignore reset is active (val: ${sourceState.val}, oldVal: ${oldState.val}, storageVal: ${storageState.val}) -> ignore on this run`);
                                 return;
                             }
                         }
@@ -200,7 +193,7 @@ export class Datapoints {
                                 // double check für ignore reset - neuer Gesamtwert darf nicht unter dem in der DB liegen
                                 const oldValInDatabase = await this.adapter.sql.getLastValue(item, logPrefix);
                                 if (oldValInDatabase && sum < oldValInDatabase) {
-                                    this.log.warn(`${logPrefix} new total value ${sum} is lower than value in database ${oldValInDatabase} (val: ${state.val}, oldVal: ${oldState.val}, delta: ${mathjs.round(delta, 5)}) -> ignore on this run`);
+                                    this.log.warn(`${logPrefix} new total value ${sum} is lower than value in database ${oldValInDatabase} (val: ${sourceState.val}, oldVal: ${oldState.val}, delta: ${mathjs.round(delta, 5)}) -> ignore on this run`);
                                     return;
                                 }
                             }
@@ -208,7 +201,7 @@ export class Datapoints {
                             this.adapter.itemDebug(item, `${logPrefix} set new total value: (old total: ${total.val} + delta: ${mathjs.round(delta, 5)}) = ${sum}`);
                         }
                         else {
-                            this.log.warn(`${logPrefix} calculated new total value ${sum} is lower than oldVal ${oldState.val} (val: ${state.val}, oldVal: ${oldState.val}, storageVal: ${storageState.val}, delta: ${mathjs.round(delta, 5)}) -> got a reset`);
+                            this.log.warn(`${logPrefix} calculated new total value ${sum} is lower than oldVal ${oldState.val} (val: ${sourceState.val}, oldVal: ${oldState.val}, storageVal: ${storageState.val}, delta: ${mathjs.round(delta, 5)}) -> got a reset`);
                         }
                         await this.adapter.setState(`${item.idChannelTarget}.${this.idStorageValue}`, sum, true);
                     }
@@ -216,16 +209,50 @@ export class Datapoints {
                         // Falls der Zähler innerhalb der Entprellzeit geändert wurde, aber danach keine neuen Werte schickt
                         // muss der Wert aktualisiert werden, da sonst der Wert nicht mehr stimmt (z.B. PV Produktion)
                         if (this.adapter.initComplete) {
-                            this.timeoutDebounceList[id] = this.adapter.setTimeout(async () => {
-                                await this.updateState(item, id, state, true);
+                            this.timeoutDebounceList[idSource] = this.adapter.setTimeout(async () => {
+                                await this.updateStateNumber(item, idSource, sourceState, true);
                                 this.log.warn(`${logPrefix} no new value after debounce time -> recheck after timeout done`);
                             }, 1.5 * item.debounce * 1000);
                         }
                     }
                 }
                 else {
-                    console.warn(`${logPrefix} val / oldVal is null (val: ${state.val} oldVal: ${total.val})' -> ignore values on this run`);
+                    console.warn(`${logPrefix} val / oldVal is null (val: ${sourceState.val} oldVal: ${total.val})' -> ignore values on this run`);
                 }
+            }
+        }
+        catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
+    }
+    async updateStateBoolean(item, idSource, sourceState, force = false) {
+        const logPrefix = `[${this.logPrefix}.updateStateBoolean] - '${idSource}':`;
+        try {
+            const idTarget = `${item.idChannelTarget}.${this.idBooleanValue}`;
+            if (item.enable) {
+                const targetState = await this.adapter.getStateAsync(idTarget);
+                if (sourceState.val !== targetState.val || force) {
+                    // nur ausführen, wenn sich der Wert / ack auch geändert hat
+                    if (this.adapter.timeoutBoolean[idSource]) {
+                        this.adapter.clearTimeout(this.adapter.timeoutBoolean[idSource]);
+                    }
+                    this.adapter.timeoutBoolean[idSource] = this.adapter.setTimeout(async () => {
+                        // we need a timeout, because sql need some time to write the new value in the database
+                        const counter = (await this.adapter.sql.getCounter(item, Interval.ALL, `'${item.idChannelTarget}.${this.idTotal}'`));
+                        if (counter) {
+                            await this.adapter.setStateChangedAsync(`${item.idChannelTarget}.${this.idTotal}`, { val: counter.count, lc: sourceState.lc, ack: true });
+                        }
+                        this.adapter.clearTimeout(this.adapter.timeoutBoolean[idSource]);
+                        delete this.adapter.timeoutBoolean[idSource];
+                    }, (item.debounce || this.adapter.config.sqlWriteTimeout) * 1000);
+                }
+            }
+            if (force) {
+                // prevent sql adapter errors caused by duplicate entries
+                await this.adapter.setStateChangedAsync(idTarget, sourceState);
+            }
+            else {
+                await this.adapter.setState(idTarget, sourceState);
             }
         }
         catch (error) {
@@ -248,28 +275,30 @@ export class Datapoints {
         const logPrefix = `[${this.logPrefix}.onStateChange] - '${id}':`;
         try {
             if (item.type === 'number') {
-                await this.updateState(item, id, state);
+                await this.updateStateNumber(item, id, state);
+                // old value nach verarbeiteter Änderung setzen, hier da fkt return hat
                 await this.adapter.setState(`${item.idChannelTarget}.${this.idOldValue}`, state);
             }
             else if (item.type === 'boolean') {
-                const idTarget = `${item.idChannelTarget}.${this.idBooleanValue}`;
-                const targetState = await this.adapter.getStateAsync(idTarget);
-                if (state.val !== targetState.val) {
-                    // nur ausführen, wenn sich der Wert / ack auch geändert hat
-                    if (this.adapter.timeoutBoolean[id]) {
-                        this.adapter.clearTimeout(this.adapter.timeoutBoolean[id]);
-                    }
-                    this.adapter.timeoutBoolean[id] = this.adapter.setTimeout(async () => {
-                        // we need a timeout, because sql need some time to write the new value in the database
-                        const counter = (await this.adapter.sql.getCounter(item, Interval.ALL, `'${item.idChannelTarget}.${this.idTotal}'`));
-                        if (counter) {
-                            await this.adapter.setStateChangedAsync(`${item.idChannelTarget}.${this.idTotal}`, { val: counter.count, lc: state.lc, ack: true });
-                        }
-                        this.adapter.clearTimeout(this.adapter.timeoutBoolean[id]);
-                        delete this.adapter.timeoutBoolean[id];
-                    }, (item.debounce || this.adapter.config.sqlWriteTimeout) * 1000);
-                }
-                await this.adapter.setState(idTarget, state);
+                await this.updateStateBoolean(item, id, state);
+                // const idTarget = `${item.idChannelTarget}.${this.idBooleanValue}`
+                // const targetState = await this.adapter.getStateAsync(idTarget);
+                // if (state.val !== targetState.val) {
+                //     // nur ausführen, wenn sich der Wert / ack auch geändert hat
+                //     if (this.adapter.timeoutBoolean[id]) {
+                //         this.adapter.clearTimeout(this.adapter.timeoutBoolean[id]);
+                //     }
+                //     this.adapter.timeoutBoolean[id] = this.adapter.setTimeout(async () => {
+                //         // we need a timeout, because sql need some time to write the new value in the database
+                //         const counter = (await this.adapter.sql.getCounter(item, Interval.ALL, `'${item.idChannelTarget}.${this.idTotal}'`));
+                //         if (counter) {
+                //             await this.adapter.setStateChangedAsync(`${item.idChannelTarget}.${this.idTotal}`, { val: counter.count, lc: state.lc, ack: true });
+                //         }
+                //         this.adapter.clearTimeout(this.adapter.timeoutBoolean[id]);
+                //         delete this.adapter.timeoutBoolean[id];
+                //     }, (item.debounce || this.adapter.config.sqlWriteTimeout) * 1000);
+                // }
+                // await this.adapter.setState(idTarget, state);
             }
         }
         catch (error) {
