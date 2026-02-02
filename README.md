@@ -1,4 +1,5 @@
 ![Logo](admin/analytics-mariadb.png)
+
 # ioBroker.analytics-mariadb
 
 [![NPM version](https://img.shields.io/npm/v/iobroker.analytics-mariadb.svg)](https://www.npmjs.com/package/iobroker.analytics-mariadb)
@@ -14,128 +15,115 @@
 
 Analytics adapter for processing data stored in MariaDB
 
-## Developer manual
-This section is intended for the developer. It can be deleted later.
+## Derzeit unterstützte Version von MariaDB
 
-### DISCLAIMER
+Version **10.11.x**
 
-Please make sure that you consider copyrights and trademarks when you use names or logos of a company and add a disclaimer to your README.
-You can check other adapters for examples or ask in the developer community. Using a name or logo of a company without permission may cause legal problems for you.
+## Adapter Konfiguration
 
-### Getting started
+### Allgemein
 
-You are almost done, only a few steps left:
-1. Create a new repository on GitHub with the name `ioBroker.analytics-mariadb`
-1. Initialize the current folder as a new git repository:  
-    ```bash
-    git init -b main
-    git add .
-    git commit -m "Initial commit"
-    ```
-1. Link your local repository with the one on GitHub:  
-    ```bash
-    git remote add origin https://github.com/Scrounger/ioBroker.analytics-mariadb
-    ```
+![Logo](doc/de/tab_general.jpg)
 
-1. Push all files to the GitHub repo:  
-    ```bash
-    git push origin main
-    ```
-1. Add a new secret under https://github.com/Scrounger/ioBroker.analytics-mariadb/settings/secrets. It must be named `AUTO_MERGE_TOKEN` and contain a personal access token with push access to the repository, e.g. yours. You can create a new token under https://github.com/settings/tokens.
+### Datenpunkte (Zahl)
 
-1. Head over to [src/main.ts](src/main.ts) and start programming!
+Hier werden Datenpunkte (vom Typ `number`) von Sensoren die euren Verbrauch messen (z.B. Stromzähler, Wasserzähler, Wärmemengenzähler etc.) hinterlegt, aus denen der Adapter den kumulierten Gesamtverbrauch aufzeichnet und in der Datenbank speichert
 
-### Best Practices
-We've collected some [best practices](https://github.com/ioBroker/ioBroker.repositories#development-and-coding-best-practices) regarding ioBroker development and coding in general. If you're new to ioBroker or Node.js, you should
-check them out. If you're already experienced, you should also take a look at them - you might learn something new :)
+![Logo](doc/de/tab_datapoints_number.jpg)
 
-### State Roles
-When creating state objects, it is important to use the correct role for the state. The role defines how the state should be interpreted by visualizations and other adapters. For a list of available roles and their meanings, please refer to the [state roles documentation](https://www.iobroker.net/#en/documentation/dev/stateroles.md).
+| **Spalte**               | **Beschreibung**                                                                                                                                                                                                                                          |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Quell-ID**             | Datenpunkt zur Verbrauchsmessung vom Typ `number`.                                                                                                                                                                                                        |
+| **Kanal Ziel-ID**        | Kanal-ID, unter der alle Daten des Adapters gespeichert werden (z. B. `analytics-mariadb.X.XXX`).                                                                                                                                                         |
+| **Name**                 | Ein frei wählbarer Name bzw. eine Bezeichnung für den Datenpunkt.                                                                                                                                                                                         |
+| **SQL-Voreinstellung**   | Zu verwendende SQL-Voreinstellungen. Details dazu finden sich unter [SQL-Voreinstellungen für Datenpunkte (Experte)](#SQL-Voreinstellungen-für-Datenpunkte-%28Experte%29).                                                                                |
+| **max. Delta**           | Maximales erlaubtes Delta zwischen dem alten und dem neuen Wert. Überschreitet der Wert dieses Delta, wird er ignoriert. Diese Einstellung hilft, kurzfristige Schwankungen (z. B. durch Skalierungsfaktoren) abzufangen.                                 |
+| **Resets ignorieren**    | Ein Reset des Zählers wird ignoriert, wenn der neue Wert niedriger ist als der alte. Diese Einstellung verhindert, dass kurzzeitige Sprünge (z. B. durch Skalierungsfaktoren oder Verbindungsabbrüche bei Sensoren) fälschlicherweise registriert werden. |
+| **Entprellzeit**         | Wartezeit, bevor ein neuer Wert gespeichert wird. Wenn viele Zähler in kurzen Intervallen (z. B. alle 2–3 Sekunden) Werte senden, empfiehlt es sich, eine Entprellzeit einzurichten, um die Systemressourcen zu schonen.                                  |
+| **SQL „WHERE“ anhängen** | SQL-„WHERE“-Bedingung an Datenbankabfragen anhängen (nur verwenden, wenn man sich mit SQL auskennt!).                                                                                                                                                     |
+| **Debug**                | Aktiviert zusätzliche Debug-Logs für diesen Datenpunkt. Der Adapter muss hierfür auf das Log-Level „Debug“ gesetzt sein.                                                                                                                                  |
 
-**Important:** Do not invent your own custom role names. If you need a role that is not part of the official list, please contact the ioBroker developer community for guidance and discussion about adding new roles.
+### Datenpunkte (Logikwert)
 
-### Scripts in `package.json`
-Several npm scripts are predefined for your convenience. You can run them using `npm run <scriptname>`
-| Script name | Description |
-|-------------|-------------|
-| `build` | Compile the TypeScript sources. |
-| `watch` | Compile the TypeScript sources and watch for changes. |
-| `test:ts` | Executes the tests you defined in `*.test.ts` files. |
-| `test:package` | Ensures your `package.json` and `io-package.json` are valid. |
-| `test:integration` | Tests the adapter startup with an actual instance of ioBroker. |
-| `test` | Performs a minimal test run on package files and your tests. |
-| `check` | Performs a type-check on your code (without compiling anything). |
-| `lint` | Runs `ESLint` to check your code for formatting errors and potential bugs. |
-| `translate` | Translates texts in your adapter to all required languages, see [`@iobroker/adapter-dev`](https://github.com/ioBroker/adapter-dev#manage-translations) for more details. |
-| `release` | Creates a new release, see [`@alcalzone/release-script`](https://github.com/AlCalzone/release-script#usage) for more details. |
+Hier werden Datenpunkte (vom Typ `boolean`) hinterlegt, aus denen der Adapter die steigenden Flanken zählt (Wert geht von false auf true), als Summe zur Verfügung stellt und in der Datenbank speichert
 
-### Configuring the compilation
-The adapter template uses [esbuild](https://esbuild.github.io/) to compile TypeScript and/or React code. You can configure many compilation settings 
-either in `tsconfig.json` or by changing options for the build tasks. These options are described in detail in the
-[`@iobroker/adapter-dev` documentation](https://github.com/ioBroker/adapter-dev#compile-adapter-files).
+![Logo](doc/de/tab_datapoints_boolean.jpg)
 
-### Writing tests
-When done right, testing code is invaluable, because it gives you the 
-confidence to change your code while knowing exactly if and when 
-something breaks. A good read on the topic of test-driven development 
-is https://hackernoon.com/introduction-to-test-driven-development-tdd-61a13bc92d92. 
-Although writing tests before the code might seem strange at first, but it has very 
-clear upsides.
+| **Spalte**               | **Beschreibung**                                                                                                                                                                                                         |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Quell-ID**             | Datenpunkt vom Typ `boolean`, der gezählt werden soll.                                                                                                                                                                   |
+| **Kanal Ziel-ID**        | Kanal-ID, unter der alle Daten des Adapters gespeichert werden (z. B. `analytics-mariadb.X.XXX`).                                                                                                                        |
+| **Name**                 | Ein frei wählbarer Name bzw. eine Bezeichnung für den Datenpunkt.                                                                                                                                                        |
+| **SQL-Voreinstellung**   | Zu verwendende SQL-Voreinstellungen. Details dazu finden sich unter [SQL-Voreinstellungen für Datenpunkte (Experte)](#SQL-Voreinstellungen-für-Datenpunkte-%28Experte%29).                                               |
+| **Entprellzeit**         | Wartezeit, bevor ein neuer Wert gespeichert wird. Wenn viele Zähler in kurzen Intervallen (z. B. alle 2–3 Sekunden) Werte senden, empfiehlt es sich, eine Entprellzeit einzurichten, um die Systemressourcen zu schonen. |
+| **SQL „WHERE“ anhängen** | SQL-„WHERE“-Bedingung an Datenbankabfragen anhängen (nur verwenden, wenn man sich mit SQL auskennt!).                                                                                                                    |
+| **Debug**                | Aktiviert zusätzliche Debug-Logs für diesen Datenpunkt. Der Adapter muss hierfür auf das Log-Level „Debug“ gesetzt sein.                                                                                                 |
 
-The template provides you with basic tests for the adapter startup and package files.
-It is recommended that you add your own tests into the mix.
+### Historie
 
-### Publishing the adapter
-Using GitHub Actions, you can enable automatic releases on npm whenever you push a new git tag that matches the form 
-`v<major>.<minor>.<patch>`. We **strongly recommend** that you do. The necessary steps are described in `.github/workflows/test-and-release.yml`.
+![Logo](doc/de/tab_history.jpg)
 
-Since you installed the release script, you can create a new
-release simply by calling:
-```bash
-npm run release
-```
-Additional command line options for the release script are explained in the
-[release-script documentation](https://github.com/AlCalzone/release-script#command-line).
+| Spalte          | Beschreibung |
+| --------------- | ------------ |
+| Datenpunkte     |              |
+| Dezimal-stellen |              |
+| T.              |              |
+| W.              |              |
+| M.              |              |
+| J.              |              |
+| Kosten          |              |
+| Gesamtkosten    |              |
+| Debug           |              |
 
-To get your adapter released in ioBroker, please refer to the documentation 
-of [ioBroker.repositories](https://github.com/ioBroker/ioBroker.repositories#requirements-for-adapter-to-get-added-to-the-latest-repository).
+### Historie berechnet
 
-### Test the adapter manually on a local ioBroker installation
-In order to install the adapter locally without publishing, the following steps are recommended:
-1. Create a GitHub repository for your adapter if you haven't already
-1. Push your code to the GitHub repository
-1. Use the ioBroker Admin interface or command line to install the adapter from GitHub:
-    * **Via Admin UI**: Go to the "Adapters" tab, click on "Custom Install" (GitHub icon), and enter your repository URL:
-        ```
-        https://github.com/Scrounger/ioBroker.analytics-mariadb
-        ```
-        You can also install from a specific branch by adding `#branchname` at the end:
-        ```
-        https://github.com/Scrounger/ioBroker.analytics-mariadb#dev
-        ```
-    * **Via Command Line**: Install using the `iob` command:
-        ```bash
-        iob url https://github.com/Scrounger/ioBroker.analytics-mariadb
-        ```
-        Or from a specific branch:
-        ```bash
-        iob url https://github.com/Scrounger/ioBroker.analytics-mariadb#dev
-        ```
+![Logo](doc/de/tab_history_calculation.jpg)
 
-For later updates:
-1. Push your changes to GitHub
-1. Repeat the installation steps above (via Admin UI or `iob url` command) to update the adapter
+| Spalte            | Beschreibung |
+| ----------------- | ------------ |
+| Datenpunkte       |              |
+| Kanal-ID          |              |
+| Berechnungsformel |              |
+| Einheit           |              |
+| Dezimal-stellen   |              |
+| T.                |              |
+| W.                |              |
+| M.                |              |
+| J.                |              |
+| Kosten            |              |
+| Gesamtkosten      |              |
+| Debug             |              |
+
+### Kosten
+
+### Abrechnungszeitraum
+
+### SQL-Voreinstellungen für Datenpunkte (Experte)
+
+![Logo](doc/de/tab_datapoints_sql_presets.jpg)
+
+| Spalte                                        | Beschreibung |
+| --------------------------------------------- | ------------ |
+| Name                                          |              |
+| Typ                                           |              |
+| Entprell-zeit                                 |              |
+| trotzdem gleiche Werte aufzeichnen (Sekunden) |              |
+| Minimale Differenz zum letzten Wert           |              |
+| Aufbewahrungsdauer                            |              |
 
 ## Changelog
+
 <!--
     Placeholder for the next version (at the beginning of the line):
     ### **WORK IN PROGRESS**
 -->
 
 ### **WORK IN PROGRESS**
-* (Scrounger) initial release
+
+- (Scrounger) initial release
 
 ## License
+
 MIT License
 
 Copyright (c) 2026 Scrounger <scrounger@gmx.net>
