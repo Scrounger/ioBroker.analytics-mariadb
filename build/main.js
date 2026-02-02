@@ -12,7 +12,7 @@ import { scheduleJob } from 'node-schedule';
 import { SqlInterface } from './lib/sqlInterface.js';
 import { History } from './lib/history.js';
 import { Datapoints } from './lib/datapoints.js';
-import { Cost } from './lib/cost.js';
+import { Costs } from './lib/cost.js';
 import { Billing } from './lib/billing.js';
 class AnalyticsMariadb extends utils.Adapter {
     sourceToDatapoint = {};
@@ -54,7 +54,7 @@ class AnalyticsMariadb extends utils.Adapter {
                 this.sql = new SqlInterface(this);
                 this.datapoints = new Datapoints(this, utils);
                 await this.datapoints.init();
-                this.cost = new Cost(this);
+                this.cost = new Costs(this);
                 await this.cost.init();
                 this.history = new History(this, utils);
                 await this.history.init();
@@ -71,11 +71,11 @@ class AnalyticsMariadb extends utils.Adapter {
                 // Beim Tageswechsel, Wert kurz vor und nach 0:00 in Datenbank schreiben, damit der Verbrauch zwischen Tageswechsel korrekt erfasst wird
                 this.scheduleSaveValueBeforeDayChange = scheduleJob('59 59 23 * * *', async () => {
                     this.log.debug(`${logPrefix} cron job to to save values in database before day change started...`);
-                    await this.datapoints.writeValuesAtDayChangeToDatabase();
+                    await this.datapoints.saveStatesToDatabase();
                 });
                 this.scheduleSaveValueAfterDayChange = scheduleJob('1 0 0 * * *', async () => {
                     this.log.debug(`${logPrefix} cron job to to save values in database after day change started...`);
-                    await this.datapoints.writeValuesAtDayChangeToDatabase();
+                    await this.datapoints.saveStatesToDatabase();
                 });
                 // const item = { ... this.config.historyList[0] };
                 // item.debug = true;
@@ -166,19 +166,21 @@ class AnalyticsMariadb extends utils.Adapter {
                         }
                     }
                     else if (state.from.includes(this.namespace)) {
-                        // adapter states changed
-                        const targetId = id.replace(`${this.namespace}.`, '');
-                        // Update History and costs if enabled
-                        const historyItem = this.history.getByIdTarget(targetId || targetId.replace(`.${this.datapoints.idTotal}`, `.${this.datapoints.idBooleanValue}`));
-                        if (historyItem) {
-                            await this.history.onStateChange(historyItem, state);
-                        }
-                        if (historyItem) {
-                            // Update Billing if enabled
-                            const billingList = this.billing.getListByIdTarget(targetId, true);
-                            if (billingList && billingList.length > 0) {
-                                for (const billingItem of billingList) {
-                                    await this.billing.onStateChange(billingItem, historyItem);
+                        // adapter states changed 
+                        if (id.endsWith(`.${this.idTotal}`) || id.endsWith(`.${this.idOldValue}`)) {
+                            const targetId = id.replace(`${this.namespace}.`, '');
+                            // Update History and costs if enabled
+                            const historyItem = this.history.getByIdTarget(targetId || targetId.replace(`.${this.datapoints.idTotal}`, `.${this.datapoints.idBooleanValue}`));
+                            if (historyItem) {
+                                await this.history.onStateChange(historyItem, state);
+                            }
+                            if (historyItem) {
+                                // Update Billing if enabled
+                                const billingList = this.billing.getListByIdTarget(targetId, true);
+                                if (billingList && billingList.length > 0) {
+                                    for (const billingItem of billingList) {
+                                        await this.billing.onStateChange(billingItem, historyItem);
+                                    }
                                 }
                             }
                         }

@@ -88,5 +88,10 @@
     "consumption": "consumption",
     "pre payment of period": "pre payment of period",
     "datapoints default settings": "datapoints default settings",
-    "Expert": "Expert"
+    "Expert": "Expert",
+    "global settings": "global settings",
+    "back payment": "back payment",
+    "refund": "refund",
+    "pre payment": "pre payment",
+    "advance reimbursement": "advance reimbursement"
 }

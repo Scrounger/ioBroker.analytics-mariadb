@@ -6,6 +6,7 @@ export declare class Billing {
     idChannelBilling: string;
     private idConsumption;
     private idCosts;
+    private idPrePayment;
     private idBackPayment;
     constructor(adapter: ioBroker.myAdapter, utils: typeof import("@iobroker/adapter-core"));
     init(): Promise<void>;

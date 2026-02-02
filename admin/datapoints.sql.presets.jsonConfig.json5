@@ -24,15 +24,6 @@
             text: 'Datapoints Sql Presets',
             size: 2,
         },
-        dividerDatapointsSqlInfo: {
-            newLine: true,
-            type: 'staticText',
-            label: 'You must first save your entries before you can use them in the datapoints tab',
-            style: {
-                color: 'red',
-                'font-size': '14px',
-            },
-        },
         datapointsSqlPresetsList: {
             newLine: true,
             type: 'table',
@@ -76,6 +67,7 @@
                     max: 86400000,
                     step: 1,
                     default: 1000,
+                    width: 100,
                 },
                 {
                     attr: 'changesRelogInterval',

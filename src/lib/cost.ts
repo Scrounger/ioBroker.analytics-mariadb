@@ -13,13 +13,13 @@ export interface CostResult {
     sum?: number;
 }
 
-export class Cost {
-    private logPrefix: string = 'Cost'
+export class Costs {
+    private logPrefix: string = 'Costs'
 
     private adapter: ioBroker.myAdapter;
     private log: ioBroker.Logger;
 
-    public idChannelCost = 'cost';
+    public idChannelCost = 'costs';
 
     private costList: ioBroker.AdapterConfigTypes.CostList = {};
 

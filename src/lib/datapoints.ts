@@ -176,7 +176,7 @@ export class Datapoints {
     }
 
     private async updateStateNumber(item: ioBroker.AdapterConfigTypes.DatapointsItem, idSource: string, sourceState: ioBroker.State, force: boolean = false): Promise<void> {
-        const logPrefix = `[${this.logPrefix}.updateStateNumber] - '${idSource}':`
+        const logPrefix = `[${this.logPrefix}.updateStateNumber] [${item.idChannelTarget}]:`
 
         try {
             if (item.enable) {
@@ -218,7 +218,13 @@ export class Datapoints {
                         if (item.ignoreReset) {
                             if (delta <= 0) {
                                 // delta ist kleiner 0, d.h. Wert liegt unter altem Wert
+                                if (delta === 0 && !this.adapter.initComplete) {
+                                    // suppress login at adapter start, if value not changed
+                                    return;
+                                }
+
                                 this.log.warn(`${logPrefix} delta ${mathjs.round(delta, 5)} is <= 0 and ignore reset is active (val: ${sourceState.val}, oldVal: ${oldState.val}, storageVal: ${storageState.val}) -> ignore on this run`);
+
                                 return;
                             } else if (oldState.val < storageState.val) {
                                 // solange oldVal nicht über altem gespeichertem Wert liegt wird ignoriert
@@ -345,8 +351,8 @@ export class Datapoints {
         }
     }
 
-    public async writeValuesAtDayChangeToDatabase(): Promise<void> {
-        const logPrefix = `[${this.logPrefix}.writeValuesAtDayChangeToDatabase]':`
+    public async saveStatesToDatabase(): Promise<void> {
+        const logPrefix = `[${this.logPrefix}.saveStatesToDatabase]':`
 
         try {
             const list = [...this.adapter.config.datapointsNumberList, ...this.adapter.config.datapointsBooleanList];
@@ -354,7 +360,7 @@ export class Datapoints {
             if (list && list.length > 0) {
                 for (const item of list) {
                     if (item.enable) {
-                        void this.writeItemAtDayChangeToDatabase(item);
+                        void this.saveStateToDatabase(item);
                     }
                 }
             }
@@ -368,13 +374,13 @@ export class Datapoints {
      * 
      * @param item Datapoint item
      */
-    private async writeItemAtDayChangeToDatabase(item: ioBroker.AdapterConfigTypes.DatapointsItem): Promise<void> {
-        const logPrefix = `[${this.logPrefix}.writeItemAtDayChangeToDatabase]':`
+    private async saveStateToDatabase(item: ioBroker.AdapterConfigTypes.DatapointsItem): Promise<void> {
+        const logPrefix = `[${this.logPrefix}.saveStateToDatabase]':`
 
         try {
             const state = await this.adapter.getStateAsync(item.idSql);
 
-            this.adapter.log.info(`${logPrefix} '${item.idSql}' - save state to database`);
+            this.adapter.log.info(`${logPrefix} save state to database: ${item.idSql}`);
 
             void this.adapter.sql.storeState(item, state);
 

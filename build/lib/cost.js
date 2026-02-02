@@ -1,11 +1,11 @@
 import moment from "moment";
 import * as mathjs from 'mathjs';
 import * as helper from './helper.js';
-export class Cost {
-    logPrefix = 'Cost';
+export class Costs {
+    logPrefix = 'Costs';
     adapter;
     log;
-    idChannelCost = 'cost';
+    idChannelCost = 'costs';
     costList = {};
     constructor(adapter) {
         this.adapter = adapter;

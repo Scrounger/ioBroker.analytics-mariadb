@@ -64,6 +64,7 @@
                     step: 1,
                     default: 3,
                     width: 85,
+                    hidden: '!data.id.endsWith(".total") || data.id === undefined || data.id === "" || data.id === null',
                     disabled: '!globalData.datapointsNumberList.find(dp => data.id.includes(dp.idChannelTarget)).enable || !globalData.datapointsBooleanList.find(dp => data.id.includes(dp.idChannelTarget)).enable',
                 },
                 {

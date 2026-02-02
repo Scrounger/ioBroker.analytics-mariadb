@@ -7,7 +7,7 @@ export interface CostResult {
     days?: number;
     sum?: number;
 }
-export declare class Cost {
+export declare class Costs {
     private logPrefix;
     private adapter;
     private log;

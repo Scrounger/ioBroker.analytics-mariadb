@@ -12,9 +12,10 @@ export class Billing {
     private log: ioBroker.Logger;
 
     public idChannelBilling = 'billing';
-    private idConsumption = 'consumption';
-    private idCosts = 'cost';
-    private idBackPayment = 'backpayment';
+    private idConsumption = '00_consumption';
+    private idCosts = '01_costs';
+    private idPrePayment = '02_prepayment';
+    private idBackPayment = '03_backpayment';
 
     constructor(adapter: ioBroker.myAdapter, utils: typeof import("@iobroker/adapter-core")) {
         this.adapter = adapter;
@@ -64,11 +65,16 @@ export class Billing {
                     const datapointItem = this.adapter.datapoints.getByIdTarget(item.id);
                     const historyItem = this.adapter.history.getByIdTarget(item.id);
 
+                    const unit = this.adapter.cost.getContractType(historyItem.idContractType).currency;
+
                     await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idConsumption}`, 'consumption', null, sourceObj?.common as ioBroker.StateCommon);
-                    await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idCosts}`, 'Costs', null, { ...sourceObj?.common as ioBroker.StateCommon, ...{ role: 'state', unit: this.adapter.cost.getContractType(historyItem.idContractType).currency } });
+                    await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idCosts}`, 'Costs', null, { ...sourceObj?.common as ioBroker.StateCommon, ...{ role: 'state', unit: unit } });
 
                     if (item.prePayment) {
-                        await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idBackPayment}`, 'back payment', null, { ...sourceObj?.common as ioBroker.StateCommon, ...{ role: 'state', unit: this.adapter.cost.getContractType(historyItem.idContractType).currency } });
+                        await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idPrePayment}`, item.prePayment > 0 ? 'pre payment' : 'advance reimbursement', null, { ...sourceObj?.common as ioBroker.StateCommon, ...{ role: 'state', unit: unit } });
+
+                        const curState = await this.adapter.getStateAsync(`${idChannel}.${this.idBackPayment}`);
+                        await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idBackPayment}`, curState && curState.val as number >= 0 ? 'back payment' : 'refund', null, { ...sourceObj?.common as ioBroker.StateCommon, ...{ role: 'state', unit: unit } });
                     }
 
                     await this.updateState(item, historyItem, datapointItem);
@@ -98,13 +104,26 @@ export class Billing {
 
                     if (item.prePayment) {
                         const daysOfPeriod = end.diff(start, 'days') + 1;
-
-                        let res = result.sum - item.prePayment;
+                        let prePayment = item.prePayment;
 
                         if (end.isAfter(moment()) || end.isSame(moment(), 'day')) {
                             const daysUntilNow = moment().diff(start, 'days') + 1;
 
-                            res = mathjs.round(result.sum - ((item.prePayment / daysOfPeriod) * daysUntilNow), 3);
+                            prePayment = (item.prePayment / daysOfPeriod) * daysUntilNow;
+                        }
+
+                        const oldState = await this.adapter.getStateAsync(`${idChannel}.${this.idBackPayment}`);
+                        const obj = await this.adapter.getObjectAsync(`${idChannel}.${this.idBackPayment}`);
+                        const oldValue = oldState.val as number;
+                        const res = mathjs.round(result.sum - prePayment, 2);
+
+                        await this.adapter.setStateChangedAsync(`${idChannel}.${this.idPrePayment}`, { val: mathjs.round(prePayment), ack: true });
+
+                        // Objekt Name auf Erstattung / Nachzahlung ggf. anpassen
+                        if (oldValue < 0 && res >= 0) {
+                            await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idBackPayment}`, 'back payment', null, obj.common as ioBroker.StateCommon);
+                        } else if (oldValue >= 0 && res < 0) {
+                            await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idBackPayment}`, 'refund', null, obj.common as ioBroker.StateCommon);
                         }
 
                         await this.adapter.setStateChangedAsync(`${idChannel}.${this.idBackPayment}`, { val: res, ack: true });
@@ -124,7 +143,7 @@ export class Billing {
         try {
             await this.updateState(item, historyItem, this.adapter.datapoints.getByIdTarget(item.id));
 
-            this.log.debug(`${logPrefix} '${item.provider}' billing data updated`);
+            this.log.silly(`${logPrefix} '${item.provider}' billing data updated`);
 
         } catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);

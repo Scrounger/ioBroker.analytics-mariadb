@@ -88,7 +88,6 @@
                     attr: 'prePayment',
                     type: 'number',
                     title: 'pre payment of period',
-                    min: 0,
                     width: 140,
                     disabled: '!globalData.datapointsNumberList.find(dp => data.id.includes(dp.idChannelTarget)).enable',
                 },

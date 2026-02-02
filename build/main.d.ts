@@ -3,7 +3,7 @@ import { Job } from 'node-schedule';
 import { SqlInterface } from './lib/sqlInterface.js';
 import { History } from './lib/history.js';
 import { Datapoints } from './lib/datapoints.js';
-import { Cost } from './lib/cost.js';
+import { Costs } from './lib/cost.js';
 import { Billing } from './lib/billing.js';
 declare class AnalyticsMariadb extends utils.Adapter {
     sourceToDatapoint: Record<string, ioBroker.AdapterConfigTypes.DatapointsItem>;
@@ -15,7 +15,7 @@ declare class AnalyticsMariadb extends utils.Adapter {
     sql: SqlInterface;
     datapoints: Datapoints;
     history: History;
-    cost: Cost;
+    cost: Costs;
     billing: Billing;
     scheduleUpdateHistoryAtDayChange: Job;
     scheduleSaveValueBeforeDayChange: Job;

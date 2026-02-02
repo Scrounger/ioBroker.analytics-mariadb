@@ -143,7 +143,7 @@ export class Datapoints {
         }
     }
     async updateStateNumber(item, idSource, sourceState, force = false) {
-        const logPrefix = `[${this.logPrefix}.updateStateNumber] - '${idSource}':`;
+        const logPrefix = `[${this.logPrefix}.updateStateNumber] [${item.idChannelTarget}]:`;
         try {
             if (item.enable) {
                 const total = await this.adapter.getStateAsync(`${item.idChannelTarget}.${this.idTotal}`);
@@ -178,6 +178,10 @@ export class Datapoints {
                         if (item.ignoreReset) {
                             if (delta <= 0) {
                                 // delta ist kleiner 0, d.h. Wert liegt unter altem Wert
+                                if (delta === 0 && !this.adapter.initComplete) {
+                                    // suppress login at adapter start, if value not changed
+                                    return;
+                                }
                                 this.log.warn(`${logPrefix} delta ${mathjs.round(delta, 5)} is <= 0 and ignore reset is active (val: ${sourceState.val}, oldVal: ${oldState.val}, storageVal: ${storageState.val}) -> ignore on this run`);
                                 return;
                             }
@@ -281,38 +285,20 @@ export class Datapoints {
             }
             else if (item.type === 'boolean') {
                 await this.updateStateBoolean(item, id, state);
-                // const idTarget = `${item.idChannelTarget}.${this.idBooleanValue}`
-                // const targetState = await this.adapter.getStateAsync(idTarget);
-                // if (state.val !== targetState.val) {
-                //     // nur ausführen, wenn sich der Wert / ack auch geändert hat
-                //     if (this.adapter.timeoutBoolean[id]) {
-                //         this.adapter.clearTimeout(this.adapter.timeoutBoolean[id]);
-                //     }
-                //     this.adapter.timeoutBoolean[id] = this.adapter.setTimeout(async () => {
-                //         // we need a timeout, because sql need some time to write the new value in the database
-                //         const counter = (await this.adapter.sql.getCounter(item, Interval.ALL, `'${item.idChannelTarget}.${this.idTotal}'`));
-                //         if (counter) {
-                //             await this.adapter.setStateChangedAsync(`${item.idChannelTarget}.${this.idTotal}`, { val: counter.count, lc: state.lc, ack: true });
-                //         }
-                //         this.adapter.clearTimeout(this.adapter.timeoutBoolean[id]);
-                //         delete this.adapter.timeoutBoolean[id];
-                //     }, (item.debounce || this.adapter.config.sqlWriteTimeout) * 1000);
-                // }
-                // await this.adapter.setState(idTarget, state);
             }
         }
         catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
     }
-    async writeValuesAtDayChangeToDatabase() {
-        const logPrefix = `[${this.logPrefix}.writeValuesAtDayChangeToDatabase]':`;
+    async saveStatesToDatabase() {
+        const logPrefix = `[${this.logPrefix}.saveStatesToDatabase]':`;
         try {
             const list = [...this.adapter.config.datapointsNumberList, ...this.adapter.config.datapointsBooleanList];
             if (list && list.length > 0) {
                 for (const item of list) {
                     if (item.enable) {
-                        void this.writeItemAtDayChangeToDatabase(item);
+                        void this.saveStateToDatabase(item);
                     }
                 }
             }
@@ -326,11 +312,11 @@ export class Datapoints {
      *
      * @param item Datapoint item
      */
-    async writeItemAtDayChangeToDatabase(item) {
-        const logPrefix = `[${this.logPrefix}.writeItemAtDayChangeToDatabase]':`;
+    async saveStateToDatabase(item) {
+        const logPrefix = `[${this.logPrefix}.saveStateToDatabase]':`;
         try {
             const state = await this.adapter.getStateAsync(item.idSql);
-            this.adapter.log.info(`${logPrefix} '${item.idSql}' - save state to database`);
+            this.adapter.log.info(`${logPrefix} save state to database: ${item.idSql}`);
             void this.adapter.sql.storeState(item, state);
         }
         catch (error) {

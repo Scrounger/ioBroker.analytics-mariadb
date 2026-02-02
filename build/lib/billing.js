@@ -8,9 +8,10 @@ export class Billing {
     utils;
     log;
     idChannelBilling = 'billing';
-    idConsumption = 'consumption';
-    idCosts = 'cost';
-    idBackPayment = 'backpayment';
+    idConsumption = '00_consumption';
+    idCosts = '01_costs';
+    idPrePayment = '02_prepayment';
+    idBackPayment = '03_backpayment';
     constructor(adapter, utils) {
         this.adapter = adapter;
         this.utils = utils;
@@ -44,10 +45,13 @@ export class Billing {
                     const sourceObj = await this.adapter.getObjectAsync(item.id);
                     const datapointItem = this.adapter.datapoints.getByIdTarget(item.id);
                     const historyItem = this.adapter.history.getByIdTarget(item.id);
+                    const unit = this.adapter.cost.getContractType(historyItem.idContractType).currency;
                     await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idConsumption}`, 'consumption', null, sourceObj?.common);
-                    await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idCosts}`, 'Costs', null, { ...sourceObj?.common, ...{ role: 'state', unit: this.adapter.cost.getContractType(historyItem.idContractType).currency } });
+                    await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idCosts}`, 'Costs', null, { ...sourceObj?.common, ...{ role: 'state', unit: unit } });
                     if (item.prePayment) {
-                        await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idBackPayment}`, 'back payment', null, { ...sourceObj?.common, ...{ role: 'state', unit: this.adapter.cost.getContractType(historyItem.idContractType).currency } });
+                        await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idPrePayment}`, item.prePayment > 0 ? 'pre payment' : 'advance reimbursement', null, { ...sourceObj?.common, ...{ role: 'state', unit: unit } });
+                        const curState = await this.adapter.getStateAsync(`${idChannel}.${this.idBackPayment}`);
+                        await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idBackPayment}`, curState && curState.val >= 0 ? 'back payment' : 'refund', null, { ...sourceObj?.common, ...{ role: 'state', unit: unit } });
                     }
                     await this.updateState(item, historyItem, datapointItem);
                     this.log.debug(`${logPrefix} '${item.provider}' billing states created and updated`);
@@ -71,10 +75,22 @@ export class Billing {
                     await this.adapter.setStateChangedAsync(`${idChannel}.${this.idCosts}`, { val: result.sum, ack: true });
                     if (item.prePayment) {
                         const daysOfPeriod = end.diff(start, 'days') + 1;
-                        let res = result.sum - item.prePayment;
+                        let prePayment = item.prePayment;
                         if (end.isAfter(moment()) || end.isSame(moment(), 'day')) {
                             const daysUntilNow = moment().diff(start, 'days') + 1;
-                            res = mathjs.round(result.sum - ((item.prePayment / daysOfPeriod) * daysUntilNow), 3);
+                            prePayment = (item.prePayment / daysOfPeriod) * daysUntilNow;
+                        }
+                        const oldState = await this.adapter.getStateAsync(`${idChannel}.${this.idBackPayment}`);
+                        const obj = await this.adapter.getObjectAsync(`${idChannel}.${this.idBackPayment}`);
+                        const oldValue = oldState.val;
+                        const res = mathjs.round(result.sum - prePayment, 2);
+                        await this.adapter.setStateChangedAsync(`${idChannel}.${this.idPrePayment}`, { val: mathjs.round(prePayment), ack: true });
+                        // Objekt Name auf Erstattung / Nachzahlung ggf. anpassen
+                        if (oldValue < 0 && res >= 0) {
+                            await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idBackPayment}`, 'back payment', null, obj.common);
+                        }
+                        else if (oldValue >= 0 && res < 0) {
+                            await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idBackPayment}`, 'refund', null, obj.common);
                         }
                         await this.adapter.setStateChangedAsync(`${idChannel}.${this.idBackPayment}`, { val: res, ack: true });
                     }
@@ -91,7 +107,7 @@ export class Billing {
         const logPrefix = `[${this.logPrefix}.onStateChange] [${helper.getIdWithoutLastPart(item.id)}] [${moment(item.start).format(this.adapter.dateFormat)} - ${moment(item.end).format(this.adapter.dateFormat)}]:`;
         try {
             await this.updateState(item, historyItem, this.adapter.datapoints.getByIdTarget(item.id));
-            this.log.debug(`${logPrefix} '${item.provider}' billing data updated`);
+            this.log.silly(`${logPrefix} '${item.provider}' billing data updated`);
         }
         catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);

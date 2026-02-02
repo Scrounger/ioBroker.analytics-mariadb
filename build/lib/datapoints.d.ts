@@ -21,11 +21,11 @@ export declare class Datapoints {
     private updateStateBoolean;
     onObjectChange(id: string): Promise<void>;
     onStateChange(item: ioBroker.AdapterConfigTypes.DatapointsItem, id: string, state: ioBroker.State): Promise<void>;
-    writeValuesAtDayChangeToDatabase(): Promise<void>;
+    saveStatesToDatabase(): Promise<void>;
     /**
      * Write item asynchronously to database at day change
      *
      * @param item Datapoint item
      */
-    private writeItemAtDayChangeToDatabase;
+    private saveStateToDatabase;
 }

@@ -341,7 +341,7 @@ export class History {
         const logPrefix = `[${this.logPrefix}.onStateChange] [${helper.getIdWithoutLastPart(item.id)}]:`;
         try {
             await this.updateThisYear(item, currentState);
-            this.log.debug(`${logPrefix} history${item.idContractType ? ' and costs ' : ' '}states of this year updated`);
+            this.log.silly(`${logPrefix} history${item.idContractType ? ' and costs ' : ' '}states of this year updated`);
         }
         catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
