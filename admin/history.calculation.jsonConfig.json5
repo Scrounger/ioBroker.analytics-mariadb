@@ -50,7 +50,7 @@
                     noMultiEdit: true,
                     jsonData: '{"data": ${JSON.stringify(globalData.historyList)}}',
                     command: 'getHistoryList',
-                    validator: '!!data.id && data.id.every(id => globalData.historyList.some(h => h.id === id));',
+                    validator: '!!data.id && data.id.every(id => globalData.historyList.some(h => h.id === id) && (globalData.datapointsNumberList.some(h => h.idChannelTarget === id.substring(0, id.lastIndexOf(".")) && h.enable) || globalData.datapointsBooleanList.some(h => h.idChannelTarget === id.substring(0, id.lastIndexOf(".")) && h.enable)));',
                     validatorNoSaveOnError: true,
                     validatorErrorText: 'mandatory input',
                     multiple: true,

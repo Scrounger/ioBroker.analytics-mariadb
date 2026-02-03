@@ -207,7 +207,16 @@ class AnalyticsMariadb extends utils.Adapter {
                             const historyItem = this.history.getByIdTarget(targetId || targetId.replace(`.${this.datapoints.idTotal}`, `.${this.datapoints.idBooleanValue}`));
 
                             if (historyItem) {
-                                await this.history.onStateChange(historyItem, state);
+                                await this.history.onStateChange(historyItem, state, false);
+                            }
+
+                            // Update calcualted History items
+                            const calcHistoryItemsList = this.history.getCalculationByIdTarget(targetId || targetId.replace(`.${this.datapoints.idTotal}`, `.${this.datapoints.idBooleanValue}`));
+
+                            if (calcHistoryItemsList && calcHistoryItemsList.length > 0) {
+                                for (const item of calcHistoryItemsList) {
+                                    await this.history.onStateChange(item, state, true);
+                                }
                             }
 
                             if (historyItem) {
@@ -287,6 +296,20 @@ class AnalyticsMariadb extends utils.Adapter {
                     if (obj.callback) {
                         this.sendTo(obj.from, obj.command, result, obj.callback);
                     }
+                } else if (obj.command === 'getHistoryList') {
+                    const data = obj.message.data as ioBroker.AdapterConfigTypes.HistoryItem[];
+
+                    const result = data.map(item => {
+                        const dpItem = this.datapoints.getByIdTarget(item.id as string);
+                        return {
+                            value: `${item.id}`,
+                            label: dpItem ? `${dpItem.name} (${item.id})` : `${item.id}`
+                        }
+                    });
+
+                    if (obj.callback) {
+                        this.sendTo(obj.from, obj.command, result, obj.callback);
+                    }
 
                 } else if (obj.command === 'getCostsContractTypes') {
                     const data = obj.message.data as ioBroker.AdapterConfigTypes.CostContractType[];
@@ -311,7 +334,7 @@ class AnalyticsMariadb extends utils.Adapter {
                         const dpItem = this.datapoints.getByIdTarget(item.id as string);
                         return {
                             value: `${item.id}`,
-                            label: dpItem ? `${dpItem.name} (${item.idContractType})` : `${item.id}`
+                            label: dpItem ? `${dpItem.name} (${item.idContractType})` : `ERROR !!! ${item.id}`
                         }
                     });
 

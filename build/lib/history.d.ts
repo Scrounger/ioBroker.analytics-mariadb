@@ -7,6 +7,7 @@ export declare class History {
     constructor(adapter: ioBroker.myAdapter, utils: typeof import("@iobroker/adapter-core"));
     init(): Promise<void>;
     getByIdTarget(idTarget: string): ioBroker.AdapterConfigTypes.HistoryItem;
+    getCalculationByIdTarget(idTarget: string): ioBroker.AdapterConfigTypes.HistoryItem[];
     private createStates;
     updateNameOfStates(): Promise<void>;
     private _updateNameOfStates;
@@ -15,7 +16,9 @@ export declare class History {
     private updateThisYear;
     private updateThePast;
     private updateHistory;
-    private updateCalculatedStates;
-    onStateChange(item: ioBroker.AdapterConfigTypes.HistoryItem, currentState: ioBroker.State): Promise<void>;
+    private updateCalculatedThisYear;
+    private updateCalculatedThePast;
+    private getCalculation;
+    onStateChange(item: ioBroker.AdapterConfigTypes.HistoryItem, currentState: ioBroker.State, isCalculation: boolean): Promise<void>;
     private getDatesFromInterval;
 }

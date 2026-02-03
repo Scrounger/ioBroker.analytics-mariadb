@@ -261,7 +261,7 @@ export class Datapoints {
                         if (this.adapter.initComplete) {
                             this.timeoutDebounceList[idSource] = this.adapter.setTimeout(async () => {
                                 await this.updateStateNumber(item, idSource, sourceState, true);
-                                this.log.warn(`${logPrefix} no new value after debounce time -> recheck after timeout done`);
+                                this.adapter.itemDebug(item, `${logPrefix} no new value after debounce time -> recheck after timeout done`);
                             }, 1.5 * item.debounce * 1000);
                         }
                     }

@@ -39,6 +39,12 @@ export class History {
         );
     }
 
+    public getCalculationByIdTarget(idTarget: string): ioBroker.AdapterConfigTypes.HistoryItem[] {
+        return this.adapter.config.historyCalcList.filter(
+            x => x.id.includes(idTarget)
+        );
+    }
+
     private async createStates(isAdapterStart: boolean): Promise<void> {
         const logPrefix = `[${this.logPrefix}.createStates]:`
 
@@ -226,7 +232,18 @@ export class History {
             }
 
             for (const item of this.adapter.config.historyCalcList) {
-                await this.updateCalculatedStates(item, isAdapterStart);
+                for (const id of item.id) {
+                    // first check if all datapoints are enabled, because all are needed for the calculation
+                    const datapointItem = this.adapter.datapoints.getByIdTarget(id);
+
+                    if (!datapointItem || !datapointItem.enable) {
+                        this.log.error(`${logPrefix} datapoint '${helper.getIdWithoutLastPart(id)}' not enabled or exists, but it's mandatory for the calculation -> abort!`);
+                        return;
+                    }
+                }
+
+                await this.updateCalculatedThisYear(item, isAdapterStart);
+                await this.updateCalculatedThePast(item);
             }
         } catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
@@ -260,7 +277,7 @@ export class History {
     }
 
     private async updateThePast(item: ioBroker.AdapterConfigTypes.HistoryItem, isAdapterStart: boolean = false): Promise<void> {
-        const logPrefix = `[${this.logPrefix}.updateStatesOfThePast] [${helper.getIdWithoutLastPart(item.id as string)}]:`
+        const logPrefix = `[${this.logPrefix}.updateThePast] [${helper.getIdWithoutLastPart(item.id as string)}]:`
 
         try {
             const datapointItem = this.adapter.datapoints.getByIdTarget(item.id as string);
@@ -343,19 +360,10 @@ export class History {
         }
     }
 
-    private async updateCalculatedStates(item: ioBroker.AdapterConfigTypes.HistoryItem, isAdapterStart: boolean): Promise<void> {
-        const logPrefix = `[${this.logPrefix}.updateCalculatedStates] - '${item.idChannel}':`
+    private async updateCalculatedThisYear(item: ioBroker.AdapterConfigTypes.HistoryItem, isAdapterStart: boolean = false): Promise<void> {
+        const logPrefix = `[${this.logPrefix}.updateCalculatedThisYear] [${item.idChannel}]:`
 
         try {
-            for (const id of item.id) {
-                const datapointItem = this.adapter.datapoints.getByIdTarget(id);
-
-                if (!datapointItem || !datapointItem.enable) {
-                    this.log.error(`${logPrefix} datapoint '${helper.getIdWithoutLastPart(id)}' not enabled or exists, but it's mandatory for the calculation -> abort!`);
-                    return;
-                }
-            }
-
             const debugFormula = item.formula.replace(/\[(\d+)\]/g, (_, index: string) => {
                 return helper.getIdWithoutLastPart(item.id[Number(index)]);
             });
@@ -365,41 +373,109 @@ export class History {
             for (const interval of Object.keys(Interval)) {
                 if (interval !== Interval.ALL) {
 
-                    const calcArray = [];
-                    for (const id of item.id) {
-                        const state = await this.adapter.getStateAsync(`${helper.getIdWithoutLastPart(id)}.${this.idChannelHistory}.${interval}`);
+                    const calculation = await this.getCalculation(item, interval);
 
-                        if (state && state.val) {
-                            calcArray.push(state.val);
-                        } else {
-                            this.log.warn(`${logPrefix} [${interval}] no data available, using 0 instead`);
-                            calcArray.push(0);
-                        }
+                    if (calculation) {
+                        this.adapter.itemDebug(item, `${logPrefix} [${interval}] calculation: ${debugFormula} => ${calculation.formula} = ${calculation.result}`);
+
+                        await this.adapter.setStateChangedAsync(`${item.idChannel}.${this.idChannelHistory}.${interval}`, calculation.result, true);
                     }
-
-                    const formula = item.formula.replace(/\[(\d+)\]/g, (_, index: string) => {
-                        return calcArray[Number(index)];
-                    });
-
-                    const result = mathjs.evaluate(formula);
-
-                    if (result) {
-                        this.adapter.itemDebug(item, `${logPrefix} ${interval} - calculation: ${formula} = ${result}`);
-                    }
-
-                    await this.adapter.setStateChangedAsync(`${item.idChannel}.${this.idChannelHistory}.${interval}`, mathjs.round(result, item.decimals), true);
                 }
+            }
+
+            if (isAdapterStart) {
+                this.log.info(`${logPrefix} history${item.idContractType ? ' and costs ' : ' '}states of this year updated`);
             }
         } catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
     }
 
-    public async onStateChange(item: ioBroker.AdapterConfigTypes.HistoryItem, currentState: ioBroker.State): Promise<void> {
-        const logPrefix = `[${this.logPrefix}.onStateChange] [${helper.getIdWithoutLastPart(item.id as string)}]:`
+    private async updateCalculatedThePast(item: ioBroker.AdapterConfigTypes.HistoryItem): Promise<void> {
+        const logPrefix = `[${this.logPrefix}.updateCalculatedThePast] [${item.idChannel}]:`
 
         try {
-            await this.updateThisYear(item, currentState);
+            const debugFormula = item.formula.replace(/\[(\d+)\]/g, (_, index: string) => {
+                return helper.getIdWithoutLastPart(item.id[Number(index)]);
+            });
+
+            this.adapter.itemDebug(item, `${logPrefix} calculation formula: ${debugFormula}`);
+
+            for (const interval of Object.keys(Interval)) {
+                if (interval !== Interval.ALL) {
+
+                    if (item[interval] > 0) {
+                        for (let i = 1; i <= item[interval]; i++) {
+                            const calculation = await this.getCalculation(item, interval, i);
+
+                            if (calculation) {
+                                this.adapter.itemDebug(item, `${logPrefix} [${interval}_${helper.zeroPad(i, 2)}] calculation: ${debugFormula} => ${calculation.formula} = ${calculation.result}`);
+
+                                await this.adapter.setStateChangedAsync(`${item.idChannel}.${this.idChannelHistory}._${interval}.${interval}_${helper.zeroPad(i, 2)}`, calculation.result, true);
+                            }
+                        }
+                    } else {
+                        this.adapter.log.debug(`${logPrefix} [${interval}] history for interval '${interval}' is disabled`);
+                    }
+                }
+            }
+
+            this.log.info(`${logPrefix} history states of the past updated`);
+        } catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
+    }
+
+    private async getCalculation(item: ioBroker.AdapterConfigTypes.HistoryItem, interval: string, i: number | null = null): Promise<{ result: number, formula: string } | null> {
+        const logPrefix = `[${this.logPrefix}.getCalculation] [${item.idChannel}] [${interval}]:`
+
+        try {
+            const calcArray = [];
+
+            for (const id of item.id) {
+                const datapointItem = this.adapter.datapoints.getByIdTarget(id as string);
+
+                if (datapointItem && datapointItem.enable) {
+
+                    const state = await this.adapter.getStateAsync(`${helper.getIdWithoutLastPart(id)}.${this.idChannelHistory}.${i === null ? interval : `_${interval}.${interval}_${helper.zeroPad(i, 2)}`}`);
+
+                    if (state && (state.val || state.val === 0)) {
+                        calcArray.push(state.val);
+                    } else {
+                        this.adapter.itemDebug(item, `${logPrefix} [${i === null ? interval : `${interval}_${helper.zeroPad(i, 2)}`}] '${id}' no data available, using 0 instead`);
+                        calcArray.push(0);
+                    }
+                } else {
+                    this.log.error(`${logPrefix} source '${id}' is disabled, no history processing is possible -> abort!`);
+                    return null;
+                }
+            }
+
+            const formula = item.formula.replace(/\[(\d+)\]/g, (_, index: string) => {
+                return calcArray[Number(index)];
+            });
+
+            return {
+                result: mathjs.round(mathjs.evaluate(formula), 3),
+                formula: formula
+            }
+
+        } catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
+
+        return null;
+    }
+
+    public async onStateChange(item: ioBroker.AdapterConfigTypes.HistoryItem, currentState: ioBroker.State, isCalculation: boolean): Promise<void> {
+        const logPrefix = `[${this.logPrefix}.onStateChange] [${helper.getIdWithoutLastPart(typeof item.id === 'string' ? item.id : item.idChannel)}]:`
+
+        try {
+            if (isCalculation) {
+                await this.updateCalculatedThisYear(item);
+            } else {
+                await this.updateThisYear(item, currentState);
+            }
 
             this.log.silly(`${logPrefix} history${item.idContractType ? ' and costs ' : ' '}states of this year updated`);
         } catch (error) {
