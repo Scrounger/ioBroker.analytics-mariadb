@@ -1,5 +1,7 @@
 import moment from "moment";
 export interface CostResult {
+    start?: moment.Moment;
+    end?: moment.Moment;
     consumption?: number;
     variableCosts?: number;
     basicPrice?: number;

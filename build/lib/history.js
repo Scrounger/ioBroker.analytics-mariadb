@@ -268,23 +268,30 @@ export class History {
     }
     async updateHistory(id, item, datapointItem, interval, i, currentState) {
         const logPrefixAppend = `[${datapointItem.idChannelTarget}] [${helper.getIdLastPart(id)}]`;
-        const logPrefix = `[${this.logPrefix}.updateStateHistory] ${logPrefixAppend}:`;
+        const logPrefix = `[${this.logPrefix}.updateHistory] ${logPrefixAppend}:`;
         try {
             const range = this.getDatesFromInterval(interval, i);
             let result = null;
             let costResult = null;
             if (datapointItem.type === 'number') {
-                const data = await this.adapter.sql.getTotal(item, datapointItem, interval, range.start.valueOf(), range.end.valueOf(), logPrefixAppend);
-                if (data && data.start && data.end && data.delta !== null) {
-                    if (i === null) {
-                        // values of this year -> taking current state value for delta calculation
-                        result = mathjs.round(currentState.val - data.min, item.decimals);
+                if (item.idContractType) {
+                    // Wenn Kosten aktiviert sind, nehmen wir den Verbrauch aus der Kostenberechnung um Abfragen auf die Datenbank zu minimieren
+                    costResult = await this.adapter.costs.getCostOfRange(item, datapointItem, range.start, range.end, helper.getIdLastPart(id));
+                    if (costResult) {
+                        result = costResult.consumption;
                     }
-                    else {
-                        result = mathjs.round(data.delta, item.decimals);
-                    }
-                    if (item.idContractType) {
-                        costResult = await this.adapter.costs.getCostOfRange(item, datapointItem, range.start, range.end, helper.getIdLastPart(id));
+                }
+                if (result === null) {
+                    // Kosten nicht aktiviert oder Kosten sind aktiviert, aber für Zeitraum konnte kein Verbrauch ermittelt werden
+                    const data = await this.adapter.sql.getTotal(item, datapointItem, interval, range.start.valueOf(), range.end.valueOf(), logPrefixAppend);
+                    if (data && data.start && data.end && data.delta !== null) {
+                        if (i === null) {
+                            // values of this year -> taking current state value for delta calculation
+                            result = mathjs.round(currentState.val - data.min, item.decimals);
+                        }
+                        else {
+                            result = mathjs.round(data.delta, item.decimals);
+                        }
                     }
                 }
             }

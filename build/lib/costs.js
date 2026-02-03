@@ -89,6 +89,8 @@ export class Costs {
                     }
                     this.adapter.itemDebug(item, `${logPrefix} time period from ${start.format(this.adapter.dateFormat)} to ${end.format(this.adapter.dateFormat)} - contract data: ${JSON.stringify(data)}`);
                     const consumption = await this.adapter.sql.getTotal(item, datapointItem, interval, start.startOf('day').valueOf(), end.endOf('day').valueOf(), logPrefixAppend);
+                    result.start = result.start ? start.isBefore(result.start) ? start : result.start : start;
+                    result.end = result.end ? end.isAfter(result.start) ? end : result.end : end;
                     if (consumption && consumption.delta !== null) {
                         const daysOfRange = end.diff(start, 'days') + 1;
                         let delta = consumption.delta;
@@ -101,17 +103,28 @@ export class Costs {
                         this.adapter.itemDebug(item, `${logPrefix} time period from ${start.format(this.adapter.dateFormat)} to ${end.format(this.adapter.dateFormat)} - calculation result: ${JSON.stringify(result)}`);
                     }
                 }
-                if (item.costSumOptions?.length > 0) {
-                    result.sum = mathjs.round((item.costSumOptions?.includes('variableCosts') ? result.variableCosts : 0)
-                        + (item.costSumOptions?.includes('basicPrice') ? result.basicPrice : 0)
-                        - (item.costSumOptions?.includes('bonusPrice') ? result.bonusPrice : 0), 2);
+                if (result.start.isSame(rangeStart, 'day') && result.end.isSame(rangeEnde, 'day')) {
+                    if (result.consumption && result.sum) {
+                        if (item.costSumOptions?.length > 0) {
+                            result.consumption = mathjs.round(result.consumption, item.decimals);
+                            result.sum = mathjs.round((item.costSumOptions?.includes('variableCosts') ? result.variableCosts : 0)
+                                + (item.costSumOptions?.includes('basicPrice') ? result.basicPrice : 0)
+                                - (item.costSumOptions?.includes('bonusPrice') ? result.bonusPrice : 0), 2);
+                        }
+                        else {
+                            this.log.warn(`${logPrefix} no cost sum options in the adapter settings defined`);
+                            result.sum = null;
+                        }
+                        this.adapter.itemDebug(item, `${logPrefix} start: ${rangeStart.format('DD.MM.YYYY - HH:mm')}, end: ${rangeEnde.format('DD.MM.YYYY - HH:mm')}, sum: ${result.sum}`);
+                        return result;
+                    }
+                    else {
+                        this.adapter.itemDebug(item, `${logPrefix} no cosumption or sum property available in the result: ${JSON.stringify(result)}`);
+                    }
                 }
                 else {
-                    this.log.warn(`${logPrefix} no cost sum options in the adapter settings defined`);
-                    result.sum = null;
+                    this.log.error(`${logPrefix} costs can't be calculated because period (${result.start.format(this.adapter.dateFormat)} - ${result.end.format(this.adapter.dateFormat)}) does not match requested period (${rangeStart.format(this.adapter.dateFormat)} - ${rangeEnde.format(this.adapter.dateFormat)}) -> Missing contract data!`);
                 }
-                this.adapter.itemDebug(item, `${logPrefix} start: ${rangeStart.format('DD.MM.YYYY - HH:mm')}, end: ${rangeEnde.format('DD.MM.YYYY - HH:mm')}, sum: ${result.sum}`);
-                return result;
             }
         }
         catch (error) {
