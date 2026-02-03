@@ -15,7 +15,7 @@ import { Job, scheduleJob } from 'node-schedule';
 import { SqlInterface } from './lib/sqlInterface.js';
 import { History } from './lib/history.js';
 import { Datapoints } from './lib/datapoints.js';
-import { Costs } from './lib/cost.js';
+import { Costs } from './lib/costs.js';
 import { Billing } from './lib/billing.js';
 
 
@@ -33,7 +33,7 @@ class AnalyticsMariadb extends utils.Adapter {
     sql: SqlInterface;
     datapoints: Datapoints;
     history: History;
-    cost: Costs;
+    costs: Costs;
     billing: Billing;
 
     scheduleUpdateHistoryAtDayChange: Job;
@@ -71,8 +71,8 @@ class AnalyticsMariadb extends utils.Adapter {
                 this.datapoints = new Datapoints(this, utils);
                 await this.datapoints.init();
 
-                this.cost = new Costs(this)
-                await this.cost.init();
+                this.costs = new Costs(this)
+                await this.costs.init();
 
                 this.history = new History(this, utils);
                 await this.history.init();

@@ -2,7 +2,7 @@
 import { Interval, SqlInterface } from './sqlInterface.js';
 import { Datapoints } from './datapoints.js';
 import { History } from './history.js';
-import { Cost } from './cost.js';
+import { Costs } from './costs.js';
 
 // Augment the globally declared type ioBroker.AdapterConfig
 declare global {
@@ -116,7 +116,7 @@ declare global {
             sql: SqlInterface;
             datapoints: Datapoints;
             history: History;
-            cost: Cost;
+            costs: Costs;
 
             initComplete: boolean;
 

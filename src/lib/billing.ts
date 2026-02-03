@@ -65,7 +65,7 @@ export class Billing {
                     const datapointItem = this.adapter.datapoints.getByIdTarget(item.id);
                     const historyItem = this.adapter.history.getByIdTarget(item.id);
 
-                    const unit = this.adapter.cost.getContractType(historyItem.idContractType).currency;
+                    const unit = this.adapter.costs.getContractType(historyItem.idContractType).currency;
 
                     await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idConsumption}`, 'consumption', null, sourceObj?.common as ioBroker.StateCommon);
                     await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idCosts}`, 'Costs', null, { ...sourceObj?.common as ioBroker.StateCommon, ...{ role: 'state', unit: unit } });
@@ -96,7 +96,7 @@ export class Billing {
                 const end = moment(item.end);
                 const idChannel = `${helper.getIdWithoutLastPart(item.id)}.${this.idChannelBilling}.${start.format('YYYY_MM_DD').replace(/[./]/g, "_")}_to_${end.format('YYYY_MM_DD').replace(/[./]/g, "_")}`;
 
-                const result = await this.adapter.cost.getCostOfRange(historyItem, datapointItem, start, end, `${item.provider}`);
+                const result = await this.adapter.costs.getCostOfRange(historyItem, datapointItem, start, end, `${item.provider}`);
 
                 if (result) {
                     await this.adapter.setStateChangedAsync(`${idChannel}.${this.idConsumption}`, { val: result.consumption, ack: true });
