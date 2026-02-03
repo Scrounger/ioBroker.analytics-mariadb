@@ -16,7 +16,7 @@ import { Costs } from './lib/cost.js';
 import { Billing } from './lib/billing.js';
 class AnalyticsMariadb extends utils.Adapter {
     sourceToDatapoint = {};
-    timeoutBoolean = {};
+    timeoutDebounceList = {};
     idTotal = 'total';
     idOldValue = 'oldValue';
     idStorageValue = 'storageValue';
@@ -97,9 +97,9 @@ class AnalyticsMariadb extends utils.Adapter {
     onUnload(callback) {
         try {
             // Here you must clear all timeouts or intervals that may still be active
-            for (const id in this.timeoutBoolean) {
-                if (this.timeoutBoolean[id]) {
-                    this.clearTimeout(this.timeoutBoolean[id]);
+            for (const id in this.timeoutDebounceList) {
+                if (this.timeoutDebounceList[id]) {
+                    this.clearTimeout(this.timeoutDebounceList[id]);
                 }
             }
             if (this.scheduleUpdateHistoryAtDayChange) {
@@ -110,9 +110,6 @@ class AnalyticsMariadb extends utils.Adapter {
             }
             if (this.scheduleSaveValueAfterDayChange) {
                 this.scheduleSaveValueAfterDayChange.cancel();
-            }
-            for (const item in this.datapoints.timeoutDebounceList) {
-                this.clearTimeout(this.datapoints.timeoutDebounceList[item]);
             }
             callback();
         }
@@ -170,6 +167,7 @@ class AnalyticsMariadb extends utils.Adapter {
                         if (id.endsWith(`.${this.idTotal}`) || id.endsWith(`.${this.idOldValue}`)) {
                             const targetId = id.replace(`${this.namespace}.`, '');
                             // Update History and costs if enabled
+                            const datapointItem = this.datapoints.getByIdTarget(targetId);
                             const historyItem = this.history.getByIdTarget(targetId || targetId.replace(`.${this.datapoints.idTotal}`, `.${this.datapoints.idBooleanValue}`));
                             if (historyItem) {
                                 await this.history.onStateChange(historyItem, state, false);

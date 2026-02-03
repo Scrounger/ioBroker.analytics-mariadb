@@ -89,12 +89,11 @@
     },
     "native": {
         "sqlInstance": "",
-        "datapointsDefaultUpdateDeBounce": 5,
         "historyDefaultDays": 8,
         "historyDefaultWeeks": 4,
         "historyDefaultMonths": 14,
         "historyDefaultYears": 5,
-        "historyDefaultUpdateDeBounce": 30,
+        "historyDefaultUpdateDeBounce": 15,
         "datapointsNumberList": [],
         "datapointsBooleanList": [],
         "datapointsSqlPresetsList": [

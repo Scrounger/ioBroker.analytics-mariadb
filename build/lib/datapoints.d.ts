@@ -7,9 +7,6 @@ export declare class Datapoints {
     idOldValue: string;
     private idStorageValue;
     idBooleanValue: string;
-    timeoutDebounceList: {
-        [id: string]: ioBroker.Timeout;
-    };
     constructor(adapter: ioBroker.myAdapter, utils: typeof import("@iobroker/adapter-core"));
     init(): Promise<void>;
     getByIdTarget(idTarget: string): ioBroker.AdapterConfigTypes.DatapointsItem;

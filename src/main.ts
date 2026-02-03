@@ -23,7 +23,7 @@ class AnalyticsMariadb extends utils.Adapter {
 
     sourceToDatapoint: Record<string, ioBroker.AdapterConfigTypes.DatapointsItem> = {};
 
-    timeoutBoolean: Record<string, ioBroker.Timeout> = {};
+    timeoutDebounceList: Record<string, ioBroker.Timeout> = {};
 
     idTotal = 'total';
     idOldValue = 'oldValue';
@@ -123,9 +123,9 @@ class AnalyticsMariadb extends utils.Adapter {
     private onUnload(callback: () => void): void {
         try {
             // Here you must clear all timeouts or intervals that may still be active
-            for (const id in this.timeoutBoolean) {
-                if (this.timeoutBoolean[id]) {
-                    this.clearTimeout(this.timeoutBoolean[id]);
+            for (const id in this.timeoutDebounceList) {
+                if (this.timeoutDebounceList[id]) {
+                    this.clearTimeout(this.timeoutDebounceList[id]);
                 }
             }
 
@@ -137,10 +137,6 @@ class AnalyticsMariadb extends utils.Adapter {
             }
             if (this.scheduleSaveValueAfterDayChange) {
                 this.scheduleSaveValueAfterDayChange.cancel();
-            }
-
-            for (const item in this.datapoints.timeoutDebounceList) {
-                this.clearTimeout(this.datapoints.timeoutDebounceList[item]);
             }
 
             callback();
@@ -204,6 +200,7 @@ class AnalyticsMariadb extends utils.Adapter {
                             const targetId = id.replace(`${this.namespace}.`, '');
 
                             // Update History and costs if enabled
+                            const datapointItem = this.datapoints.getByIdTarget(targetId);
                             const historyItem = this.history.getByIdTarget(targetId || targetId.replace(`.${this.datapoints.idTotal}`, `.${this.datapoints.idBooleanValue}`));
 
                             if (historyItem) {

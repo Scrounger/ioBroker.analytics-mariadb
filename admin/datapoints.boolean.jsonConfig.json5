@@ -97,21 +97,6 @@
                     disabled: '!data.enable',
                 },
                 {
-                    attr: 'debounce',
-                    type: 'number',
-                    title: 'De-bounce time',
-                    unit: 's',
-                    min: 0,
-                    max: 60,
-                    step: 1,
-                    defaultFunc: {
-                        func: 'globalData.datapointsDefaultUpdateDeBounce',
-                        alsoDependsOn: ['datapointsDefaultUpdateDeBounce'],
-                    },
-                    width: 100,
-                    disabled: '!data.enable',
-                },
-                {
                     attr: 'sqlWhereAppend',
                     type: 'text',
                     title: 'SQL \"WHERE\" append',

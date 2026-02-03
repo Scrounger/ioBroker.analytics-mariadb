@@ -397,11 +397,25 @@ export class History {
     async onStateChange(item, currentState, isCalculation) {
         const logPrefix = `[${this.logPrefix}.onStateChange] [${helper.getIdWithoutLastPart(typeof item.id === 'string' ? item.id : item.idChannel)}]:`;
         try {
-            if (isCalculation) {
-                await this.updateCalculatedThisYear(item);
+            const idChannel = item.idChannel ? item.idChannel : helper.getIdWithoutLastPart(item.id);
+            if (this.adapter.timeoutDebounceList[idChannel]) {
+                this.adapter.clearTimeout(this.adapter.timeoutDebounceList[idChannel]);
+                delete this.adapter.timeoutDebounceList[idChannel];
+            }
+            const total = await this.adapter.getStateAsync(`${idChannel}.${this.idChannelHistory}.${Interval.day}`);
+            if (currentState.lc - total.lc > ((item.debounce || 15)) * 1000) {
+                if (isCalculation) {
+                    await this.updateCalculatedThisYear(item);
+                }
+                else {
+                    await this.updateThisYear(item, currentState);
+                }
             }
             else {
-                await this.updateThisYear(item, currentState);
+                this.adapter.timeoutDebounceList[idChannel] = this.adapter.setTimeout(async () => {
+                    await this.onStateChange(item, currentState, isCalculation);
+                    this.adapter.itemDebug(item, `${logPrefix} no new value after debounce time -> recheck after timeout done`);
+                }, (item.debounce || 15) * 1000);
             }
             this.log.silly(`${logPrefix} history${item.idContractType ? ' and costs ' : ' '}states of this year updated`);
         }
