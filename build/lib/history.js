@@ -253,7 +253,7 @@ export class History {
                         else {
                             this.adapter.log.debug(`${logPrefix} history for interval '${interval}' is disabled`);
                         }
-                        this.log.debug(`${logPrefix} [${interval}] history ${item.idContractType ? ' and costs ' : ' '} for interval updated`);
+                        this.log.debug(`${logPrefix} [_${interval}] history ${item.idContractType ? ' and costs ' : ' '} for interval updated`);
                     }
                 }
                 this.log.info(`${logPrefix} history states of the past updated`);
@@ -272,13 +272,14 @@ export class History {
         try {
             const range = this.getDatesFromInterval(interval, i);
             let result = null;
-            let costResult = null;
+            let costsResult = null;
             if (datapointItem.type === 'number') {
                 if (item.idContractType) {
                     // Wenn Kosten aktiviert sind, nehmen wir den Verbrauch aus der Kostenberechnung um Abfragen auf die Datenbank zu minimieren
-                    costResult = await this.adapter.costs.getCostOfRange(item, datapointItem, range.start, range.end, helper.getIdLastPart(id));
-                    if (costResult) {
-                        result = costResult.consumption;
+                    const data = await this.adapter.costs.getCostOfRange(item, datapointItem, range.start, range.end, helper.getIdLastPart(id));
+                    if (data) {
+                        result = data.consumption;
+                        costsResult = data.sum;
                     }
                 }
                 if (result === null) {
@@ -306,7 +307,7 @@ export class History {
             }
             await this.adapter.setStateChangedAsync(id, result, true);
             if (item.idContractType) {
-                await this.adapter.setStateChangedAsync(`${id.replace(`.${this.idChannelHistory}.`, `.${this.adapter.costs.idChannelCost}.`)}`, costResult ? costResult.sum : null, true);
+                await this.adapter.setStateChangedAsync(`${id.replace(`.${this.idChannelHistory}.`, `.${this.adapter.costs.idChannelCost}.`)}`, costsResult, true);
             }
             this.adapter.itemDebug(item, `${logPrefix} start: ${moment(range.start).format('DD.MM.YYYY - HH:mm')}, end: ${moment(range.end).format('DD.MM.YYYY - HH:mm')}, result: ${result}`);
         }
@@ -325,7 +326,7 @@ export class History {
                 if (interval !== Interval.ALL) {
                     const calculation = await this.getCalculation(item, interval);
                     if (calculation) {
-                        this.adapter.itemDebug(item, `${logPrefix} [${interval}] calculation: ${debugFormula} => ${calculation.formula} = ${calculation.result}`);
+                        this.adapter.itemDebug(item, `${logPrefix} [_${interval}] calculation: ${debugFormula} => ${calculation.formula} = ${calculation.result}`);
                         await this.adapter.setStateChangedAsync(`${item.idChannel}.${this.idChannelHistory}.${interval}`, calculation.result, true);
                     }
                 }

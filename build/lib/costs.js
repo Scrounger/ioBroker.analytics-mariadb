@@ -64,7 +64,7 @@ export class Costs {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
     }
-    async getCostOfRange(item, datapointItem, rangeStart, rangeEnde, interval = undefined) {
+    async getCostOfRange(item, datapointItem, rangeStart, rangeEnd, interval = undefined) {
         const logPrefixAppend = `[${helper.getIdWithoutLastPart(item.id)}]${interval ? ` [${interval}] ` : ' [manual] '}[${item.idContractType}]`;
         const logPrefix = `[${this.logPrefix}.getCostOfRange] ${logPrefixAppend}:`;
         try {
@@ -72,10 +72,10 @@ export class Costs {
             const contractDataOfRange = this.costList[item.idContractType].data.filter((x) => {
                 const contractStart = moment(x.start, this.adapter.dateFormat, true);
                 const contractEnd = moment(x.end, this.adapter.dateFormat, true);
-                return rangeStart.isSameOrBefore(contractEnd) && rangeEnde.isSameOrAfter(contractStart);
+                return rangeStart.isSameOrBefore(contractEnd) && rangeEnd.isSameOrAfter(contractStart);
             });
             if (contractDataOfRange && contractDataOfRange.length > 0) {
-                this.adapter.itemDebug(item, `${logPrefix} time period from ${rangeStart.format(this.adapter.dateFormat)} to ${rangeEnde.format(this.adapter.dateFormat)} - contract data: ${JSON.stringify(contractDataOfRange)}`);
+                this.adapter.itemDebug(item, `${logPrefix} time period from ${rangeStart.format(this.adapter.dateFormat)} to ${rangeEnd.format(this.adapter.dateFormat)} - contract data: ${JSON.stringify(contractDataOfRange)}`);
                 for (const data of contractDataOfRange) {
                     const cStart = moment(data.start, this.adapter.dateFormat, true);
                     const cEnd = moment(data.end, this.adapter.dateFormat, true);
@@ -84,8 +84,8 @@ export class Costs {
                     if (rangeStart.isAfter(cStart)) {
                         start = rangeStart;
                     }
-                    if (rangeEnde.isBefore(cEnd)) {
-                        end = rangeEnde;
+                    if (rangeEnd.isBefore(cEnd)) {
+                        end = rangeEnd;
                     }
                     this.adapter.itemDebug(item, `${logPrefix} time period from ${start.format(this.adapter.dateFormat)} to ${end.format(this.adapter.dateFormat)} - contract data: ${JSON.stringify(data)}`);
                     const consumption = await this.adapter.sql.getTotal(item, datapointItem, interval, start.startOf('day').valueOf(), end.endOf('day').valueOf(), logPrefixAppend);
@@ -103,27 +103,26 @@ export class Costs {
                         this.adapter.itemDebug(item, `${logPrefix} time period from ${start.format(this.adapter.dateFormat)} to ${end.format(this.adapter.dateFormat)} - calculation result: ${JSON.stringify(result)}`);
                     }
                 }
-                if (result.start.isSame(rangeStart, 'day') && result.end.isSame(rangeEnde, 'day')) {
-                    if (result.consumption && result.sum) {
+                if ((rangeStart.isSame(result.start) || rangeStart.isBetween(result.start, result.end)) && (rangeEnd.isSame(result.end) || rangeEnd.isBetween(result.start, result.end))) {
+                    if (result.consumption) {
                         if (item.costSumOptions?.length > 0) {
                             result.consumption = mathjs.round(result.consumption, item.decimals);
                             result.sum = mathjs.round((item.costSumOptions?.includes('variableCosts') ? result.variableCosts : 0)
                                 + (item.costSumOptions?.includes('basicPrice') ? result.basicPrice : 0)
                                 - (item.costSumOptions?.includes('bonusPrice') ? result.bonusPrice : 0), 2);
+                            this.adapter.itemDebug(item, `${logPrefix} start: ${rangeStart.format('DD.MM.YYYY - HH:mm')}, end: ${rangeEnd.format('DD.MM.YYYY - HH:mm')}, sum: ${result.sum}`);
+                            return result;
                         }
                         else {
                             this.log.warn(`${logPrefix} no cost sum options in the adapter settings defined`);
-                            result.sum = null;
                         }
-                        this.adapter.itemDebug(item, `${logPrefix} start: ${rangeStart.format('DD.MM.YYYY - HH:mm')}, end: ${rangeEnde.format('DD.MM.YYYY - HH:mm')}, sum: ${result.sum}`);
-                        return result;
                     }
                     else {
-                        this.adapter.itemDebug(item, `${logPrefix} no cosumption or sum property available in the result: ${JSON.stringify(result)}`);
+                        this.adapter.itemDebug(item, `${logPrefix} no cosumption available in the result: ${JSON.stringify(result)}`);
                     }
                 }
                 else {
-                    this.log.error(`${logPrefix} costs can't be calculated because period (${result.start.format(this.adapter.dateFormat)} - ${result.end.format(this.adapter.dateFormat)}) does not match requested period (${rangeStart.format(this.adapter.dateFormat)} - ${rangeEnde.format(this.adapter.dateFormat)}) -> Missing contract data!`);
+                    this.log.error(`${logPrefix} costs can't be calculated because period (${result.start.format(this.adapter.dateFormat)} - ${result.end.format(this.adapter.dateFormat)}) is not between (${rangeStart.format(this.adapter.dateFormat)} - ${rangeEnd.format(this.adapter.dateFormat)}) -> Missing contract data!`);
                 }
             }
         }
