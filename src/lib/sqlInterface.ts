@@ -366,7 +366,7 @@ export class SqlInterface {
         const logPrefix = `[${this.logPrefix}.metricsHandler]:`
 
         try {
-            const cutoff = Date.now() - 60000;
+            const cutoff = Date.now() - this.adapter.config.metricsMinUpdateInterval * 1000;
 
             while (this.metrics.length && this.metrics[0].timestamp < cutoff) {
                 this.metrics.shift();

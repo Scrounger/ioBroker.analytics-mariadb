@@ -49,38 +49,44 @@ class AnalyticsMariadb extends utils.Adapter {
         const logPrefix = '[onReady]:';
         try {
             if (this.config.sqlInstance) {
-                moment.locale(this.language);
-                await utils.I18n.init(`${utils.getAbsoluteDefaultDataDir().replace('iobroker-data/', '')}node_modules/iobroker.${this.name}/admin`, this);
-                this.sql = new SqlInterface(this);
-                this.datapoints = new Datapoints(this, utils);
-                await this.datapoints.init();
-                this.costs = new Costs(this);
-                await this.costs.init();
-                this.history = new History(this, utils);
-                await this.history.init();
-                this.billing = new Billing(this, utils);
-                await this.billing.init();
-                this.initComplete = true;
-                // Historische Werte einmal täglich aktualisieren (_Tag, _Woche, _Monat, _Jahr)
-                this.scheduleUpdateHistoryAtDayChange = scheduleJob(this.config.cronUpdateHistoryAtDayChange, async () => {
-                    this.log.debug(`${logPrefix} cron job to update name of history states at day change started...`);
-                    await this.history.updateNameOfStates();
-                    this.log.debug(`${logPrefix} cron job to update history values at day change started...`);
-                    await this.history.updateStates();
-                });
-                // Beim Tageswechsel, Wert kurz vor und nach 0:00 in Datenbank schreiben, damit der Verbrauch zwischen Tageswechsel korrekt erfasst wird
-                this.scheduleSaveValueBeforeDayChange = scheduleJob('59 59 23 * * *', async () => {
-                    this.log.debug(`${logPrefix} cron job to to save values in database before day change started...`);
-                    await this.datapoints.saveStatesToDatabase();
-                });
-                this.scheduleSaveValueAfterDayChange = scheduleJob('1 0 0 * * *', async () => {
-                    this.log.debug(`${logPrefix} cron job to to save values in database after day change started...`);
-                    await this.datapoints.saveStatesToDatabase();
-                });
-                // const item = { ... this.config.historyList[0] };
-                // const datapointItem = this.datapoints.getByIdTarget(item.id as string);
-                // item.debug = true;
-                // await this.costs.getCostOfRange(item, datapointItem, moment('01.01.2022', 'DD.MM.YYYY'), moment('31.12.2022', 'DD.MM.YYYY').endOf('day'));
+                const sqlObj = await this.getForeignObjectAsync(`system.adapter.${this.config.sqlInstance}`);
+                if (sqlObj && sqlObj.native && sqlObj.native.dbtype === 'mysql') {
+                    moment.locale(this.language);
+                    await utils.I18n.init(`${utils.getAbsoluteDefaultDataDir().replace('iobroker-data/', '')}node_modules/iobroker.${this.name}/admin`, this);
+                    this.sql = new SqlInterface(this);
+                    this.datapoints = new Datapoints(this, utils);
+                    await this.datapoints.init();
+                    this.costs = new Costs(this);
+                    await this.costs.init();
+                    this.history = new History(this, utils);
+                    await this.history.init();
+                    this.billing = new Billing(this, utils);
+                    await this.billing.init();
+                    this.initComplete = true;
+                    // Historische Werte einmal täglich aktualisieren (_Tag, _Woche, _Monat, _Jahr)
+                    this.scheduleUpdateHistoryAtDayChange = scheduleJob(this.config.cronUpdateHistoryAtDayChange, async () => {
+                        this.log.debug(`${logPrefix} cron job to update name of history states at day change started...`);
+                        await this.history.updateNameOfStates();
+                        this.log.debug(`${logPrefix} cron job to update history values at day change started...`);
+                        await this.history.updateStates();
+                    });
+                    // Beim Tageswechsel, Wert kurz vor und nach 0:00 in Datenbank schreiben, damit der Verbrauch zwischen Tageswechsel korrekt erfasst wird
+                    this.scheduleSaveValueBeforeDayChange = scheduleJob('59 59 23 * * *', async () => {
+                        this.log.debug(`${logPrefix} cron job to to save values in database before day change started...`);
+                        await this.datapoints.saveStatesToDatabase();
+                    });
+                    this.scheduleSaveValueAfterDayChange = scheduleJob('1 0 0 * * *', async () => {
+                        this.log.debug(`${logPrefix} cron job to to save values in database after day change started...`);
+                        await this.datapoints.saveStatesToDatabase();
+                    });
+                    // const item = { ... this.config.historyList[0] };
+                    // const datapointItem = this.datapoints.getByIdTarget(item.id as string);
+                    // item.debug = true;
+                    // await this.costs.getCostOfRange(item, datapointItem, moment('01.01.2022', 'DD.MM.YYYY'), moment('31.12.2022', 'DD.MM.YYYY').endOf('day'));
+                }
+                else {
+                    this.log.error(`${logPrefix} only dbtype mysql is supported by this adapter (currently configured: ${(sqlObj && sqlObj.native && sqlObj.native.dbtype) || 'undefined'})!`);
+                }
             }
             else {
                 this.log.error(`${logPrefix} No SQL instance configured in adapter configuration!`);
