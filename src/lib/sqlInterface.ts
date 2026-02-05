@@ -114,7 +114,7 @@ export class SqlInterface {
                     return data[0] as SqlCounter;
                 } else {
                     if (data.length === 0) {
-                        this.log.warn(`${logPrefix} no data for this range available. You can use a sql append role to supress this warning.`);
+                        this.log.info(`${logPrefix} no data for this range available. Change the settings for this interval to supress this info`);
                     } else {
                         this.log.error(`${logPrefix} unexpected number of data rows: ${data.length} (data: ${JSON.stringify(data)})`);
                     }
@@ -171,7 +171,7 @@ export class SqlInterface {
                     return data[0] as SqlTotal;
                 } else {
                     if (data.length === 0) {
-                        this.log.warn(`${logPrefix} no data for this range available. You can use a sql append role to supress this warning.`);
+                        this.log.info(`${logPrefix} no data for this range available. Change the settings for this interval to supress this info`);
                     } else {
                         this.log.error(`${logPrefix} unexpected number of data rows: ${data.length} (data: ${JSON.stringify(data)})`);
                     }
@@ -236,7 +236,7 @@ export class SqlInterface {
                     return data[0] as SqlTotal;
                 } else {
                     if (data.length === 0) {
-                        this.log.warn(`${logPrefix} no data for this range available. Change the settings for this interval to supress this warning`);
+                        this.log.info(`${logPrefix} no data for this range available. Change the settings for this interval to supress this info`);
                     } else {
                         this.log.error(`${logPrefix} unexpected number of data rows: ${data.length} (data: ${JSON.stringify(data)})`);
                     }
