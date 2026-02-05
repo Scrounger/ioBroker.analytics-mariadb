@@ -21,7 +21,9 @@ export class Costs {
     private adapter: ioBroker.myAdapter;
     private log: ioBroker.Logger;
 
-    public idChannelCost = 'costs';
+    // public idChannelCost = 'costs';
+
+    public idSuffix = '_costs';
 
     private costList: ioBroker.AdapterConfigTypes.CostList = {};
 

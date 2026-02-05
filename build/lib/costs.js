@@ -5,7 +5,8 @@ export class Costs {
     logPrefix = 'Costs';
     adapter;
     log;
-    idChannelCost = 'costs';
+    // public idChannelCost = 'costs';
+    idSuffix = '_costs';
     costList = {};
     constructor(adapter) {
         this.adapter = adapter;

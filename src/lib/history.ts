@@ -69,7 +69,6 @@ export class History {
                 await objectHandler.createChannel(this.adapter, this.utils, `${idChannel}.${this.idChannelHistory}`, item.idChannel ? 'historical calculated values' : 'historical values');
 
                 if (item.idContractType) {
-                    await objectHandler.createChannel(this.adapter, this.utils, `${idChannel}.${this.adapter.costs.idChannelCost}`, 'costs for historical values');
                     commonCost.unit = this.adapter.costs.getContractType(item.idContractType).currency;
                 }
 
@@ -100,22 +99,42 @@ export class History {
 
                 for (const interval of Object.keys(Interval)) {
                     if (interval !== Interval.ALL) {
+                        // History of this year
                         await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idChannelHistory}.${interval}`, null, null, commonHistory, undefined, false, false);
 
-                        await objectHandler.createChannel(this.adapter, this.utils, `${idChannel}.${this.idChannelHistory}._${interval}`, `past ${interval}s`);
-
                         if (item.idContractType) {
-                            await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.adapter.costs.idChannelCost}.${interval}`, null, null, commonCost, undefined, false, false);
-                            await objectHandler.createChannel(this.adapter, this.utils, `${idChannel}.${this.adapter.costs.idChannelCost}._${interval}`, `past ${interval}s`);
+                            await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idChannelHistory}.${interval}${this.adapter.costs.idSuffix}`, null, null, commonCost, undefined, false, false);
                         }
 
+                        // Past history
+                        const idChannelPast = `${idChannel}.${this.idChannelHistory}._${interval}`
+                        const existingPastStates = await this.adapter.getStatesAsync(`${idChannelPast}.*`);
+
                         if (item[interval] > 0) {
+                            await objectHandler.createChannel(this.adapter, this.utils, idChannelPast, `past ${interval}s`);
+
                             for (let i = 1; i <= item[interval]; i++) {
-                                await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idChannelHistory}._${interval}.${interval}_${helper.zeroPad(i, 2)}`, null, null, commonHistory, undefined, false, false);
+                                await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannelPast}.${interval}_${helper.zeroPad(i, 2)}`, null, null, commonHistory, undefined, false, false);
+                                delete existingPastStates[`${this.adapter.namespace}.${idChannelPast}.${interval}_${helper.zeroPad(i, 2)}`];
 
                                 if (item.idContractType) {
-                                    await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.adapter.costs.idChannelCost}._${interval}.${interval}_${helper.zeroPad(i, 2)}`, null, null, commonCost, undefined, false, false);
+                                    await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannelPast}.${interval}_${helper.zeroPad(i, 2)}${this.adapter.costs.idSuffix}`, null, null, commonCost, undefined, false, false);
+                                    delete existingPastStates[`${this.adapter.namespace}.${idChannelPast}.${interval}_${helper.zeroPad(i, 2)}${this.adapter.costs.idSuffix}`];
                                 }
+                            }
+
+                            if (existingPastStates && Object.keys(existingPastStates).length > 0) {
+                                // delete not needed channels
+                                for (const id of Object.keys(existingPastStates)) {
+                                    this.adapter.delObjectAsync(id);
+                                    this.log.info(`${logPrefix} deleted history state '${id}' because interval is set to ${item[interval]}`);
+                                }
+                            }
+                        } else {
+                            // delete not needed channels
+                            if (await this.adapter.objectExists(idChannelPast)) {
+                                await this.adapter.delObjectAsync(idChannelPast, { recursive: true });
+                                this.log.info(`${logPrefix} deleted history channel '${idChannelPast}' because interval is set to ${item[interval]}`);
                             }
                         }
                     }
@@ -152,10 +171,10 @@ export class History {
                             continue;
                         }
 
-                        await this._updateNameOfStates(`${idChannel}.${this.idChannelHistory}.${interval}`, name, logPrefix);
+                        await this._updateNameOfStates(`${idChannel}.${this.idChannelHistory}.${interval}`, `${name} - ${this.utils.I18n.getTranslatedObject('consumption')[this.adapter.language] || 'consumption'}`, logPrefix);
 
                         if (item.idContractType) {
-                            await this._updateNameOfStates(`${idChannel}.${this.adapter.costs.idChannelCost}.${interval}`, name, logPrefix);
+                            await this._updateNameOfStates(`${idChannel}.${this.idChannelHistory}.${interval}${this.adapter.costs.idSuffix}`, `${name} - ${this.utils.I18n.getTranslatedObject('Costs')[this.adapter.language] || 'Costs'}`, logPrefix);
                         }
 
                         if (item[interval] > 0) {
@@ -180,10 +199,10 @@ export class History {
                                     continue;
                                 }
 
-                                await this._updateNameOfStates(`${idChannel}.${this.idChannelHistory}._${interval}.${interval}_${helper.zeroPad(i, 2)}`, name, logPrefix);
+                                await this._updateNameOfStates(`${idChannel}.${this.idChannelHistory}._${interval}.${interval}_${helper.zeroPad(i, 2)}`, `${name} - ${this.utils.I18n.getTranslatedObject('consumption')[this.adapter.language] || 'consumption'}`, logPrefix);
 
                                 if (item.idContractType) {
-                                    await this._updateNameOfStates(`${idChannel}.${this.adapter.costs.idChannelCost}._${interval}.${interval}_${helper.zeroPad(i, 2)}`, name, logPrefix);
+                                    await this._updateNameOfStates(`${idChannel}.${this.idChannelHistory}._${interval}.${interval}_${helper.zeroPad(i, 2)}${this.adapter.costs.idSuffix}`, `${name} - ${this.utils.I18n.getTranslatedObject('Costs')[this.adapter.language] || 'Costs'}`, logPrefix);
                                 }
                             }
                         }
@@ -358,7 +377,7 @@ export class History {
             await this.adapter.setStateChangedAsync(id, result, true);
 
             if (item.idContractType) {
-                await this.adapter.setStateChangedAsync(`${id.replace(`.${this.idChannelHistory}.`, `.${this.adapter.costs.idChannelCost}.`)}`, costsResult, true);
+                await this.adapter.setStateChangedAsync(`${id}${this.adapter.costs.idSuffix}`, costsResult, true);
             }
 
             this.adapter.itemDebug(item, `${logPrefix} start: ${moment(range.start).format('DD.MM.YYYY - HH:mm')}, end: ${moment(range.end).format('DD.MM.YYYY - HH:mm')}, result: ${result}`);

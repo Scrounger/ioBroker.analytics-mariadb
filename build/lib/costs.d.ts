@@ -13,7 +13,7 @@ export declare class Costs {
     private logPrefix;
     private adapter;
     private log;
-    idChannelCost: string;
+    idSuffix: string;
     private costList;
     constructor(adapter: ioBroker.myAdapter);
     init(): Promise<void>;

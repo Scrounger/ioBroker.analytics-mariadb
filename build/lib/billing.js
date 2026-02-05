@@ -33,6 +33,8 @@ export class Billing {
         let logPrefix = `[${this.logPrefix}.createStates]:`;
         try {
             const list = this.adapter.config.billingList;
+            // existing states, needed to delete not existing channels on adapter start
+            const existingBillings = await this.adapter.getStatesAsync(`*.${this.idChannelBilling}.*.${this.idConsumption}`);
             if (list && list.length > 0) {
                 for (const item of list) {
                     logPrefix = `[${this.logPrefix}.updateState] [${helper.getIdWithoutLastPart(item.id)}] [${moment(item.start).format(this.adapter.dateFormat)} - ${moment(item.end).format(this.adapter.dateFormat)}]:`;
@@ -54,7 +56,15 @@ export class Billing {
                         await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idBackPayment}`, curState && curState.val >= 0 ? 'back payment' : 'refund', null, { ...sourceObj?.common, ...{ role: 'state', unit: unit } });
                     }
                     await this.updateState(item, historyItem, datapointItem);
+                    delete existingBillings[`${this.adapter.namespace}.${idChannel}.${this.idConsumption}`];
                     this.log.debug(`${logPrefix} '${item.provider}' billing states created and updated`);
+                }
+                if (existingBillings && Object.keys(existingBillings).length > 0) {
+                    // delete not needed channels
+                    for (const id of Object.keys(existingBillings)) {
+                        this.adapter.delObjectAsync(helper.getIdWithoutLastPart(id), { recursive: true });
+                        this.log.info(`${logPrefix} deleted billing channel '${id}' because it not exists anymore in the configuration`);
+                    }
                 }
             }
         }
