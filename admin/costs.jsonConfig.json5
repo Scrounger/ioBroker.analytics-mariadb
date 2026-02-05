@@ -123,6 +123,9 @@
                     validatorNoSaveOnError: true,
                     validatorErrorText: 'mandatory input',
                     width: 180,
+                    style: {
+                        minWidth: '120px',
+                    },
                 },
                 {
                     attr: 'end',
@@ -133,6 +136,9 @@
                     validatorNoSaveOnError: true,
                     validatorErrorText: 'mandatory input',
                     width: 180,
+                    style: {
+                        minWidth: '120px',
+                    },
                 },
                 {
                     attr: 'variableCosts',

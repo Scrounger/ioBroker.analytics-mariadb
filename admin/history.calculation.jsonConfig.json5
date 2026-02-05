@@ -81,6 +81,9 @@
                     type: 'text',
                     title: 'unit',
                     width: 110,
+                    style: {
+                        minWidth: '70px',
+                    },
                 },
                 {
                     attr: 'debounce',
@@ -180,6 +183,7 @@
                     title: 'Costs',
                     default: false,
                     width: 80,
+                    disabled: '!data.id.some(id => globalData.historyList.some(h => h.id === id && h.idContractType))',
                 },
                 {
                     attr: 'debug',

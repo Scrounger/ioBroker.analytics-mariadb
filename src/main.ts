@@ -322,24 +322,21 @@ class AnalyticsMariadb extends utils.Adapter {
                     if (obj.callback) {
                         this.sendTo(obj.from, obj.command, result, obj.callback);
                     }
-                } else if (obj.command === 'getCostContractTypes') {
-                    const data = obj.message.data as ioBroker.AdapterConfigTypes.CostContractType[];
-
-                    const result = data.map(p => p.id);
-
-                    if (obj.callback) {
-                        this.sendTo(obj.from, obj.command, result, obj.callback);
-                    }
                 } else if (obj.command === 'getBillingList') {
-                    const data = obj.message.data as ioBroker.AdapterConfigTypes.HistoryItem[];
+                    const historyList = obj.message.history as ioBroker.AdapterConfigTypes.HistoryItem[];
 
-                    const result = data.filter(x => x.idContractType).map(item => {
-                        const dpItem = this.datapoints.getByIdTarget(item.id as string);
-                        return {
-                            value: `${item.id}`,
-                            label: dpItem ? `${dpItem.name} (${item.idContractType})` : `ERROR !!! ${item.id}`
+                    const result = historyList.filter(x => x.idContractType).map(item => {
+                        const dpItem = (obj.message.datapoints as ioBroker.AdapterConfigTypes.DatapointsItem[]).find(d => item.id.includes(d.idChannelTarget));
+                        if (dpItem) {
+                            return {
+                                value: `${item.id}`,
+                                label: dpItem ? `${dpItem.name} (${item.idContractType})` : `ERROR !!! ${item.id}`
+                            }
                         }
-                    });
+                        return null;
+                    }).filter(item => item !== null);;
+
+                    this.log.warn(JSON.stringify(result));
 
                     if (obj.callback) {
                         this.sendTo(obj.from, obj.command, result, obj.callback);

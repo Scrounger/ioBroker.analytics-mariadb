@@ -275,22 +275,20 @@ class AnalyticsMariadb extends utils.Adapter {
                         this.sendTo(obj.from, obj.command, result, obj.callback);
                     }
                 }
-                else if (obj.command === 'getCostContractTypes') {
-                    const data = obj.message.data;
-                    const result = data.map(p => p.id);
-                    if (obj.callback) {
-                        this.sendTo(obj.from, obj.command, result, obj.callback);
-                    }
-                }
                 else if (obj.command === 'getBillingList') {
-                    const data = obj.message.data;
-                    const result = data.filter(x => x.idContractType).map(item => {
-                        const dpItem = this.datapoints.getByIdTarget(item.id);
-                        return {
-                            value: `${item.id}`,
-                            label: dpItem ? `${dpItem.name} (${item.idContractType})` : `ERROR !!! ${item.id}`
-                        };
-                    });
+                    const historyList = obj.message.history;
+                    const result = historyList.filter(x => x.idContractType).map(item => {
+                        const dpItem = obj.message.datapoints.find(d => item.id.includes(d.idChannelTarget));
+                        if (dpItem) {
+                            return {
+                                value: `${item.id}`,
+                                label: dpItem ? `${dpItem.name} (${item.idContractType})` : `ERROR !!! ${item.id}`
+                            };
+                        }
+                        return null;
+                    }).filter(item => item !== null);
+                    ;
+                    this.log.warn(JSON.stringify(result));
                     if (obj.callback) {
                         this.sendTo(obj.from, obj.command, result, obj.callback);
                     }
