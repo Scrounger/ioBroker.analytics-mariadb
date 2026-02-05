@@ -57,7 +57,7 @@ class AnalyticsMariadb extends utils.Adapter {
                     this.datapoints = new Datapoints(this, utils);
                     await this.datapoints.init();
                     this.costs = new Costs(this);
-                    await this.costs.init();
+                    this.costs.init();
                     this.history = new History(this, utils);
                     await this.history.init();
                     this.billing = new Billing(this, utils);
@@ -71,13 +71,13 @@ class AnalyticsMariadb extends utils.Adapter {
                         await this.history.updateStates();
                     });
                     // Beim Tageswechsel, Wert kurz vor und nach 0:00 in Datenbank schreiben, damit der Verbrauch zwischen Tageswechsel korrekt erfasst wird
-                    this.scheduleSaveValueBeforeDayChange = scheduleJob('59 59 23 * * *', async () => {
+                    this.scheduleSaveValueBeforeDayChange = scheduleJob('59 59 23 * * *', () => {
                         this.log.debug(`${logPrefix} cron job to to save values in database before day change started...`);
-                        await this.datapoints.saveStatesToDatabase();
+                        this.datapoints.saveStatesToDatabase();
                     });
-                    this.scheduleSaveValueAfterDayChange = scheduleJob('1 0 0 * * *', async () => {
+                    this.scheduleSaveValueAfterDayChange = scheduleJob('1 0 0 * * *', () => {
                         this.log.debug(`${logPrefix} cron job to to save values in database after day change started...`);
-                        await this.datapoints.saveStatesToDatabase();
+                        this.datapoints.saveStatesToDatabase();
                     });
                     // const item = { ... this.config.historyList[0] };
                     // const datapointItem = this.datapoints.getByIdTarget(item.id as string);
@@ -207,9 +207,6 @@ class AnalyticsMariadb extends utils.Adapter {
         catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
-    }
-    isBetweenDayChange(start, end) {
-        return moment().isSameOrAfter(moment(start, 'HH:mm')) || moment().isSameOrBefore(moment(end, 'HH:mm'));
     }
     // If you need to accept messages in your adapter, uncomment the following block and the corresponding line in the constructor.
     // /**

@@ -75,7 +75,7 @@ class AnalyticsMariadb extends utils.Adapter {
                     await this.datapoints.init();
 
                     this.costs = new Costs(this)
-                    await this.costs.init();
+                    this.costs.init();
 
                     this.history = new History(this, utils);
                     await this.history.init();
@@ -95,13 +95,13 @@ class AnalyticsMariadb extends utils.Adapter {
                     });
 
                     // Beim Tageswechsel, Wert kurz vor und nach 0:00 in Datenbank schreiben, damit der Verbrauch zwischen Tageswechsel korrekt erfasst wird
-                    this.scheduleSaveValueBeforeDayChange = scheduleJob('59 59 23 * * *', async () => {
+                    this.scheduleSaveValueBeforeDayChange = scheduleJob('59 59 23 * * *', () => {
                         this.log.debug(`${logPrefix} cron job to to save values in database before day change started...`);
-                        await this.datapoints.saveStatesToDatabase();
+                        this.datapoints.saveStatesToDatabase();
                     });
-                    this.scheduleSaveValueAfterDayChange = scheduleJob('1 0 0 * * *', async () => {
+                    this.scheduleSaveValueAfterDayChange = scheduleJob('1 0 0 * * *', () => {
                         this.log.debug(`${logPrefix} cron job to to save values in database after day change started...`);
-                        await this.datapoints.saveStatesToDatabase();
+                        this.datapoints.saveStatesToDatabase();
                     });
 
                     // const item = { ... this.config.historyList[0] };
@@ -244,10 +244,6 @@ class AnalyticsMariadb extends utils.Adapter {
         }
     }
 
-    private isBetweenDayChange(start: string, end: string): Boolean {
-        return moment().isSameOrAfter(moment(start, 'HH:mm')) || moment().isSameOrBefore(moment(end, 'HH:mm'));
-    }
-
     // If you need to accept messages in your adapter, uncomment the following block and the corresponding line in the constructor.
     // /**
     //  * Some message was sent to this instance over message box. Used by email, pushover, text2speech, ...
@@ -305,8 +301,8 @@ class AnalyticsMariadb extends utils.Adapter {
                     const result = data.map(item => {
                         const dpItem = this.datapoints.getByIdTarget(item.id as string);
                         return {
-                            value: `${item.id}`,
-                            label: dpItem ? `${dpItem.name} (${item.id})` : `${item.id}`
+                            value: `${item.id as string}`,
+                            label: dpItem ? `${dpItem.name} (${item.id as string})` : `${item.id as string}`
                         }
                     });
 
@@ -329,8 +325,8 @@ class AnalyticsMariadb extends utils.Adapter {
                         const dpItem = (obj.message.datapoints as ioBroker.AdapterConfigTypes.DatapointsItem[]).find(d => item.id.includes(d.idChannelTarget));
                         if (dpItem) {
                             return {
-                                value: `${item.id}`,
-                                label: dpItem ? `${dpItem.name} (${item.idContractType})` : `ERROR !!! ${item.id}`
+                                value: `${item.id as string}`,
+                                label: dpItem ? `${dpItem.name} (${item.idContractType})` : `ERROR !!! ${item.id as string}`
                             }
                         }
                         return null;

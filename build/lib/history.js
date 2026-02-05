@@ -101,7 +101,7 @@ export class History {
                             if (existingPastStates && Object.keys(existingPastStates).length > 0) {
                                 // delete not needed channels
                                 for (const id of Object.keys(existingPastStates)) {
-                                    this.adapter.delObjectAsync(id);
+                                    await this.adapter.delObjectAsync(id);
                                     this.log.info(`${logPrefix} deleted history state '${id}' because interval is set to ${item[interval]}`);
                                 }
                             }

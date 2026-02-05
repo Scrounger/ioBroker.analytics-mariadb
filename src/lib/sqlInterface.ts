@@ -129,7 +129,11 @@ export class SqlInterface {
 
     /**
      * @deprecated old function
-     * 
+     * @param item 
+     * @param interval
+     * @param timestampStart
+     * @param timestampEnd
+     * @param logPrefixAppend 
      */
     public async getTotal2(item: ioBroker.AdapterConfigTypes.HistoryItem, interval: string, timestampStart: number, timestampEnd: number, logPrefixAppend: string): Promise<SqlTotal | null> {
         const logPrefix = `[${this.logPrefix}.getTotal2] ${logPrefixAppend}:`
@@ -340,7 +344,7 @@ export class SqlInterface {
                     this.log.warn(`${logPrefix} query took ${duration / 1000}s (query: ${typeof query === 'string' ? query : JSON.stringify(query)})`);
                 }
 
-                await this.metricsHandler(now.valueOf(), duration);
+                this.metricsHandler(now.valueOf(), duration);
 
                 if (data.error) {
                     this.log.error(`${logPrefix} data error: ${data.error}`);
@@ -362,7 +366,7 @@ export class SqlInterface {
         return null;
     }
 
-    private async metricsHandler(now: number, duration: number) {
+    private metricsHandler(now: number, duration: number): void {
         const logPrefix = `[${this.logPrefix}.metricsHandler]:`
 
         try {
@@ -387,7 +391,7 @@ export class SqlInterface {
         }
     }
 
-    private getMetricsPeaksPerSecond() {
+    private getMetricsPeaksPerSecond(): Record<number, { requests: number; peakDuration: number; }> {
         const logPrefix = `[${this.logPrefix}.getPeaksPerSecond]:`
 
         try {
@@ -415,7 +419,7 @@ export class SqlInterface {
         return null;
     }
 
-    private async getMetricsAbsolutePeaks() {
+    private async getMetricsAbsolutePeaks(): Promise<void> {
         const logPrefix = `[${this.logPrefix}.getAbsolutePeaks]:`
 
         try {

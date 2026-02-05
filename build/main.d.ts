@@ -40,7 +40,6 @@ declare class AnalyticsMariadb extends utils.Adapter {
      * @param state - State object
      */
     private onStateChange;
-    private isBetweenDayChange;
     private onMessage;
     itemDebug(item: ioBroker.AdapterConfigTypes.DatapointsItem | ioBroker.AdapterConfigTypes.HistoryItem | ioBroker.AdapterConfigTypes.CostContractType, message: string): void;
 }

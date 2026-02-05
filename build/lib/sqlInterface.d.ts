@@ -34,7 +34,11 @@ export declare class SqlInterface {
     getCounter(item: ioBroker.AdapterConfigTypes.DatapointsItem, interval: string, logPrefixAppend: string, timestampStart?: number, timestampEnd?: number): Promise<SqlCounter | null>;
     /**
      * @deprecated old function
-     *
+     * @param item
+     * @param interval
+     * @param timestampStart
+     * @param timestampEnd
+     * @param logPrefixAppend
      */
     getTotal2(item: ioBroker.AdapterConfigTypes.HistoryItem, interval: string, timestampStart: number, timestampEnd: number, logPrefixAppend: string): Promise<SqlTotal | null>;
     getTotal(item: ioBroker.AdapterConfigTypes.HistoryItem, datapointItem: ioBroker.AdapterConfigTypes.DatapointsItem, interval: string, timestampStart: number, timestampEnd: number, logPrefixAppend: string): Promise<SqlTotal | null>;

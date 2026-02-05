@@ -130,7 +130,7 @@ export class History {
                             if (existingPastStates && Object.keys(existingPastStates).length > 0) {
                                 // delete not needed channels
                                 for (const id of Object.keys(existingPastStates)) {
-                                    this.adapter.delObjectAsync(id);
+                                    await this.adapter.delObjectAsync(id);
                                     this.log.info(`${logPrefix} deleted history state '${id}' because interval is set to ${item[interval]}`);
                                 }
                             }
@@ -464,7 +464,7 @@ export class History {
             const calcArray = [];
 
             for (const id of item.id) {
-                const datapointItem = this.adapter.datapoints.getByIdTarget(id as string);
+                const datapointItem = this.adapter.datapoints.getByIdTarget(id);
 
                 if (datapointItem && datapointItem.enable) {
 

@@ -16,7 +16,7 @@ export declare class Costs {
     idSuffix: string;
     private costList;
     constructor(adapter: ioBroker.myAdapter);
-    init(): Promise<void>;
+    init(): void;
     getContractType(idContractType: string): ioBroker.AdapterConfigTypes.CostContractType;
     private prepareAndCheckCostList;
     getCostOfRange(item: ioBroker.AdapterConfigTypes.HistoryItem, datapointItem: ioBroker.AdapterConfigTypes.DatapointsItem, rangeStart: moment.Moment, rangeEnd: moment.Moment, interval?: string): Promise<CostResult>;

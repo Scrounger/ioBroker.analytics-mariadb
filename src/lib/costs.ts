@@ -32,7 +32,7 @@ export class Costs {
         this.log = adapter.log;
     }
 
-    public async init(): Promise<void> {
+    public init(): void {
         const logPrefix = `[${this.logPrefix}.init]:`
 
         try {
@@ -188,7 +188,7 @@ export class Costs {
         return null;
     }
 
-    private calculationOfRange(formula: string, data: ioBroker.AdapterConfigTypes.CostItemData, consumptionOfRange: number, daysOfRange: number, result: CostResult, logPrefixAppend: string) {
+    private calculationOfRange(formula: string, data: ioBroker.AdapterConfigTypes.CostItemData, consumptionOfRange: number, daysOfRange: number, result: CostResult, logPrefixAppend: string): void {
         const logPrefix = `[${this.logPrefix}.calculationOfRange] ${logPrefixAppend}:`
 
         try {

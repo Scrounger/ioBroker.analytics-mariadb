@@ -274,7 +274,7 @@ export class Datapoints {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
     }
-    async saveStatesToDatabase() {
+    saveStatesToDatabase() {
         const logPrefix = `[${this.logPrefix}.saveStatesToDatabase]':`;
         try {
             const list = [...this.adapter.config.datapointsNumberList, ...this.adapter.config.datapointsBooleanList];

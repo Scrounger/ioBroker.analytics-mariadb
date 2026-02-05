@@ -96,7 +96,11 @@ export class SqlInterface {
     }
     /**
      * @deprecated old function
-     *
+     * @param item
+     * @param interval
+     * @param timestampStart
+     * @param timestampEnd
+     * @param logPrefixAppend
      */
     async getTotal2(item, interval, timestampStart, timestampEnd, logPrefixAppend) {
         const logPrefix = `[${this.logPrefix}.getTotal2] ${logPrefixAppend}:`;
@@ -286,7 +290,7 @@ export class SqlInterface {
                 if (duration / 1000 > 1) {
                     this.log.warn(`${logPrefix} query took ${duration / 1000}s (query: ${typeof query === 'string' ? query : JSON.stringify(query)})`);
                 }
-                await this.metricsHandler(now.valueOf(), duration);
+                this.metricsHandler(now.valueOf(), duration);
                 if (data.error) {
                     this.log.error(`${logPrefix} data error: ${data.error}`);
                     return null;
@@ -309,7 +313,7 @@ export class SqlInterface {
         }
         return null;
     }
-    async metricsHandler(now, duration) {
+    metricsHandler(now, duration) {
         const logPrefix = `[${this.logPrefix}.metricsHandler]:`;
         try {
             const cutoff = Date.now() - this.adapter.config.metricsMinUpdateInterval * 1000;

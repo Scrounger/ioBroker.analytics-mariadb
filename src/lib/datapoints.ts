@@ -261,7 +261,7 @@ export class Datapoints {
         }
     }
 
-    private async updateStateBoolean(item: ioBroker.AdapterConfigTypes.DatapointsItem, idSource: string, sourceState: ioBroker.State, force: boolean = false) {
+    private async updateStateBoolean(item: ioBroker.AdapterConfigTypes.DatapointsItem, idSource: string, sourceState: ioBroker.State, force: boolean = false): Promise<void> {
         const logPrefix = `[${this.logPrefix}.updateStateBoolean] - '${idSource}':`
 
         try {
@@ -334,7 +334,7 @@ export class Datapoints {
         }
     }
 
-    public async saveStatesToDatabase(): Promise<void> {
+    public saveStatesToDatabase(): void {
         const logPrefix = `[${this.logPrefix}.saveStatesToDatabase]':`
 
         try {

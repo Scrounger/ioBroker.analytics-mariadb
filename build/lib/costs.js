@@ -12,7 +12,7 @@ export class Costs {
         this.adapter = adapter;
         this.log = adapter.log;
     }
-    async init() {
+    init() {
         const logPrefix = `[${this.logPrefix}.init]:`;
         try {
             this.prepareAndCheckCostList();

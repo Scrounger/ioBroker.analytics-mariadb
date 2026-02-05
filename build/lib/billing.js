@@ -62,7 +62,7 @@ export class Billing {
                 if (existingBillings && Object.keys(existingBillings).length > 0) {
                     // delete not needed channels
                     for (const id of Object.keys(existingBillings)) {
-                        this.adapter.delObjectAsync(helper.getIdWithoutLastPart(id), { recursive: true });
+                        await this.adapter.delObjectAsync(helper.getIdWithoutLastPart(id), { recursive: true });
                         this.log.info(`${logPrefix} deleted billing channel '${id}' because it not exists anymore in the configuration`);
                     }
                 }
@@ -107,6 +107,7 @@ export class Billing {
                 }
             }
             else {
+                this.log.error(`${logPrefix} datapoint '${datapointItem.idChannelTarget}' not enabled or exists, but it's mandatory for the billing -> abort!`);
             }
         }
         catch (error) {
