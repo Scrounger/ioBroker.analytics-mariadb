@@ -69,7 +69,11 @@ export class History {
                 await objectHandler.createChannel(this.adapter, this.utils, `${idChannel}.${this.idChannelHistory}`, item.idChannel ? 'historical calculated values' : 'historical values');
 
                 if (item.idContractType) {
-                    commonCost.unit = this.adapter.costs.getContractType(item.idContractType).currency;
+                    if (typeof item.id === 'string') {
+                        commonCost.unit = this.adapter.costs.getContractType(item.idContractType).currency;
+                    } else {
+                        // ToDo: handling für calculation items, könnte unterschiedliche Währungen haben, evtl. einfach drauf prüfen
+                    }
                 }
 
                 if (typeof item.id === 'string') {

@@ -93,9 +93,12 @@
                         func: 'globalData.historyDefaultDays',
                         alsoDependsOn: ['historyDefaultDays'],
                     },
-                    width: 72,
                     tooltip: 'days',
                     disabled: '!globalData.datapointsNumberList.find(dp => data.id.includes(dp.idChannelTarget)).enable || !globalData.datapointsBooleanList.find(dp => data.id.includes(dp.idChannelTarget)).enable',
+                    width: 72,
+                    style: {
+                        minWidth: '36px',
+                    },
                 },
                 {
                     attr: 'week',
@@ -108,9 +111,12 @@
                         func: 'globalData.historyDefaultWeeks',
                         alsoDependsOn: ['historyDefaultWeeks'],
                     },
-                    width: 72,
                     tooltip: 'weeks',
                     disabled: '!globalData.datapointsNumberList.find(dp => data.id.includes(dp.idChannelTarget)).enable || !globalData.datapointsBooleanList.find(dp => data.id.includes(dp.idChannelTarget)).enable',
+                    width: 72,
+                    style: {
+                        minWidth: '36px',
+                    },
                 },
                 {
                     attr: 'month',
@@ -123,9 +129,12 @@
                         func: 'globalData.historyDefaultMonths',
                         alsoDependsOn: ['historyDefaultMonths'],
                     },
-                    width: 72,
                     tooltip: 'months',
                     disabled: '!globalData.datapointsNumberList.find(dp => data.id.includes(dp.idChannelTarget)).enable || !globalData.datapointsBooleanList.find(dp => data.id.includes(dp.idChannelTarget)).enable',
+                    width: 72,
+                    style: {
+                        minWidth: '36px',
+                    },
                 },
                 {
                     attr: 'year',
@@ -138,9 +147,12 @@
                         func: 'globalData.historyDefaultYears',
                         alsoDependsOn: ['historyDefaultYears'],
                     },
-                    width: 72,
                     tooltip: 'years',
                     disabled: '!globalData.datapointsNumberList.find(dp => data.id.includes(dp.idChannelTarget)).enable || !globalData.datapointsBooleanList.find(dp => data.id.includes(dp.idChannelTarget)).enable',
+                    width: 72,
+                    style: {
+                        minWidth: '36px',
+                    },
                 },
                 {
                     attr: 'idContractType',
