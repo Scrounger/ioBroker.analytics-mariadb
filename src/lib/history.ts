@@ -259,16 +259,6 @@ export class History {
             }
 
             for (const item of this.adapter.config.historyCalcList) {
-                for (const id of item.id) {
-                    // first check if all datapoints are enabled, because all are needed for the calculation
-                    const datapointItem = this.adapter.datapoints.getByIdTarget(id);
-
-                    if (!datapointItem || !datapointItem.enable) {
-                        this.log.error(`${logPrefix} datapoint '${helper.getIdWithoutLastPart(id)}' not enabled or exists, but it's mandatory for the calculation -> abort!`);
-                        return;
-                    }
-                }
-
                 await this.updateCalculatedThisYear(item, isAdapterStart);
                 await this.updateCalculatedThePast(item);
             }
@@ -395,31 +385,65 @@ export class History {
         }
     }
 
+    private checkCalculationConditions(item: ioBroker.AdapterConfigTypes.HistoryItem): boolean {
+        const logPrefix = `[${this.logPrefix}.checkCalculationConditions] [${item.idChannel}]:`
+
+        try {
+            for (const id of item.id) {
+                // first check if all datapoints are enabled, because all are needed for the calculation
+                const datapointItem = this.adapter.datapoints.getByIdTarget(id);
+
+                if (!datapointItem) {
+                    this.log.error(`${logPrefix} datapoint '${id}' not found, but it's mandatory for the calculation -> abort!`);
+                    return false;
+                }
+
+                if (!datapointItem.enable) {
+                    this.log.error(`${logPrefix} datapoint '${id}' is not enabled, but it's mandatory for the calculation -> abort!`);
+                    return false;
+                }
+
+                const historyItem = this.adapter.history.getByIdTarget(id);
+                if (!historyItem) {
+                    this.log.error(`${logPrefix} history item for '${id}' not found, but it's mandatory for the calculation -> abort!`);
+                    return false;
+                }
+            }
+
+            return true;
+        } catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+            return false;
+        }
+    }
+
     private async updateCalculatedThisYear(item: ioBroker.AdapterConfigTypes.HistoryItem, isAdapterStart: boolean = false): Promise<void> {
         const logPrefix = `[${this.logPrefix}.updateCalculatedThisYear] [${item.idChannel}]:`
 
         try {
-            const debugFormula = item.formula.replace(/\[(\d+)\]/g, (_, index: string) => {
-                return helper.getIdWithoutLastPart(item.id[Number(index)]);
-            });
+            if (this.checkCalculationConditions(item)) {
+                const debugFormula = item.formula.replace(/\[(\d+)\]/g, (_, index: string) => {
+                    return helper.getIdWithoutLastPart(item.id[Number(index)]);
+                });
 
-            this.adapter.itemDebug(item, `${logPrefix} calculation formula: ${debugFormula}`);
+                this.adapter.itemDebug(item, `${logPrefix} calculation formula: ${debugFormula}`);
 
-            for (const interval of Object.keys(Interval)) {
-                if (interval !== Interval.ALL) {
+                for (const interval of Object.keys(Interval)) {
+                    if (interval !== Interval.ALL) {
 
-                    const calculation = await this.getCalculation(item, interval);
+                        const calculation = await this.getCalculation(item, interval);
 
-                    if (calculation) {
-                        this.adapter.itemDebug(item, `${logPrefix} [_${interval}] calculation: ${debugFormula} => ${calculation.formula} = ${calculation.result}`);
+                        if (calculation) {
+                            this.adapter.itemDebug(item, `${logPrefix} [_${interval}] calculation: ${debugFormula} => ${calculation.formula} = ${calculation.result}`);
 
-                        await this.adapter.setStateChangedAsync(`${item.idChannel}.${this.idChannelHistory}.${interval}`, calculation.result, true);
+                            await this.adapter.setStateChangedAsync(`${item.idChannel}.${this.idChannelHistory}.${interval}`, calculation.result, true);
+                        }
                     }
                 }
-            }
 
-            if (isAdapterStart) {
-                this.log.info(`${logPrefix} history${item.idContractType ? ' and costs ' : ' '}states of this year updated`);
+                if (isAdapterStart) {
+                    this.log.info(`${logPrefix} history${item.idContractType ? ' and costs ' : ' '}states of this year updated`);
+                }
             }
         } catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
@@ -430,32 +454,34 @@ export class History {
         const logPrefix = `[${this.logPrefix}.updateCalculatedThePast] [${item.idChannel}]:`
 
         try {
-            const debugFormula = item.formula.replace(/\[(\d+)\]/g, (_, index: string) => {
-                return helper.getIdWithoutLastPart(item.id[Number(index)]);
-            });
+            if (this.checkCalculationConditions(item)) {
+                const debugFormula = item.formula.replace(/\[(\d+)\]/g, (_, index: string) => {
+                    return helper.getIdWithoutLastPart(item.id[Number(index)]);
+                });
 
-            this.adapter.itemDebug(item, `${logPrefix} calculation formula: ${debugFormula}`);
+                this.adapter.itemDebug(item, `${logPrefix} calculation formula: ${debugFormula}`);
 
-            for (const interval of Object.keys(Interval)) {
-                if (interval !== Interval.ALL) {
+                for (const interval of Object.keys(Interval)) {
+                    if (interval !== Interval.ALL) {
 
-                    if (item[interval] > 0) {
-                        for (let i = 1; i <= item[interval]; i++) {
-                            const calculation = await this.getCalculation(item, interval, i);
+                        if (item[interval] > 0) {
+                            for (let i = 1; i <= item[interval]; i++) {
+                                const calculation = await this.getCalculation(item, interval, i);
 
-                            if (calculation) {
-                                this.adapter.itemDebug(item, `${logPrefix} [${interval}_${helper.zeroPad(i, 2)}] calculation: ${debugFormula} => ${calculation.formula} = ${calculation.result}`);
+                                if (calculation) {
+                                    this.adapter.itemDebug(item, `${logPrefix} [${interval}_${helper.zeroPad(i, 2)}] calculation: ${debugFormula} => ${calculation.formula} = ${calculation.result}`);
 
-                                await this.adapter.setStateChangedAsync(`${item.idChannel}.${this.idChannelHistory}._${interval}.${interval}_${helper.zeroPad(i, 2)}`, calculation.result, true);
+                                    await this.adapter.setStateChangedAsync(`${item.idChannel}.${this.idChannelHistory}._${interval}.${interval}_${helper.zeroPad(i, 2)}`, calculation.result, true);
+                                }
                             }
+                        } else {
+                            this.adapter.log.debug(`${logPrefix} [${interval}] history for interval '${interval}' is disabled`);
                         }
-                    } else {
-                        this.adapter.log.debug(`${logPrefix} [${interval}] history for interval '${interval}' is disabled`);
                     }
                 }
-            }
 
-            this.log.info(`${logPrefix} history states of the past updated`);
+                this.log.info(`${logPrefix} history states of the past updated`);
+            }
         } catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }

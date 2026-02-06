@@ -215,14 +215,18 @@ class AnalyticsMariadb extends utils.Adapter {
             if (typeof obj === 'object') {
                 if (obj.command === 'getDatapointsNumberSqlPresetsList') {
                     const data = obj.message.data;
-                    const result = data.filter(p => p.type === 'number').map(p => p.idPreset);
+                    const result = data.filter(p => p.type === 'number')
+                        .map(p => p.idPreset)
+                        .sort();
                     if (obj.callback) {
                         this.sendTo(obj.from, obj.command, result, obj.callback);
                     }
                 }
                 else if (obj.command === 'getDatapointsBooleanSqlPresetsList') {
                     const data = obj.message.data;
-                    const result = data.filter(p => p.type === 'boolean').map(p => p.idPreset);
+                    const result = data.filter(p => p.type === 'boolean')
+                        .map(p => p.idPreset)
+                        .sort();
                     if (obj.callback) {
                         this.sendTo(obj.from, obj.command, result, obj.callback);
                     }
@@ -242,7 +246,14 @@ class AnalyticsMariadb extends utils.Adapter {
                             label: item.name ? `${item.name} (${item.idChannelTarget}.${this.datapoints.idBooleanValue})` : `${item.idChannelTarget}.${this.datapoints.idBooleanValue}`
                         };
                     });
-                    const result = [...numberLists, ...booleanLists];
+                    const result = [...numberLists, ...booleanLists]
+                        .sort((a, b) => {
+                        if (a.label < b.label)
+                            return -1;
+                        if (a.label > b.label)
+                            return 1;
+                        return 0;
+                    });
                     if (obj.callback) {
                         this.sendTo(obj.from, obj.command, result, obj.callback);
                     }
@@ -250,11 +261,22 @@ class AnalyticsMariadb extends utils.Adapter {
                 else if (obj.command === 'getHistoryList') {
                     const data = obj.message.data;
                     const result = data.map(item => {
-                        const dpItem = this.datapoints.getByIdTarget(item.id);
-                        return {
-                            value: `${item.id}`,
-                            label: dpItem ? `${dpItem.name} (${item.id})` : `${item.id}`
-                        };
+                        if (item.id) {
+                            const dpItem = this.datapoints.getByIdTarget(item.id);
+                            return {
+                                value: `${item.id}`,
+                                label: dpItem ? `${dpItem.name} (${item.id})` : `${item.id}`
+                            };
+                        }
+                        return null;
+                    })
+                        .filter(item => item !== null)
+                        .sort((a, b) => {
+                        if (a.label < b.label)
+                            return -1;
+                        if (a.label > b.label)
+                            return 1;
+                        return 0;
                     });
                     if (obj.callback) {
                         this.sendTo(obj.from, obj.command, result, obj.callback);
@@ -262,7 +284,8 @@ class AnalyticsMariadb extends utils.Adapter {
                 }
                 else if (obj.command === 'getCostsContractTypes') {
                     const data = obj.message.data;
-                    const result = data.map(p => p.id);
+                    const result = data.map(p => p.id)
+                        .sort();
                     if (obj.callback) {
                         this.sendTo(obj.from, obj.command, result, obj.callback);
                     }
@@ -278,7 +301,16 @@ class AnalyticsMariadb extends utils.Adapter {
                             };
                         }
                         return null;
-                    }).filter(item => item !== null);
+                    })
+                        .filter(item => item !== null)
+                        .sort((a, b) => {
+                        if (a.label < b.label)
+                            return -1;
+                        if (a.label > b.label)
+                            return 1;
+                        return 0;
+                    });
+                    ;
                     if (obj.callback) {
                         this.sendTo(obj.from, obj.command, result, obj.callback);
                     }

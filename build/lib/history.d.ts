@@ -16,6 +16,7 @@ export declare class History {
     private updateThisYear;
     private updateThePast;
     private updateHistory;
+    private checkCalculationConditions;
     private updateCalculatedThisYear;
     private updateCalculatedThePast;
     private getCalculation;

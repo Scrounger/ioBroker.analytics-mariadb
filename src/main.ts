@@ -252,7 +252,9 @@ class AnalyticsMariadb extends utils.Adapter {
                 if (obj.command === 'getDatapointsNumberSqlPresetsList') {
                     const data = obj.message.data as ioBroker.AdapterConfigTypes.DatapointsSqlPresetsItem[];
 
-                    const result = data.filter(p => p.type === 'number').map(p => p.idPreset);
+                    const result = data.filter(p => p.type === 'number')
+                        .map(p => p.idPreset)
+                        .sort();
 
                     if (obj.callback) {
                         this.sendTo(obj.from, obj.command, result, obj.callback);
@@ -261,7 +263,9 @@ class AnalyticsMariadb extends utils.Adapter {
                 } else if (obj.command === 'getDatapointsBooleanSqlPresetsList') {
                     const data = obj.message.data as ioBroker.AdapterConfigTypes.DatapointsSqlPresetsItem[];
 
-                    const result = data.filter(p => p.type === 'boolean').map(p => p.idPreset);
+                    const result = data.filter(p => p.type === 'boolean')
+                        .map(p => p.idPreset)
+                        .sort();
 
                     if (obj.callback) {
                         this.sendTo(obj.from, obj.command, result, obj.callback);
@@ -284,7 +288,12 @@ class AnalyticsMariadb extends utils.Adapter {
                         }
                     });
 
-                    const result = [...numberLists, ...booleanLists];
+                    const result = [...numberLists, ...booleanLists]
+                        .sort((a, b) => {
+                            if (a.label < b.label) return -1;
+                            if (a.label > b.label) return 1;
+                            return 0;
+                        });
 
                     if (obj.callback) {
                         this.sendTo(obj.from, obj.command, result, obj.callback);
@@ -293,12 +302,21 @@ class AnalyticsMariadb extends utils.Adapter {
                     const data = obj.message.data as ioBroker.AdapterConfigTypes.HistoryItem[];
 
                     const result = data.map(item => {
-                        const dpItem = this.datapoints.getByIdTarget(item.id as string);
-                        return {
-                            value: `${item.id as string}`,
-                            label: dpItem ? `${dpItem.name} (${item.id as string})` : `${item.id as string}`
+                        if (item.id) {
+                            const dpItem = this.datapoints.getByIdTarget(item.id as string);
+                            return {
+                                value: `${item.id as string}`,
+                                label: dpItem ? `${dpItem.name} (${item.id as string})` : `${item.id as string}`
+                            }
                         }
-                    });
+                        return null;
+                    })
+                        .filter(item => item !== null)
+                        .sort((a, b) => {
+                            if (a.label < b.label) return -1;
+                            if (a.label > b.label) return 1;
+                            return 0;
+                        });
 
                     if (obj.callback) {
                         this.sendTo(obj.from, obj.command, result, obj.callback);
@@ -307,7 +325,8 @@ class AnalyticsMariadb extends utils.Adapter {
                 } else if (obj.command === 'getCostsContractTypes') {
                     const data = obj.message.data as ioBroker.AdapterConfigTypes.CostContractType[];
 
-                    const result = data.map(p => p.id);
+                    const result = data.map(p => p.id)
+                        .sort();
 
                     if (obj.callback) {
                         this.sendTo(obj.from, obj.command, result, obj.callback);
@@ -324,7 +343,13 @@ class AnalyticsMariadb extends utils.Adapter {
                             }
                         }
                         return null;
-                    }).filter(item => item !== null);
+                    })
+                        .filter(item => item !== null)
+                        .sort((a, b) => {
+                            if (a.label < b.label) return -1;
+                            if (a.label > b.label) return 1;
+                            return 0;
+                        });;
 
                     if (obj.callback) {
                         this.sendTo(obj.from, obj.command, result, obj.callback);
