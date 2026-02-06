@@ -25,11 +25,6 @@ class AnalyticsMariadb extends utils.Adapter {
 
     timeoutDebounceList: Record<string, ioBroker.Timeout> = {};
 
-    idTotal = 'total';
-    idOldValue = 'oldValue';
-    idStorageValue = 'storageValue';
-    idBooleanValue = 'value'
-
     sql: SqlInterface;
     datapoints: Datapoints;
     history: History;
@@ -164,7 +159,7 @@ class AnalyticsMariadb extends utils.Adapter {
             if (obj && !obj.from.includes(this.namespace)) {
                 // if adapter objects changed from outside of this adapter
 
-                if (id.endsWith(`.${this.idTotal}`) || id.endsWith(`.${this.idOldValue}`) || id.endsWith(`.${this.idBooleanValue}`)) {
+                if (id.endsWith(`.${this.datapoints.idTotal}`) || id.endsWith(`.${this.datapoints.idOldValue}`) || id.endsWith(`.${this.datapoints.idBooleanValue}`)) {
                     await this.datapoints.onObjectChange(id);
 
                 } else {
@@ -202,19 +197,18 @@ class AnalyticsMariadb extends utils.Adapter {
                     } else if (state.from.includes(this.namespace)) {
                         // adapter states changed 
 
-                        if (id.endsWith(`.${this.idTotal}`) || id.endsWith(`.${this.idOldValue}`)) {
+                        if (id.endsWith(`.${this.datapoints.idTotal}`)) {
                             const targetId = id.replace(`${this.namespace}.`, '');
 
                             // Update History and costs if enabled
-                            const datapointItem = this.datapoints.getByIdTarget(targetId);
-                            const historyItem = this.history.getByIdTarget(targetId || targetId.replace(`.${this.datapoints.idTotal}`, `.${this.datapoints.idBooleanValue}`));
+                            const historyItem = this.history.getByIdTarget(targetId) || this.history.getByIdTarget(targetId.replace(`.${this.datapoints.idTotal}`, `.${this.datapoints.idBooleanValue}`));
 
                             if (historyItem) {
                                 await this.history.onStateChange(historyItem, state, false);
                             }
 
                             // Update calcualted History items
-                            const calcHistoryItemsList = this.history.getCalculationByIdTarget(targetId || targetId.replace(`.${this.datapoints.idTotal}`, `.${this.datapoints.idBooleanValue}`));
+                            const calcHistoryItemsList = this.history.getCalculationByIdTarget(targetId) || this.history.getCalculationByIdTarget(targetId.replace(`.${this.datapoints.idTotal}`, `.${this.datapoints.idBooleanValue}`));
 
                             if (calcHistoryItemsList && calcHistoryItemsList.length > 0) {
                                 for (const item of calcHistoryItemsList) {
@@ -277,16 +271,16 @@ class AnalyticsMariadb extends utils.Adapter {
                     const dataNumber = obj.message.dataNumber as ioBroker.AdapterConfigTypes.DatapointsItem[];
                     const numberLists = dataNumber.map(item => {
                         return {
-                            value: `${item.idChannelTarget}.${this.idTotal}`,
-                            label: item.name ? `${item.name} (${item.idChannelTarget}.${this.idTotal})` : `${item.idChannelTarget}.${this.idTotal}`
+                            value: `${item.idChannelTarget}.${this.datapoints.idTotal}`,
+                            label: item.name ? `${item.name} (${item.idChannelTarget}.${this.datapoints.idTotal})` : `${item.idChannelTarget}.${this.datapoints.idTotal}`
                         }
                     });
 
                     const dataBoolean = obj.message.dataBoolean as ioBroker.AdapterConfigTypes.DatapointsItem[];
                     const booleanLists = dataBoolean.map(item => {
                         return {
-                            value: `${item.idChannelTarget}.${this.idBooleanValue}`,
-                            label: item.name ? `${item.name} (${item.idChannelTarget}.${this.idBooleanValue})` : `${item.idChannelTarget}.${this.idBooleanValue}`
+                            value: `${item.idChannelTarget}.${this.datapoints.idBooleanValue}`,
+                            label: item.name ? `${item.name} (${item.idChannelTarget}.${this.datapoints.idBooleanValue})` : `${item.idChannelTarget}.${this.datapoints.idBooleanValue}`
                         }
                     });
 
@@ -330,9 +324,7 @@ class AnalyticsMariadb extends utils.Adapter {
                             }
                         }
                         return null;
-                    }).filter(item => item !== null);;
-
-                    this.log.warn(JSON.stringify(result));
+                    }).filter(item => item !== null);
 
                     if (obj.callback) {
                         this.sendTo(obj.from, obj.command, result, obj.callback);

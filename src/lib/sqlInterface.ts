@@ -72,7 +72,7 @@ export class SqlInterface {
         }
     }
 
-    public async getCounter(item: ioBroker.AdapterConfigTypes.DatapointsItem, interval: string, logPrefixAppend: string, timestampStart: number = 0, timestampEnd: number = 0,): Promise<SqlCounter | null> {
+    public async getCounter(item: ioBroker.AdapterConfigTypes.DatapointsItem, interval: string, logPrefixAppend: string, timestampStart: number = 0, timestampEnd: number = 0, historyItem: ioBroker.AdapterConfigTypes.HistoryItem | null = null): Promise<SqlCounter | null> {
         const logPrefix = `[${this.logPrefix}.getCounter] ${logPrefixAppend}:`
 
         try {
@@ -104,7 +104,7 @@ export class SqlInterface {
                 ORDER BY ts DESC;
             `;
 
-            this.adapter.itemDebug(item, `${logPrefix} ${interval === Interval.ALL ? '' : `start: ${moment(timestampStart).format(`${this.adapter.dateFormat} - HH:mm`)}, end: ${moment(timestampEnd).format(`${this.adapter.dateFormat} - HH:mm`)}`}, query: ${query}`);
+            this.adapter.itemDebug(historyItem ? historyItem : item, `${logPrefix} ${interval === Interval.ALL ? '' : `start: ${moment(timestampStart).format(`${this.adapter.dateFormat} - HH:mm`)}, end: ${moment(timestampEnd).format(`${this.adapter.dateFormat} - HH:mm`)}`}, query: ${query}`);
 
             const data = await this.retrieve(QueryType.QUERY, query, item, logPrefixAppend);
 

@@ -31,7 +31,7 @@ export declare class SqlInterface {
     private lastMetricTs;
     constructor(adapter: ioBroker.myAdapter);
     getDatabaseName(): Promise<void>;
-    getCounter(item: ioBroker.AdapterConfigTypes.DatapointsItem, interval: string, logPrefixAppend: string, timestampStart?: number, timestampEnd?: number): Promise<SqlCounter | null>;
+    getCounter(item: ioBroker.AdapterConfigTypes.DatapointsItem, interval: string, logPrefixAppend: string, timestampStart?: number, timestampEnd?: number, historyItem?: ioBroker.AdapterConfigTypes.HistoryItem | null): Promise<SqlCounter | null>;
     /**
      * @deprecated old function
      * @param item

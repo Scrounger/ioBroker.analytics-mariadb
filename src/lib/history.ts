@@ -62,6 +62,8 @@ export class History {
 
             const commonCost = { ...commonHistory }
 
+            // all existings states needed to delete not needed states at the end
+            const allExistingStates = await this.adapter.getStatesAsync(`*.${this.idChannelHistory}.*`);
 
             for (const item of list) {
                 const idChannel = item.idChannel || helper.getIdWithoutLastPart(item.id as string);
@@ -105,33 +107,26 @@ export class History {
                     if (interval !== Interval.ALL) {
                         // History of this year
                         await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idChannelHistory}.${interval}`, null, null, commonHistory, undefined, false, false);
+                        delete allExistingStates[`${this.adapter.namespace}.${idChannel}.${this.idChannelHistory}.${interval}`];
 
                         if (item.idContractType) {
                             await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idChannelHistory}.${interval}${this.adapter.costs.idSuffix}`, null, null, commonCost, undefined, false, false);
+                            delete allExistingStates[`${this.adapter.namespace}.${idChannel}.${this.idChannelHistory}.${interval}${this.adapter.costs.idSuffix}`];
                         }
 
                         // Past history
                         const idChannelPast = `${idChannel}.${this.idChannelHistory}._${interval}`
-                        const existingPastStates = await this.adapter.getStatesAsync(`${idChannelPast}.*`);
 
                         if (item[interval] > 0) {
                             await objectHandler.createChannel(this.adapter, this.utils, idChannelPast, `past ${interval}s`);
 
                             for (let i = 1; i <= item[interval]; i++) {
                                 await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannelPast}.${interval}_${helper.zeroPad(i, 2)}`, null, null, commonHistory, undefined, false, false);
-                                delete existingPastStates[`${this.adapter.namespace}.${idChannelPast}.${interval}_${helper.zeroPad(i, 2)}`];
+                                delete allExistingStates[`${this.adapter.namespace}.${idChannelPast}.${interval}_${helper.zeroPad(i, 2)}`];
 
                                 if (item.idContractType) {
                                     await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannelPast}.${interval}_${helper.zeroPad(i, 2)}${this.adapter.costs.idSuffix}`, null, null, commonCost, undefined, false, false);
-                                    delete existingPastStates[`${this.adapter.namespace}.${idChannelPast}.${interval}_${helper.zeroPad(i, 2)}${this.adapter.costs.idSuffix}`];
-                                }
-                            }
-
-                            if (existingPastStates && Object.keys(existingPastStates).length > 0) {
-                                // delete not needed channels
-                                for (const id of Object.keys(existingPastStates)) {
-                                    await this.adapter.delObjectAsync(id);
-                                    this.log.info(`${logPrefix} deleted history state '${id}' because interval is set to ${item[interval]}`);
+                                    delete allExistingStates[`${this.adapter.namespace}.${idChannelPast}.${interval}_${helper.zeroPad(i, 2)}${this.adapter.costs.idSuffix}`];
                                 }
                             }
                         } else {
@@ -145,6 +140,15 @@ export class History {
                 }
             }
 
+            if (allExistingStates && Object.keys(allExistingStates).length > 0) {
+                // delete not needed states
+                for (const id of Object.keys(allExistingStates)) {
+                    if (await this.adapter.objectExists(id)) {
+                        await this.adapter.delObjectAsync(id);
+                        this.log.info(`${logPrefix} deleted history state '${id}' because it is not needed anymore`);
+                    }
+                }
+            }
         } catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
@@ -368,7 +372,7 @@ export class History {
                     }
                 }
             } else if (datapointItem.type === 'boolean') {
-                const data = await this.adapter.sql.getCounter(datapointItem, interval, logPrefixAppend, range.start.valueOf(), range.end.valueOf());
+                const data = await this.adapter.sql.getCounter(datapointItem, interval, logPrefixAppend, range.start.valueOf(), range.end.valueOf(), item);
 
                 if (data && ((data.start && data.end) || range.start.isSame(moment(), 'day'))) {
                     result = data.count;
@@ -498,7 +502,7 @@ export class History {
         return null;
     }
 
-    public async onStateChange(item: ioBroker.AdapterConfigTypes.HistoryItem, currentState: ioBroker.State, isCalculation: boolean): Promise<void> {
+    public async onStateChange(item: ioBroker.AdapterConfigTypes.HistoryItem, currentState: ioBroker.State, isCalculation: boolean, force: boolean = false): Promise<void> {
         const logPrefix = `[${this.logPrefix}.onStateChange] [${helper.getIdWithoutLastPart(typeof item.id === 'string' ? item.id : item.idChannel)}]:`
 
         try {
@@ -512,7 +516,7 @@ export class History {
 
             const total = await this.adapter.getStateAsync(`${idChannel}.${this.idChannelHistory}.${Interval.day}`);
 
-            if (currentState.lc - total.lc > ((item.debounce || 15)) * 1000) {
+            if ((currentState.lc - total.lc > ((item.debounce || 15)) * 1000) || item.debounce === 0 || force) {
                 if (isCalculation) {
                     await this.updateCalculatedThisYear(item);
                 } else {
@@ -520,7 +524,7 @@ export class History {
                 }
             } else {
                 this.adapter.timeoutDebounceList[idChannel] = this.adapter.setTimeout(async () => {
-                    await this.onStateChange(item, currentState, isCalculation);
+                    await this.onStateChange(item, currentState, isCalculation, true);
                     this.adapter.itemDebug(item, `${logPrefix} no new value after debounce time -> recheck after timeout done`);
                 }, (item.debounce || 15) * 1000);
             }

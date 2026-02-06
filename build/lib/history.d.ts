@@ -19,6 +19,6 @@ export declare class History {
     private updateCalculatedThisYear;
     private updateCalculatedThePast;
     private getCalculation;
-    onStateChange(item: ioBroker.AdapterConfigTypes.HistoryItem, currentState: ioBroker.State, isCalculation: boolean): Promise<void>;
+    onStateChange(item: ioBroker.AdapterConfigTypes.HistoryItem, currentState: ioBroker.State, isCalculation: boolean, force?: boolean): Promise<void>;
     private getDatesFromInterval;
 }

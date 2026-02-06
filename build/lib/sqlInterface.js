@@ -42,7 +42,7 @@ export class SqlInterface {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
         }
     }
-    async getCounter(item, interval, logPrefixAppend, timestampStart = 0, timestampEnd = 0) {
+    async getCounter(item, interval, logPrefixAppend, timestampStart = 0, timestampEnd = 0, historyItem = null) {
         const logPrefix = `[${this.logPrefix}.getCounter] ${logPrefixAppend}:`;
         try {
             const query = `
@@ -72,7 +72,7 @@ export class SqlInterface {
                     n.val = 1
                 ORDER BY ts DESC;
             `;
-            this.adapter.itemDebug(item, `${logPrefix} ${interval === Interval.ALL ? '' : `start: ${moment(timestampStart).format(`${this.adapter.dateFormat} - HH:mm`)}, end: ${moment(timestampEnd).format(`${this.adapter.dateFormat} - HH:mm`)}`}, query: ${query}`);
+            this.adapter.itemDebug(historyItem ? historyItem : item, `${logPrefix} ${interval === Interval.ALL ? '' : `start: ${moment(timestampStart).format(`${this.adapter.dateFormat} - HH:mm`)}, end: ${moment(timestampEnd).format(`${this.adapter.dateFormat} - HH:mm`)}`}, query: ${query}`);
             const data = await this.retrieve(QueryType.QUERY, query, item, logPrefixAppend);
             if (data) {
                 // can only have one row

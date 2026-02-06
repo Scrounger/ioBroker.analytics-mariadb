@@ -8,10 +8,6 @@ import { Billing } from './lib/billing.js';
 declare class AnalyticsMariadb extends utils.Adapter {
     sourceToDatapoint: Record<string, ioBroker.AdapterConfigTypes.DatapointsItem>;
     timeoutDebounceList: Record<string, ioBroker.Timeout>;
-    idTotal: string;
-    idOldValue: string;
-    idStorageValue: string;
-    idBooleanValue: string;
     sql: SqlInterface;
     datapoints: Datapoints;
     history: History;

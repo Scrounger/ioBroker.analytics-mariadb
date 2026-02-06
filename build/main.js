@@ -17,10 +17,6 @@ import { Billing } from './lib/billing.js';
 class AnalyticsMariadb extends utils.Adapter {
     sourceToDatapoint = {};
     timeoutDebounceList = {};
-    idTotal = 'total';
-    idOldValue = 'oldValue';
-    idStorageValue = 'storageValue';
-    idBooleanValue = 'value';
     sql;
     datapoints;
     history;
@@ -135,7 +131,7 @@ class AnalyticsMariadb extends utils.Adapter {
         try {
             if (obj && !obj.from.includes(this.namespace)) {
                 // if adapter objects changed from outside of this adapter
-                if (id.endsWith(`.${this.idTotal}`) || id.endsWith(`.${this.idOldValue}`) || id.endsWith(`.${this.idBooleanValue}`)) {
+                if (id.endsWith(`.${this.datapoints.idTotal}`) || id.endsWith(`.${this.datapoints.idOldValue}`) || id.endsWith(`.${this.datapoints.idBooleanValue}`)) {
                     await this.datapoints.onObjectChange(id);
                 }
                 else {
@@ -171,16 +167,15 @@ class AnalyticsMariadb extends utils.Adapter {
                     }
                     else if (state.from.includes(this.namespace)) {
                         // adapter states changed 
-                        if (id.endsWith(`.${this.idTotal}`) || id.endsWith(`.${this.idOldValue}`)) {
+                        if (id.endsWith(`.${this.datapoints.idTotal}`)) {
                             const targetId = id.replace(`${this.namespace}.`, '');
                             // Update History and costs if enabled
-                            const datapointItem = this.datapoints.getByIdTarget(targetId);
-                            const historyItem = this.history.getByIdTarget(targetId || targetId.replace(`.${this.datapoints.idTotal}`, `.${this.datapoints.idBooleanValue}`));
+                            const historyItem = this.history.getByIdTarget(targetId) || this.history.getByIdTarget(targetId.replace(`.${this.datapoints.idTotal}`, `.${this.datapoints.idBooleanValue}`));
                             if (historyItem) {
                                 await this.history.onStateChange(historyItem, state, false);
                             }
                             // Update calcualted History items
-                            const calcHistoryItemsList = this.history.getCalculationByIdTarget(targetId || targetId.replace(`.${this.datapoints.idTotal}`, `.${this.datapoints.idBooleanValue}`));
+                            const calcHistoryItemsList = this.history.getCalculationByIdTarget(targetId) || this.history.getCalculationByIdTarget(targetId.replace(`.${this.datapoints.idTotal}`, `.${this.datapoints.idBooleanValue}`));
                             if (calcHistoryItemsList && calcHistoryItemsList.length > 0) {
                                 for (const item of calcHistoryItemsList) {
                                     await this.history.onStateChange(item, state, true);
@@ -236,15 +231,15 @@ class AnalyticsMariadb extends utils.Adapter {
                     const dataNumber = obj.message.dataNumber;
                     const numberLists = dataNumber.map(item => {
                         return {
-                            value: `${item.idChannelTarget}.${this.idTotal}`,
-                            label: item.name ? `${item.name} (${item.idChannelTarget}.${this.idTotal})` : `${item.idChannelTarget}.${this.idTotal}`
+                            value: `${item.idChannelTarget}.${this.datapoints.idTotal}`,
+                            label: item.name ? `${item.name} (${item.idChannelTarget}.${this.datapoints.idTotal})` : `${item.idChannelTarget}.${this.datapoints.idTotal}`
                         };
                     });
                     const dataBoolean = obj.message.dataBoolean;
                     const booleanLists = dataBoolean.map(item => {
                         return {
-                            value: `${item.idChannelTarget}.${this.idBooleanValue}`,
-                            label: item.name ? `${item.name} (${item.idChannelTarget}.${this.idBooleanValue})` : `${item.idChannelTarget}.${this.idBooleanValue}`
+                            value: `${item.idChannelTarget}.${this.datapoints.idBooleanValue}`,
+                            label: item.name ? `${item.name} (${item.idChannelTarget}.${this.datapoints.idBooleanValue})` : `${item.idChannelTarget}.${this.datapoints.idBooleanValue}`
                         };
                     });
                     const result = [...numberLists, ...booleanLists];
@@ -284,8 +279,6 @@ class AnalyticsMariadb extends utils.Adapter {
                         }
                         return null;
                     }).filter(item => item !== null);
-                    ;
-                    this.log.warn(JSON.stringify(result));
                     if (obj.callback) {
                         this.sendTo(obj.from, obj.command, result, obj.callback);
                     }
