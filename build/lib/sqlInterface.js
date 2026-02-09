@@ -287,7 +287,10 @@ export class SqlInterface {
                 });
                 const duration = moment().diff(now, 'milliseconds');
                 this.adapter.itemDebug(item, `${logPrefix} duration: ${duration / 1000}s, data: ${JSON.stringify(data)}`);
-                if (duration / 1000 > 1) {
+                if (duration / 1000 > 1 && !this.adapter.config.fastStart) {
+                    this.log.warn(`${logPrefix} query took ${duration / 1000}s (query: ${typeof query === 'string' ? query : JSON.stringify(query)})`);
+                }
+                if (duration / 1000 > 2 && this.adapter.config.fastStart) {
                     this.log.warn(`${logPrefix} query took ${duration / 1000}s (query: ${typeof query === 'string' ? query : JSON.stringify(query)})`);
                 }
                 this.metricsHandler(now.valueOf(), duration);

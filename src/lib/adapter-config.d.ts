@@ -25,6 +25,7 @@ declare global {
             sqlWriteTimeout: number;
             cronUpdateHistoryAtDayChange: string;
             metricsMinUpdateInterval: number;
+            fastStart: boolean;
         }
 
         namespace AdapterConfigTypes {

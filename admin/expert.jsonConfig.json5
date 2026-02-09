@@ -66,5 +66,16 @@
             xs: 12,
             default: 5,
         },
+        fastStart: {
+            newLine: true,
+            type: 'checkbox',
+            label: 'Faster start-up of the adapter, but higher load due to parallel requests to the database',
+            xl: 4,
+            lg: 4,
+            md: 4,
+            sm: 12,
+            xs: 12,
+            default: false,
+        },
     },
 }

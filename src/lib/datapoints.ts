@@ -220,6 +220,10 @@ export class Datapoints {
                         } else if (oldState.val < storageState.val) {
                             // solange oldVal nicht über altem gespeichertem Wert liegt wird ignoriert
                             this.log.warn(`${logPrefix} oldVal ${oldState.val} < storageVal ${storageState.val} and ignore reset is active (val: ${sourceState.val}, oldVal: ${oldState.val}, storageVal: ${storageState.val}) -> ignore on this run`);
+
+                            // old value nach verarbeiteter Änderung setzen, hier da fkt return hat
+                            await this.adapter.setState(`${item.idChannelTarget}.${this.idOldValue}`, sourceState);
+
                             return;
                         }
                     }

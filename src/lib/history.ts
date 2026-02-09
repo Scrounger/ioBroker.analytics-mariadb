@@ -254,13 +254,24 @@ export class History {
             for (const item of this.adapter.config.historyList) {
                 const currentState = await this.adapter.getStateAsync(item.id as string);
 
-                await this.updateThisYear(item, currentState, isAdapterStart);
-                await this.updateThePast(item, isAdapterStart);
+                if (!this.adapter.config.fastStart) {
+                    await this.updateThisYear(item, currentState, isAdapterStart);
+                    await this.updateThePast(item, isAdapterStart);
+                } else {
+                    void this.updateThisYear(item, currentState, isAdapterStart);
+                    void this.updateThePast(item, isAdapterStart);
+                }
+
             }
 
             for (const item of this.adapter.config.historyCalcList) {
-                await this.updateCalculatedThisYear(item, isAdapterStart);
-                await this.updateCalculatedThePast(item);
+                if (!this.adapter.config.fastStart) {
+                    await this.updateCalculatedThisYear(item, isAdapterStart);
+                    await this.updateCalculatedThePast(item);
+                } else {
+                    void this.updateCalculatedThisYear(item, isAdapterStart);
+                    void this.updateCalculatedThePast(item);
+                }
             }
         } catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);

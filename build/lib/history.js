@@ -222,12 +222,24 @@ export class History {
         try {
             for (const item of this.adapter.config.historyList) {
                 const currentState = await this.adapter.getStateAsync(item.id);
-                await this.updateThisYear(item, currentState, isAdapterStart);
-                await this.updateThePast(item, isAdapterStart);
+                if (!this.adapter.config.fastStart) {
+                    await this.updateThisYear(item, currentState, isAdapterStart);
+                    await this.updateThePast(item, isAdapterStart);
+                }
+                else {
+                    void this.updateThisYear(item, currentState, isAdapterStart);
+                    void this.updateThePast(item, isAdapterStart);
+                }
             }
             for (const item of this.adapter.config.historyCalcList) {
-                await this.updateCalculatedThisYear(item, isAdapterStart);
-                await this.updateCalculatedThePast(item);
+                if (!this.adapter.config.fastStart) {
+                    await this.updateCalculatedThisYear(item, isAdapterStart);
+                    await this.updateCalculatedThePast(item);
+                }
+                else {
+                    void this.updateCalculatedThisYear(item, isAdapterStart);
+                    void this.updateCalculatedThePast(item);
+                }
             }
         }
         catch (error) {
@@ -341,7 +353,7 @@ export class History {
             for (const id of item.id) {
                 // first check if all datapoints are enabled, because all are needed for the calculation
                 const datapointItem = this.adapter.datapoints.getByIdTarget(id);
-                if (!datapointItem || !datapointItem.enable) {
+                if (!datapointItem) {
                     this.log.error(`${logPrefix} datapoint '${id}' not found, but it's mandatory for the calculation -> abort!`);
                     return false;
                 }
