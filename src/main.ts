@@ -331,6 +331,32 @@ class AnalyticsMariadb extends utils.Adapter {
                     if (obj.callback) {
                         this.sendTo(obj.from, obj.command, result, obj.callback);
                     }
+
+                } else if (obj.command === 'getCalculationCostContractTypes') {
+                    const ids = obj.message.ids as string[];
+
+                    const historyList = obj.message.historyList as ioBroker.AdapterConfigTypes.HistoryItem[];
+                    const hasContratcs = historyList.filter(h => ids.includes(h.id as string) && h.idContractType).length > 0;
+
+                    const result = (obj.message.contractTypesList as ioBroker.AdapterConfigTypes.CostContractType[]).map(item => {
+                        return {
+                            value: item.id as string,
+                            label: item.id as string
+                        }
+                    }).sort((a, b) => {
+                        if (a.label < b.label) return -1;
+                        if (a.label > b.label) return 1;
+                        return 0;
+                    });
+
+                    if (hasContratcs) {
+                        result.unshift({ value: 'fromCalculation', label: utils.I18n.getTranslatedObject('from calculation')[this.language] });
+                    }
+
+                    if (obj.callback) {
+                        this.sendTo(obj.from, obj.command, result, obj.callback);
+                    }
+
                 } else if (obj.command === 'getBillingList') {
                     const historyList = obj.message.history as ioBroker.AdapterConfigTypes.HistoryItem[];
 

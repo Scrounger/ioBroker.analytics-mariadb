@@ -386,8 +386,12 @@ export class History {
                     if (interval !== Interval.ALL) {
                         const calculation = await this.getCalculation(item, interval);
                         if (calculation) {
-                            this.adapter.itemDebug(item, `${logPrefix} [_${interval}] calculation: ${debugFormula} => ${calculation.formula} = ${calculation.result}`);
-                            await this.adapter.setStateChangedAsync(`${item.idChannel}.${this.idChannelHistory}.${interval}`, calculation.result, true);
+                            this.adapter.itemDebug(item, `${logPrefix} [_${interval}] consumption calculation: ${debugFormula} => ${calculation.formula} = ${calculation.consumption}`);
+                            await this.adapter.setStateChangedAsync(`${item.idChannel}.${this.idChannelHistory}.${interval}`, calculation.consumption, true);
+                            if (item.idContractType === 'fromCalculation') {
+                                this.adapter.itemDebug(item, `${logPrefix} [_${interval}] cost calculation: ${debugFormula} => ${calculation.formulaCosts} = ${calculation.costs}`);
+                                await this.adapter.setStateChangedAsync(`${item.idChannel}.${this.idChannelHistory}.${interval}${this.adapter.costs.idSuffix}`, calculation.costs, true);
+                            }
                         }
                     }
                 }
@@ -414,8 +418,12 @@ export class History {
                             for (let i = 1; i <= item[interval]; i++) {
                                 const calculation = await this.getCalculation(item, interval, i);
                                 if (calculation) {
-                                    this.adapter.itemDebug(item, `${logPrefix} [${interval}_${helper.zeroPad(i, 2)}] calculation: ${debugFormula} => ${calculation.formula} = ${calculation.result}`);
-                                    await this.adapter.setStateChangedAsync(`${item.idChannel}.${this.idChannelHistory}._${interval}.${interval}_${helper.zeroPad(i, 2)}`, calculation.result, true);
+                                    this.adapter.itemDebug(item, `${logPrefix} [${interval}_${helper.zeroPad(i, 2)}] consuption calculation: ${debugFormula} => ${calculation.formula} = ${calculation.consumption}`);
+                                    await this.adapter.setStateChangedAsync(`${item.idChannel}.${this.idChannelHistory}._${interval}.${interval}_${helper.zeroPad(i, 2)}`, calculation.consumption, true);
+                                    if (item.idContractType === 'fromCalculation') {
+                                        this.adapter.itemDebug(item, `${logPrefix} [${interval}_${helper.zeroPad(i, 2)}] cost calculation: ${debugFormula} => ${calculation.formulaCosts} = ${calculation.costs}`);
+                                        await this.adapter.setStateChangedAsync(`${item.idChannel}.${this.idChannelHistory}._${interval}.${interval}_${helper.zeroPad(i, 2)}${this.adapter.costs.idSuffix}`, calculation.costs, true);
+                                    }
                                 }
                             }
                         }
@@ -435,6 +443,7 @@ export class History {
         const logPrefix = `[${this.logPrefix}.getCalculation] [${item.idChannel}] [${interval}]:`;
         try {
             const calcArray = [];
+            const calcCostsArray = [];
             for (const id of item.id) {
                 const datapointItem = this.adapter.datapoints.getByIdTarget(id);
                 if (datapointItem && datapointItem.enable) {
@@ -443,8 +452,18 @@ export class History {
                         calcArray.push(state.val);
                     }
                     else {
-                        this.adapter.itemDebug(item, `${logPrefix} [${i === null ? interval : `${interval}_${helper.zeroPad(i, 2)}`}] '${id}' no data available, using 0 instead`);
+                        this.adapter.itemDebug(item, `${logPrefix} [${i === null ? interval : `${interval}_${helper.zeroPad(i, 2)}`}] '${id}' no consuption data available, using 0 instead`);
                         calcArray.push(0);
+                    }
+                    if (item.idContractType === 'fromCalculation') {
+                        const state = await this.adapter.getStateAsync(`${helper.getIdWithoutLastPart(id)}.${this.idChannelHistory}.${i === null ? interval : `_${interval}.${interval}_${helper.zeroPad(i, 2)}`}${this.adapter.costs.idSuffix}`);
+                        if (state && (state.val || state.val === 0)) {
+                            calcCostsArray.push(state.val);
+                        }
+                        else {
+                            this.adapter.itemDebug(item, `${logPrefix} [${i === null ? interval : `${interval}_${helper.zeroPad(i, 2)}`}] '${id}' no cost data available, using 0 instead`);
+                            calcCostsArray.push(0);
+                        }
                     }
                 }
                 else {
@@ -452,12 +471,17 @@ export class History {
                     return null;
                 }
             }
-            const formula = item.formula.replace(/\[(\d+)\]/g, (_, index) => {
+            const consumption = item.formula.replace(/\[(\d+)\]/g, (_, index) => {
                 return calcArray[Number(index)];
             });
+            const costs = item.formula.replace(/\[(\d+)\]/g, (_, index) => {
+                return calcCostsArray[Number(index)];
+            });
             return {
-                result: mathjs.round(mathjs.evaluate(formula), 3),
-                formula: formula
+                consumption: mathjs.round(mathjs.evaluate(consumption), 3),
+                formula: consumption,
+                costs: item.idContractType === 'fromCalculation' ? mathjs.round(mathjs.evaluate(costs), 2) : null,
+                formulaCosts: item.idContractType === 'fromCalculation' ? costs : null
             };
         }
         catch (error) {
