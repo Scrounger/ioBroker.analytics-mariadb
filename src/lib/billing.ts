@@ -12,10 +12,12 @@ export class Billing {
     private log: ioBroker.Logger;
 
     public idChannelBilling = 'billing';
-    private idConsumption = '00_consumption';
-    private idCosts = '01_costs';
-    private idPrePayment = '02_prepayment';
-    private idBackPayment = '03_backpayment';
+
+    private idDays = '00_days';
+    private idConsumption = '01_consumption';
+    private idCosts = '02_costs';
+    private idPrePayment = '03_prepayment';
+    private idBackPayment = '04_backpayment';
 
     constructor(adapter: ioBroker.myAdapter, utils: typeof import("@iobroker/adapter-core")) {
         this.adapter = adapter;
@@ -34,7 +36,7 @@ export class Billing {
         }
     }
 
-    public getListByIdTarget(idTarget: string, futureOnly: boolean = false): ioBroker.AdapterConfigTypes.billingItem[] {
+    public getListByIdTarget(idTarget: string, futureOnly: boolean = false): ioBroker.AdapterConfigTypes.BillingItem[] {
         return this.adapter.config.billingList.filter(
             item => futureOnly ? item.id === idTarget && (moment(item.end).isAfter(moment()) || moment(item.end).isSame(moment())) : item.id === idTarget
         );
@@ -70,6 +72,7 @@ export class Billing {
 
                     const unit = this.adapter.costs.getContractType(historyItem.idContractType).currency;
 
+                    await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idDays}`, this.utils.I18n.getTranslatedObject('period in days'), null, { ...sourceObj?.common as ioBroker.StateCommon, ...{ role: 'state', unit: this.utils.I18n.getTranslatedObject('days')[this.adapter.language] } });
                     await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idConsumption}`, 'consumption', null, sourceObj?.common as ioBroker.StateCommon);
                     await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idCosts}`, 'Costs', null, { ...sourceObj?.common as ioBroker.StateCommon, ...{ role: 'state', unit: unit } });
 
@@ -100,18 +103,21 @@ export class Billing {
         }
     }
 
-    private async updateState(item: ioBroker.AdapterConfigTypes.billingItem, historyItem: ioBroker.AdapterConfigTypes.HistoryItem, datapointItem: ioBroker.AdapterConfigTypes.DatapointsItem): Promise<void> {
+    private async updateState(item: ioBroker.AdapterConfigTypes.BillingItem, historyItem: ioBroker.AdapterConfigTypes.HistoryItem, datapointItem: ioBroker.AdapterConfigTypes.DatapointsItem): Promise<void> {
         const logPrefix = `[${this.logPrefix}.updateState] [${helper.getIdWithoutLastPart(item.id)}] [${moment(item.start).format(this.adapter.dateFormat)} - ${moment(item.end).format(this.adapter.dateFormat)}]:`
 
         try {
             if (datapointItem && datapointItem.enable) {
-                const start = moment(item.start);
-                const end = moment(item.end);
+                const start = moment(item.start).startOf('day');
+                const end = moment(item.end).endOf('day');
+
                 const idChannel = `${helper.getIdWithoutLastPart(item.id)}.${this.idChannelBilling}.${start.format('YYYY_MM_DD').replace(/[./]/g, "_")}_to_${end.format('YYYY_MM_DD').replace(/[./]/g, "_")}`;
 
-                const result = await this.adapter.costs.getCostOfRange(historyItem, datapointItem, start, end, `${item.provider}`);
+                const endForCostRange = item.fixCostsDaily && end.isAfter(moment().endOf('day')) ? moment() : end;
+                const result = await this.adapter.costs.getCostOfRange(historyItem, datapointItem, start, endForCostRange, `${start.format(this.adapter.dateFormat)} - ${end.format(this.adapter.dateFormat)}: ${item.provider}`, item);
 
                 if (result) {
+                    await this.adapter.setStateChangedAsync(`${idChannel}.${this.idDays}`, { val: result.days, ack: true });
                     await this.adapter.setStateChangedAsync(`${idChannel}.${this.idConsumption}`, { val: result.consumption, ack: true });
                     await this.adapter.setStateChangedAsync(`${idChannel}.${this.idCosts}`, { val: result.sum, ack: true });
 
@@ -119,7 +125,7 @@ export class Billing {
                         const daysOfPeriod = end.diff(start, 'days') + 1;
                         let prePayment = item.prePayment;
 
-                        if (end.isAfter(moment()) || end.isSame(moment(), 'day')) {
+                        if (item.fixCostsDaily && (end.isAfter(moment().endOf('day')) || end.isSame(moment(), 'day'))) {
                             const daysUntilNow = moment().diff(start, 'days') + 1;
 
                             prePayment = (item.prePayment / daysOfPeriod) * daysUntilNow;
@@ -130,7 +136,7 @@ export class Billing {
                         const oldValue = oldState.val as number;
                         const res = mathjs.round(result.sum - prePayment, 2);
 
-                        await this.adapter.setStateChangedAsync(`${idChannel}.${this.idPrePayment}`, { val: mathjs.round(prePayment), ack: true });
+                        await this.adapter.setStateChangedAsync(`${idChannel}.${this.idPrePayment}`, { val: mathjs.round(prePayment, 2), ack: true });
 
                         // Objekt Name auf Erstattung / Nachzahlung ggf. anpassen
                         if (oldValue < 0 && res >= 0) {
@@ -150,7 +156,7 @@ export class Billing {
         }
     }
 
-    public async onStateChange(item: ioBroker.AdapterConfigTypes.billingItem, historyItem: ioBroker.AdapterConfigTypes.HistoryItem): Promise<void> {
+    public async onStateChange(item: ioBroker.AdapterConfigTypes.BillingItem, historyItem: ioBroker.AdapterConfigTypes.HistoryItem): Promise<void> {
         const logPrefix = `[${this.logPrefix}.onStateChange] [${helper.getIdWithoutLastPart(item.id)}] [${moment(item.start).format(this.adapter.dateFormat)} - ${moment(item.end).format(this.adapter.dateFormat)}]:`
 
         try {

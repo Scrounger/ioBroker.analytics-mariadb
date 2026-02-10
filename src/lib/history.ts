@@ -580,7 +580,6 @@ export class History {
                 delete this.adapter.timeoutDebounceList[idChannel];
             }
 
-
             const total = await this.adapter.getStateAsync(`${idChannel}.${this.idChannelHistory}.${Interval.day}`);
 
             if ((currentState.lc - total.lc > ((item.debounce || 15)) * 1000) || item.debounce === 0 || force) {
@@ -588,6 +587,16 @@ export class History {
                     await this.updateCalculatedThisYear(item);
                 } else {
                     await this.updateThisYear(item, currentState);
+
+                    if (item.idContractType) {
+                        const billingList = this.adapter.billing.getListByIdTarget(item.id, true);
+
+                        if (billingList && billingList.length > 0) {
+                            for (const billingItem of billingList) {
+                                await this.adapter.billing.onStateChange(billingItem, item);
+                            }
+                        }
+                    }
                 }
             } else {
                 this.adapter.timeoutDebounceList[idChannel] = this.adapter.setTimeout(async () => {

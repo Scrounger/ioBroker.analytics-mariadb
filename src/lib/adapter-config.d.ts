@@ -104,12 +104,14 @@ declare global {
                 bonusPrice: number;
             }
 
-            interface billingItem {
+            interface BillingItem {
                 id: string;
                 provider: string;
                 start: string;
                 end: string;
                 prePayment: number;
+                fixCostsDaily: boolean;
+                debug: boolean;
             }
         }
 
@@ -118,13 +120,14 @@ declare global {
             datapoints: Datapoints;
             history: History;
             costs: Costs;
+            billing: Billing;
 
             initComplete: boolean;
 
             sourceToDatapoint: Record<string, ioBroker.AdapterConfigTypes.DatapointsItem>;
             timeoutDebounceList: Record<string, ioBroker.Timeout>;
 
-            itemDebug(item: ioBroker.AdapterConfigTypes.DatapointsItem | ioBroker.AdapterConfigTypes.HistoryItem | ioBroker.AdapterConfigTypes.CostContractType, message: string): void
+            itemDebug(item: ioBroker.AdapterConfigTypes.DatapointsItem | ioBroker.AdapterConfigTypes.HistoryItem | ioBroker.AdapterConfigTypes.CostContractType | ioBroker.AdapterConfigTypes.BillingItem, message: string): void
         }
     }
 }

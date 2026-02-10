@@ -111,7 +111,7 @@ export class Costs {
      * @param interval 
      * @returns 
      */
-    public async getCostOfRange(historyItem: ioBroker.AdapterConfigTypes.HistoryItem, datapointItem: ioBroker.AdapterConfigTypes.DatapointsItem, rangeStart: moment.Moment, rangeEnd: moment.Moment, interval: string = undefined): Promise<CostResult> {
+    public async getCostOfRange(historyItem: ioBroker.AdapterConfigTypes.HistoryItem, datapointItem: ioBroker.AdapterConfigTypes.DatapointsItem, rangeStart: moment.Moment, rangeEnd: moment.Moment, interval: string = undefined, billingItem: ioBroker.AdapterConfigTypes.BillingItem | null = null,): Promise<CostResult> {
         const logPrefixAppend = `[${helper.getIdWithoutLastPart(historyItem.id as string)}]${interval ? ` [${interval}] ` : ' [manual] '}[${historyItem.idContractType}]`
         const logPrefix = `[${this.logPrefix}.getCostOfRange] ${logPrefixAppend}:`
 
@@ -131,7 +131,7 @@ export class Costs {
             });
 
             if (contractDataOfRange && contractDataOfRange.length > 0) {
-                this.adapter.itemDebug(historyItem, `${logPrefix} time period from ${rangeStart.format(this.adapter.dateFormat)} to ${rangeEnd.format(this.adapter.dateFormat)} - contract data: ${JSON.stringify(contractDataOfRange)}`);
+                this.adapter.itemDebug(billingItem || historyItem, `${logPrefix} time period from ${rangeStart.format(this.adapter.dateFormat)} to ${rangeEnd.format(this.adapter.dateFormat)} - contract data: ${JSON.stringify(contractDataOfRange)}`);
 
                 // für jeden Vertrag, der in dem Zeitraum gültig ist, die Kosten berechnen und aufsummieren
                 for (const data of contractDataOfRange) {
@@ -151,7 +151,7 @@ export class Costs {
                         end = rangeEnd;
                     }
 
-                    this.adapter.itemDebug(historyItem, `${logPrefix} time period from ${start.format(this.adapter.dateFormat)} to ${end.format(this.adapter.dateFormat)} - contract data: ${JSON.stringify(data)}`);
+                    this.adapter.itemDebug(billingItem || historyItem, `${logPrefix} time period from ${start.format(this.adapter.dateFormat)} to ${end.format(this.adapter.dateFormat)} - contract data: ${JSON.stringify(data)}`);
 
                     const consumption = await this.adapter.sql.getTotal(historyItem, datapointItem, interval, start.startOf('day').valueOf(), end.endOf('day').valueOf(), logPrefixAppend);
 
@@ -172,12 +172,12 @@ export class Costs {
 
                         this.calculationOfRange(this.costList[historyItem.idContractType].calculation, data, delta, daysOfRange, result, logPrefixAppend);
 
-                        this.adapter.itemDebug(historyItem, `${logPrefix} time period from ${start.format(this.adapter.dateFormat)} to ${end.format(this.adapter.dateFormat)} - calculation result: ${JSON.stringify(result)}`);
+                        this.adapter.itemDebug(billingItem || historyItem, `${logPrefix} time period from ${start.format(this.adapter.dateFormat)} to ${end.format(this.adapter.dateFormat)} - calculation result: ${JSON.stringify(result)}`);
                     }
                 }
 
                 // Prüfen, ob der Zeitraum vollständig von den Vertragsdaten abgedeckt ist, da sonst keine Kostenberechnung möglich ist
-                if ((rangeStart.isSame(result.start) || rangeStart.isBetween(result.start, result.end)) && (rangeEnd.isSame(result.end) || rangeEnd.isBetween(result.start, result.end))) {
+                if ((rangeStart.isSame(result.start) || rangeStart.isBetween(result.start, result.end) || rangeStart.isBefore(result.start)) && (rangeEnd.isSame(result.end) || rangeEnd.isBetween(result.start, result.end) || rangeEnd.isAfter(result.end))) {
                     if (result.consumption) {
                         if (historyItem.costSumOptions?.length > 0) {
 
@@ -188,7 +188,7 @@ export class Costs {
                                 - (historyItem.costSumOptions?.includes('bonusPrice') ? result.bonusPrice : 0)
                                 , 2);
 
-                            this.adapter.itemDebug(historyItem, `${logPrefix} start: ${rangeStart.format('DD.MM.YYYY - HH:mm')}, end: ${rangeEnd.format('DD.MM.YYYY - HH:mm')}, sum: ${result.sum}`);
+                            this.adapter.itemDebug(billingItem || historyItem, `${logPrefix} start: ${rangeStart.format('DD.MM.YYYY - HH:mm')}, end: ${rangeEnd.format('DD.MM.YYYY - HH:mm')}, sum: ${result.sum}`);
 
                             return result;
 
@@ -196,7 +196,7 @@ export class Costs {
                             this.log.warn(`${logPrefix} no cost sum options in the adapter settings defined`);
                         }
                     } else {
-                        this.adapter.itemDebug(historyItem, `${logPrefix} no cosumption available in the result: ${JSON.stringify(result)}`);
+                        this.adapter.itemDebug(billingItem || historyItem, `${logPrefix} no cosumption available in the result: ${JSON.stringify(result)}`);
                     }
                 } else {
                     this.log.error(`${logPrefix} costs can't be calculated because period (${result.start.format(this.adapter.dateFormat)} - ${result.end.format(this.adapter.dateFormat)}) is not between (${rangeStart.format(this.adapter.dateFormat)} - ${rangeEnd.format(this.adapter.dateFormat)}) -> Missing contract data!`);
@@ -231,12 +231,14 @@ export class Costs {
                 }
             });
 
+            const daysOfYear = (moment(data.start).isLeapYear() || moment(data.end).isLeapYear()) ? 366 : 365;
+
             result.consumption = (result.consumption || 0) + consumptionOfRange;
             result.days = (result.days || 0) + daysOfRange;
 
             result.variableCosts = (result.variableCosts || 0) + mathjs.evaluate(calc);
-            result.basicPrice = (result.basicPrice || 0) + (data.basicPrice / 365) * daysOfRange;
-            result.bonusPrice = (result.bonusPrice || 0) + (data.bonusPrice / 365) * daysOfRange;
+            result.basicPrice = (result.basicPrice || 0) + (data.basicPrice / daysOfYear) * daysOfRange;
+            result.bonusPrice = (result.bonusPrice || 0) + (data.bonusPrice / daysOfYear) * daysOfRange;
 
         } catch (error) {
             this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);

@@ -94,5 +94,7 @@
     "weeks": "weeks",
     "weeksShort": "W",
     "years": "years",
-    "yearsShort": "Y"
+    "yearsShort": "Y",
+    "period in days": "period in days",
+    "fix costs on daily basis": "fix costs on daily basis"
 }

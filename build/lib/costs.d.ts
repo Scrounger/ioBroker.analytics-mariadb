@@ -30,7 +30,7 @@ export declare class Costs {
      * @param interval
      * @returns
      */
-    getCostOfRange(historyItem: ioBroker.AdapterConfigTypes.HistoryItem, datapointItem: ioBroker.AdapterConfigTypes.DatapointsItem, rangeStart: moment.Moment, rangeEnd: moment.Moment, interval?: string): Promise<CostResult>;
+    getCostOfRange(historyItem: ioBroker.AdapterConfigTypes.HistoryItem, datapointItem: ioBroker.AdapterConfigTypes.DatapointsItem, rangeStart: moment.Moment, rangeEnd: moment.Moment, interval?: string, billingItem?: ioBroker.AdapterConfigTypes.BillingItem | null): Promise<CostResult>;
     /**
      * Kosten für einen Zeitraum berechnen auf Basis der hinterlegten Formel des Vertragtyps
      *

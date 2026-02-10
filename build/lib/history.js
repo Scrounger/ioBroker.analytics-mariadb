@@ -504,6 +504,14 @@ export class History {
                 }
                 else {
                     await this.updateThisYear(item, currentState);
+                    if (item.idContractType) {
+                        const billingList = this.adapter.billing.getListByIdTarget(item.id, true);
+                        if (billingList && billingList.length > 0) {
+                            for (const billingItem of billingList) {
+                                await this.adapter.billing.onStateChange(billingItem, item);
+                            }
+                        }
+                    }
                 }
             }
             else {

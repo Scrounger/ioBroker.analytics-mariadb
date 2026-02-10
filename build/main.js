@@ -181,15 +181,6 @@ class AnalyticsMariadb extends utils.Adapter {
                                     await this.history.onStateChange(item, state, true);
                                 }
                             }
-                            if (historyItem) {
-                                // Update Billing if enabled
-                                const billingList = this.billing.getListByIdTarget(targetId, true);
-                                if (billingList && billingList.length > 0) {
-                                    for (const billingItem of billingList) {
-                                        await this.billing.onStateChange(billingItem, historyItem);
-                                    }
-                                }
-                            }
                         }
                     }
                 }
@@ -247,13 +238,7 @@ class AnalyticsMariadb extends utils.Adapter {
                         };
                     });
                     const result = [...numberLists, ...booleanLists]
-                        .sort((a, b) => {
-                        if (a.label < b.label)
-                            return -1;
-                        if (a.label > b.label)
-                            return 1;
-                        return 0;
-                    });
+                        .sort((a, b) => (a.label < b.label) ? -1 : (a.label > b.label) ? 1 : 0);
                     if (obj.callback) {
                         this.sendTo(obj.from, obj.command, result, obj.callback);
                     }
@@ -271,13 +256,7 @@ class AnalyticsMariadb extends utils.Adapter {
                         return null;
                     })
                         .filter(item => item !== null)
-                        .sort((a, b) => {
-                        if (a.label < b.label)
-                            return -1;
-                        if (a.label > b.label)
-                            return 1;
-                        return 0;
-                    });
+                        .sort((a, b) => (a.label < b.label) ? -1 : (a.label > b.label) ? 1 : 0);
                     if (obj.callback) {
                         this.sendTo(obj.from, obj.command, result, obj.callback);
                     }
@@ -299,13 +278,7 @@ class AnalyticsMariadb extends utils.Adapter {
                             value: item.id,
                             label: item.id
                         };
-                    }).sort((a, b) => {
-                        if (a.label < b.label)
-                            return -1;
-                        if (a.label > b.label)
-                            return 1;
-                        return 0;
-                    });
+                    }).sort((a, b) => (a.label < b.label) ? -1 : (a.label > b.label) ? 1 : 0);
                     if (hasContratcs) {
                         result.unshift({ value: 'fromCalculation', label: utils.I18n.getTranslatedObject('from calculation')[this.language] });
                     }
@@ -320,20 +293,13 @@ class AnalyticsMariadb extends utils.Adapter {
                         if (dpItem) {
                             return {
                                 value: `${item.id}`,
-                                label: dpItem ? `${dpItem.name} (${item.idContractType})` : `ERROR !!! ${item.id}`
+                                label: dpItem ? `${item.idContractType}: ${dpItem.name}` : `ERROR !!! ${item.id}`
                             };
                         }
                         return null;
                     })
                         .filter(item => item !== null)
-                        .sort((a, b) => {
-                        if (a.label < b.label)
-                            return -1;
-                        if (a.label > b.label)
-                            return 1;
-                        return 0;
-                    });
-                    ;
+                        .sort((a, b) => (a.label < b.label) ? -1 : (a.label > b.label) ? 1 : 0);
                     if (obj.callback) {
                         this.sendTo(obj.from, obj.command, result, obj.callback);
                     }
