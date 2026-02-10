@@ -19,6 +19,27 @@ export declare class Costs {
     init(): void;
     getContractType(idContractType: string): ioBroker.AdapterConfigTypes.CostContractType;
     private prepareAndCheckCostList;
-    getCostOfRange(item: ioBroker.AdapterConfigTypes.HistoryItem, datapointItem: ioBroker.AdapterConfigTypes.DatapointsItem, rangeStart: moment.Moment, rangeEnd: moment.Moment, interval?: string): Promise<CostResult>;
+    /**
+     * Kosten für einen Zeitraum ermitteln, dabei werden die Verträge berücksichtigt, die in diesem Zeitraum gültig waren, sowie die Verbrauchswerte aus der Datenbank.
+     * Es wird geprüft, ob der Zeitraum vollständig von den Vertragsdaten abgedeckt ist, da sonst keine Kostenberechnung möglich ist.
+     *
+     * @param historyItem
+     * @param datapointItem
+     * @param rangeStart
+     * @param rangeEnd
+     * @param interval
+     * @returns
+     */
+    getCostOfRange(historyItem: ioBroker.AdapterConfigTypes.HistoryItem, datapointItem: ioBroker.AdapterConfigTypes.DatapointsItem, rangeStart: moment.Moment, rangeEnd: moment.Moment, interval?: string): Promise<CostResult>;
+    /**
+     * Kosten für einen Zeitraum berechnen auf Basis der hinterlegten Formel des Vertragtyps
+     *
+     * @param formula
+     * @param data
+     * @param consumptionOfRange
+     * @param daysOfRange
+     * @param result
+     * @param logPrefixAppend
+     */
     private calculationOfRange;
 }

@@ -100,14 +100,30 @@ export class Costs {
         }
     }
 
-    public async getCostOfRange(item: ioBroker.AdapterConfigTypes.HistoryItem, datapointItem: ioBroker.AdapterConfigTypes.DatapointsItem, rangeStart: moment.Moment, rangeEnd: moment.Moment, interval: string = undefined): Promise<CostResult> {
-        const logPrefixAppend = `[${helper.getIdWithoutLastPart(item.id as string)}]${interval ? ` [${interval}] ` : ' [manual] '}[${item.idContractType}]`
+    /**
+     * Kosten für einen Zeitraum ermitteln, dabei werden die Verträge berücksichtigt, die in diesem Zeitraum gültig waren, sowie die Verbrauchswerte aus der Datenbank. 
+     * Es wird geprüft, ob der Zeitraum vollständig von den Vertragsdaten abgedeckt ist, da sonst keine Kostenberechnung möglich ist.
+     * 
+     * @param historyItem 
+     * @param datapointItem 
+     * @param rangeStart 
+     * @param rangeEnd 
+     * @param interval 
+     * @returns 
+     */
+    public async getCostOfRange(historyItem: ioBroker.AdapterConfigTypes.HistoryItem, datapointItem: ioBroker.AdapterConfigTypes.DatapointsItem, rangeStart: moment.Moment, rangeEnd: moment.Moment, interval: string = undefined): Promise<CostResult> {
+        const logPrefixAppend = `[${helper.getIdWithoutLastPart(historyItem.id as string)}]${interval ? ` [${interval}] ` : ' [manual] '}[${historyItem.idContractType}]`
         const logPrefix = `[${this.logPrefix}.getCostOfRange] ${logPrefixAppend}:`
 
         try {
+            rangeStart = rangeStart.startOf('day');
+            rangeEnd = rangeEnd.endOf('day');
+
             const result: CostResult = {};
 
-            const contractDataOfRange = this.costList[item.idContractType].data.filter((x) => {
+            // alle Verträge des Vertragstyps filtern, die in dem Zeitraum gültig sind 
+            // (start oder end liegt in dem Zeitraum oder der Zeitraum liegt komplett innerhalb von start und end)
+            const contractDataOfRange = this.costList[historyItem.idContractType].data.filter((x) => {
                 const contractStart = moment(x.start, this.adapter.dateFormat, true);
                 const contractEnd = moment(x.end, this.adapter.dateFormat, true);
 
@@ -115,8 +131,9 @@ export class Costs {
             });
 
             if (contractDataOfRange && contractDataOfRange.length > 0) {
-                this.adapter.itemDebug(item, `${logPrefix} time period from ${rangeStart.format(this.adapter.dateFormat)} to ${rangeEnd.format(this.adapter.dateFormat)} - contract data: ${JSON.stringify(contractDataOfRange)}`);
+                this.adapter.itemDebug(historyItem, `${logPrefix} time period from ${rangeStart.format(this.adapter.dateFormat)} to ${rangeEnd.format(this.adapter.dateFormat)} - contract data: ${JSON.stringify(contractDataOfRange)}`);
 
+                // für jeden Vertrag, der in dem Zeitraum gültig ist, die Kosten berechnen und aufsummieren
                 for (const data of contractDataOfRange) {
                     const cStart = moment(data.start, this.adapter.dateFormat, true);
                     const cEnd = moment(data.end, this.adapter.dateFormat, true);
@@ -125,16 +142,18 @@ export class Costs {
                     let end = cEnd;
 
                     if (rangeStart.isAfter(cStart)) {
+                        // Wenn der Zeitraum nach dem Start des Vertrags beginnt, wird der Zeitraum als Startzeitpunkt genommen
                         start = rangeStart;
                     }
 
                     if (rangeEnd.isBefore(cEnd)) {
+                        // Wenn der Zeitraum vor dem Ende des Vertrags endet, wird der Zeitraum als Endzeitpunkt genommen
                         end = rangeEnd;
                     }
 
-                    this.adapter.itemDebug(item, `${logPrefix} time period from ${start.format(this.adapter.dateFormat)} to ${end.format(this.adapter.dateFormat)} - contract data: ${JSON.stringify(data)}`);
+                    this.adapter.itemDebug(historyItem, `${logPrefix} time period from ${start.format(this.adapter.dateFormat)} to ${end.format(this.adapter.dateFormat)} - contract data: ${JSON.stringify(data)}`);
 
-                    const consumption = await this.adapter.sql.getTotal(item, datapointItem, interval, start.startOf('day').valueOf(), end.endOf('day').valueOf(), logPrefixAppend);
+                    const consumption = await this.adapter.sql.getTotal(historyItem, datapointItem, interval, start.startOf('day').valueOf(), end.endOf('day').valueOf(), logPrefixAppend);
 
                     result.start = result.start ? start.isBefore(result.start) ? start : result.start : start;
                     result.end = result.end ? end.isAfter(result.start) ? end : result.end : end;
@@ -144,30 +163,32 @@ export class Costs {
                         let delta = consumption.delta;
 
                         if (end.isAfter(moment()) || end.isSame(moment(), 'day')) {
-                            const state = await this.adapter.getStateAsync(item.id as string);
+                            // Wenn das Ende des Zeitraums in der Zukunft liegt, wird der aktuelle Verbrauchswert (state) als Endwert genommen
+                            const state = await this.adapter.getStateAsync(historyItem.id as string);
                             delta = (state.val as number) - consumption.min;
 
-                            this.log.silly(`${logPrefix} time period from ${start.format(this.adapter.dateFormat)} to ${end.format(this.adapter.dateFormat)} using state, not database value (delta: ${mathjs.round(delta, item.decimals)}, database delta: ${mathjs.round(consumption.delta, 3)})`);
+                            this.log.silly(`${logPrefix} time period from ${start.format(this.adapter.dateFormat)} to ${end.format(this.adapter.dateFormat)} using state, not database value (delta: ${mathjs.round(delta, historyItem.decimals)}, database delta: ${mathjs.round(consumption.delta, 3)})`);
                         }
 
-                        this.calculationOfRange(this.costList[item.idContractType].calculation, data, delta, daysOfRange, result, logPrefixAppend);
+                        this.calculationOfRange(this.costList[historyItem.idContractType].calculation, data, delta, daysOfRange, result, logPrefixAppend);
 
-                        this.adapter.itemDebug(item, `${logPrefix} time period from ${start.format(this.adapter.dateFormat)} to ${end.format(this.adapter.dateFormat)} - calculation result: ${JSON.stringify(result)}`);
+                        this.adapter.itemDebug(historyItem, `${logPrefix} time period from ${start.format(this.adapter.dateFormat)} to ${end.format(this.adapter.dateFormat)} - calculation result: ${JSON.stringify(result)}`);
                     }
                 }
 
+                // Prüfen, ob der Zeitraum vollständig von den Vertragsdaten abgedeckt ist, da sonst keine Kostenberechnung möglich ist
                 if ((rangeStart.isSame(result.start) || rangeStart.isBetween(result.start, result.end)) && (rangeEnd.isSame(result.end) || rangeEnd.isBetween(result.start, result.end))) {
                     if (result.consumption) {
-                        if (item.costSumOptions?.length > 0) {
+                        if (historyItem.costSumOptions?.length > 0) {
 
-                            result.consumption = mathjs.round(result.consumption, item.decimals);
+                            result.consumption = mathjs.round(result.consumption, historyItem.decimals);
                             result.sum = mathjs.round(
-                                (item.costSumOptions?.includes('variableCosts') ? result.variableCosts : 0)
-                                + (item.costSumOptions?.includes('basicPrice') ? result.basicPrice : 0)
-                                - (item.costSumOptions?.includes('bonusPrice') ? result.bonusPrice : 0)
+                                (historyItem.costSumOptions?.includes('variableCosts') ? result.variableCosts : 0)
+                                + (historyItem.costSumOptions?.includes('basicPrice') ? result.basicPrice : 0)
+                                - (historyItem.costSumOptions?.includes('bonusPrice') ? result.bonusPrice : 0)
                                 , 2);
 
-                            this.adapter.itemDebug(item, `${logPrefix} start: ${rangeStart.format('DD.MM.YYYY - HH:mm')}, end: ${rangeEnd.format('DD.MM.YYYY - HH:mm')}, sum: ${result.sum}`);
+                            this.adapter.itemDebug(historyItem, `${logPrefix} start: ${rangeStart.format('DD.MM.YYYY - HH:mm')}, end: ${rangeEnd.format('DD.MM.YYYY - HH:mm')}, sum: ${result.sum}`);
 
                             return result;
 
@@ -175,7 +196,7 @@ export class Costs {
                             this.log.warn(`${logPrefix} no cost sum options in the adapter settings defined`);
                         }
                     } else {
-                        this.adapter.itemDebug(item, `${logPrefix} no cosumption available in the result: ${JSON.stringify(result)}`);
+                        this.adapter.itemDebug(historyItem, `${logPrefix} no cosumption available in the result: ${JSON.stringify(result)}`);
                     }
                 } else {
                     this.log.error(`${logPrefix} costs can't be calculated because period (${result.start.format(this.adapter.dateFormat)} - ${result.end.format(this.adapter.dateFormat)}) is not between (${rangeStart.format(this.adapter.dateFormat)} - ${rangeEnd.format(this.adapter.dateFormat)}) -> Missing contract data!`);
@@ -188,6 +209,16 @@ export class Costs {
         return null;
     }
 
+    /**
+     * Kosten für einen Zeitraum berechnen auf Basis der hinterlegten Formel des Vertragtyps
+     * 
+     * @param formula 
+     * @param data 
+     * @param consumptionOfRange 
+     * @param daysOfRange 
+     * @param result 
+     * @param logPrefixAppend 
+     */
     private calculationOfRange(formula: string, data: ioBroker.AdapterConfigTypes.CostItemData, consumptionOfRange: number, daysOfRange: number, result: CostResult, logPrefixAppend: string): void {
         const logPrefix = `[${this.logPrefix}.calculationOfRange] ${logPrefixAppend}:`
 
