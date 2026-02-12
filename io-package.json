@@ -1,7 +1,7 @@
 {
     "common": {
         "name": "analytics-mariadb",
-        "version": "0.0.1",
+        "version": "0.0.2",
         "news": {
             "0.0.1": {
                 "en": "initial release",
@@ -96,6 +96,7 @@
         "historyDefaultUpdateDeBounce": 15,
         "datapointsNumberList": [],
         "datapointsBooleanList": [],
+        "oldValueRetention": 604800,
         "datapointsSqlPresetsList": [
             {
                 "idPreset": "Total (big, forever)",
@@ -172,22 +173,13 @@
         ],
         "historyList": [],
         "historyCalcList": [],
-        "costsContractTypesList": [
-            {
-                "id": "Strom"
-            },
-            {
-                "id": "Wasser"
-            },
-            {
-                "id": "Einspeisung (EEG)"
-            }
-        ],
+        "costsContractTypesList": [],
         "costsContractDataList": [],
         "billingList": [],
         "sqlWriteTimeout": 5000,
         "cronUpdateHistoryAtDayChange": "3 0 * * *",
         "metricsMinUpdateInterval": 5,
+        "metricsShowWarning": 1,
         "fastStart": false
     },
     "objects": [],

@@ -271,19 +271,21 @@ class AnalyticsMariadb extends utils.Adapter {
                 }
                 else if (obj.command === 'getCalculationCostContractTypes') {
                     const ids = obj.message.ids;
-                    const historyList = obj.message.historyList;
-                    const hasContratcs = historyList.filter(h => ids.includes(h.id) && h.idContractType).length > 0;
-                    const result = obj.message.contractTypesList.map(item => {
-                        return {
-                            value: item.id,
-                            label: item.id
-                        };
-                    }).sort((a, b) => (a.label < b.label) ? -1 : (a.label > b.label) ? 1 : 0);
-                    if (hasContratcs) {
-                        result.unshift({ value: 'fromCalculation', label: utils.I18n.getTranslatedObject('from calculation')[this.language] });
-                    }
-                    if (obj.callback) {
-                        this.sendTo(obj.from, obj.command, result, obj.callback);
+                    if (ids && ids.length > 0) {
+                        const historyList = obj.message.historyList;
+                        const hasContratcs = historyList.filter(h => ids.includes(h.id) && h.idContractType).length > 0;
+                        const result = obj.message.contractTypesList.map(item => {
+                            return {
+                                value: item.id,
+                                label: item.id
+                            };
+                        }).sort((a, b) => (a.label < b.label) ? -1 : (a.label > b.label) ? 1 : 0);
+                        if (hasContratcs) {
+                            result.unshift({ value: 'fromCalculation', label: utils.I18n.getTranslatedObject('from calculation')[this.language] });
+                        }
+                        if (obj.callback) {
+                            this.sendTo(obj.from, obj.command, result, obj.callback);
+                        }
                     }
                 }
                 else if (obj.command === 'getBillingList') {

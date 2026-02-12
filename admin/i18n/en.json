@@ -97,5 +97,7 @@
     "weeks": "weeks",
     "weeksShort": "W",
     "years": "years",
-    "yearsShort": "Y"
+    "yearsShort": "Y",
+    "old value Storage retention": "old value Storage retention",
+    "show log warning if query takes longer than": "show log warning if query takes longer than"
 }

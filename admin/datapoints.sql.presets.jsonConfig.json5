@@ -24,6 +24,43 @@
             text: 'Datapoints Sql Presets',
             size: 2,
         },
+        oldValueRetention: {
+            newLine: true,
+            type: 'select',
+            label: 'old value Storage retention',
+            options: [
+                {
+                    value: 2678400,
+                    label: '1 months',
+                },
+                {
+                    value: 1209600,
+                    label: '2 weeks',
+                },
+                {
+                    value: 604800,
+                    label: '1 week',
+                },
+                {
+                    value: 432000,
+                    label: '5 days',
+                },
+                {
+                    value: 259200,
+                    label: '3 days',
+                },
+                {
+                    value: 86400,
+                    label: '1 day',
+                },
+            ],
+            default: 604800,
+            xl: 2,
+            lg: 2,
+            md: 2,
+            sm: 12,
+            xs: 12,
+        },
         datapointsSqlPresetsList: {
             newLine: true,
             type: 'table',

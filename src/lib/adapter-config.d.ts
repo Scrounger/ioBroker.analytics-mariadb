@@ -16,6 +16,7 @@ declare global {
             historyDefaultUpdateDeBounce: number;
             datapointsNumberList: AdapterConfigTypes.DatapointsItem[];
             datapointsBooleanList: AdapterConfigTypes.DatapointsItem[];
+            oldValueRetention: number;
             datapointsSqlPresetsList: AdapterConfigTypes.DatapointsSqlPresetsItem[];
             historyList: AdapterConfigTypes.HistoryItem[];
             historyCalcList: AdapterConfigTypes.HistoryItem[];
@@ -25,6 +26,7 @@ declare global {
             sqlWriteTimeout: number;
             cronUpdateHistoryAtDayChange: string;
             metricsMinUpdateInterval: number;
+            metricsShowWarning: number;
             fastStart: boolean;
         }
 

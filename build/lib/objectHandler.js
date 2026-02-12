@@ -321,7 +321,7 @@ function getSqlPreset(item, adapter, type, id) {
                 changesMinDelta: type === 'number' ? preset.changesMinDelta : 0,
                 ignoreBelowNumber: "",
                 disableSkippedValueLogging: true,
-                retention: id.endsWith(`.${adapter.datapoints.idOldValue}`) ? 2678400 : preset.retention,
+                retention: id.endsWith(`.${adapter.datapoints.idOldValue}`) ? (adapter.config.oldValueRetention || 604800) : preset.retention,
                 customRetentionDuration: 365,
                 maxLength: 0,
                 enableDebugLogs: false,
