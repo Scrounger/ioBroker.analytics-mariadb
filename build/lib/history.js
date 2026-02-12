@@ -9,6 +9,7 @@ export class History {
     utils;
     log;
     idChannelHistory = 'history';
+    idSuffix = '_consumption';
     constructor(adapter, utils) {
         this.adapter = adapter;
         this.utils = utils;
@@ -83,8 +84,8 @@ export class History {
                 for (const interval of Object.keys(Interval)) {
                     if (interval !== Interval.ALL) {
                         // History of this year
-                        await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idChannelHistory}.${interval}`, null, null, commonHistory, undefined, false, false);
-                        delete allExistingStates[`${this.adapter.namespace}.${idChannel}.${this.idChannelHistory}.${interval}`];
+                        await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idChannelHistory}.${interval}${this.idSuffix}`, null, null, commonHistory, undefined, false, false);
+                        delete allExistingStates[`${this.adapter.namespace}.${idChannel}.${this.idChannelHistory}.${interval}${this.idSuffix}`];
                         if (item.idContractType) {
                             await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannel}.${this.idChannelHistory}.${interval}${this.adapter.costs.idSuffix}`, null, null, commonCost, undefined, false, false);
                             delete allExistingStates[`${this.adapter.namespace}.${idChannel}.${this.idChannelHistory}.${interval}${this.adapter.costs.idSuffix}`];
@@ -94,11 +95,11 @@ export class History {
                         if (item[interval] > 0) {
                             await objectHandler.createChannel(this.adapter, this.utils, idChannelPast, `past ${interval}s`);
                             for (let i = 1; i <= item[interval]; i++) {
-                                await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannelPast}.${interval}_${helper.zeroPad(i, 2)}`, null, null, commonHistory, undefined, false, false);
-                                delete allExistingStates[`${this.adapter.namespace}.${idChannelPast}.${interval}_${helper.zeroPad(i, 2)}`];
+                                await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannelPast}.${helper.zeroPad(i, 2)}${this.idSuffix}`, null, null, commonHistory, undefined, false, false);
+                                delete allExistingStates[`${this.adapter.namespace}.${idChannelPast}.${helper.zeroPad(i, 2)}${this.idSuffix}`];
                                 if (item.idContractType) {
-                                    await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannelPast}.${interval}_${helper.zeroPad(i, 2)}${this.adapter.costs.idSuffix}`, null, null, commonCost, undefined, false, false);
-                                    delete allExistingStates[`${this.adapter.namespace}.${idChannelPast}.${interval}_${helper.zeroPad(i, 2)}${this.adapter.costs.idSuffix}`];
+                                    await objectHandler.createOrUpdateState(this.adapter, this.utils, `${idChannelPast}.${helper.zeroPad(i, 2)}${this.adapter.costs.idSuffix}`, null, null, commonCost, undefined, false, false);
+                                    delete allExistingStates[`${this.adapter.namespace}.${idChannelPast}.${helper.zeroPad(i, 2)}${this.adapter.costs.idSuffix}`];
                                 }
                             }
                         }
@@ -150,7 +151,7 @@ export class History {
                         else {
                             continue;
                         }
-                        await this._updateNameOfStates(`${idChannel}.${this.idChannelHistory}.${interval}`, `${name} - ${this.utils.I18n.getTranslatedObject('consumption')[this.adapter.language] || 'consumption'}`, logPrefix);
+                        await this._updateNameOfStates(`${idChannel}.${this.idChannelHistory}.${interval}${this.idSuffix}`, `${name} - ${this.utils.I18n.getTranslatedObject('consumption')[this.adapter.language] || 'consumption'}`, logPrefix);
                         if (item.idContractType) {
                             await this._updateNameOfStates(`${idChannel}.${this.idChannelHistory}.${interval}${this.adapter.costs.idSuffix}`, `${name} - ${this.utils.I18n.getTranslatedObject('Costs')[this.adapter.language] || 'Costs'}`, logPrefix);
                         }
@@ -181,9 +182,9 @@ export class History {
                                 else {
                                     continue;
                                 }
-                                await this._updateNameOfStates(`${idChannel}.${this.idChannelHistory}._${interval}.${interval}_${helper.zeroPad(i, 2)}`, `${name} - ${this.utils.I18n.getTranslatedObject('consumption')[this.adapter.language] || 'consumption'}`, logPrefix);
+                                await this._updateNameOfStates(`${idChannel}.${this.idChannelHistory}._${interval}.${helper.zeroPad(i, 2)}${this.idSuffix}`, `${name} - ${this.utils.I18n.getTranslatedObject('consumption')[this.adapter.language] || 'consumption'}`, logPrefix);
                                 if (item.idContractType) {
-                                    await this._updateNameOfStates(`${idChannel}.${this.idChannelHistory}._${interval}.${interval}_${helper.zeroPad(i, 2)}${this.adapter.costs.idSuffix}`, `${name} - ${this.utils.I18n.getTranslatedObject('Costs')[this.adapter.language] || 'Costs'}`, logPrefix);
+                                    await this._updateNameOfStates(`${idChannel}.${this.idChannelHistory}._${interval}.${helper.zeroPad(i, 2)}${this.adapter.costs.idSuffix}`, `${name} - ${this.utils.I18n.getTranslatedObject('Costs')[this.adapter.language] || 'Costs'}`, logPrefix);
                                 }
                             }
                         }
@@ -278,7 +279,7 @@ export class History {
                     if (interval !== Interval.ALL) {
                         if (item[interval] > 0) {
                             for (let i = 1; i <= item[interval]; i++) {
-                                const id = `${helper.getIdWithoutLastPart(item.id)}.${this.idChannelHistory}._${interval}.${interval}_${helper.zeroPad(i, 2)}`;
+                                const id = `${helper.getIdWithoutLastPart(item.id)}.${this.idChannelHistory}._${interval}.${helper.zeroPad(i, 2)}`;
                                 await this.updateHistory(id, item, datapointItem, interval, i, null);
                             }
                         }
@@ -299,7 +300,7 @@ export class History {
         }
     }
     async updateHistory(id, item, datapointItem, interval, i, currentState) {
-        const logPrefixAppend = `[${datapointItem.idChannelTarget}] [${helper.getIdLastPart(id)}]`;
+        const logPrefixAppend = `[${datapointItem.idChannelTarget}] [${interval === Interval.day ? interval : `_${interval}`}] [${helper.getIdLastPart(id)}]`;
         const logPrefix = `[${this.logPrefix}.updateHistory] ${logPrefixAppend}:`;
         try {
             const range = this.getDatesFromInterval(interval, i);
@@ -337,7 +338,7 @@ export class History {
             else {
                 this.log.error(`${logPrefix} state '${item.id}' has unsupported type '${datapointItem.type}', cannot processing functions'`);
             }
-            await this.adapter.setStateChangedAsync(id, result, true);
+            await this.adapter.setStateChangedAsync(`${id}${this.idSuffix}`, result, true);
             if (item.idContractType) {
                 await this.adapter.setStateChangedAsync(`${id}${this.adapter.costs.idSuffix}`, costsResult, true);
             }
@@ -387,7 +388,7 @@ export class History {
                         const calculation = await this.getCalculation(item, interval);
                         if (calculation) {
                             this.adapter.itemDebug(item, `${logPrefix} [_${interval}] consumption calculation: ${debugFormula} => ${calculation.formula} = ${calculation.consumption}`);
-                            await this.adapter.setStateChangedAsync(`${item.idChannel}.${this.idChannelHistory}.${interval}`, calculation.consumption, true);
+                            await this.adapter.setStateChangedAsync(`${item.idChannel}.${this.idChannelHistory}.${interval}${this.idSuffix}`, calculation.consumption, true);
                             if (item.idContractType === 'fromCalculation') {
                                 this.adapter.itemDebug(item, `${logPrefix} [_${interval}] cost calculation: ${debugFormula} => ${calculation.formulaCosts} = ${calculation.costs}`);
                                 await this.adapter.setStateChangedAsync(`${item.idChannel}.${this.idChannelHistory}.${interval}${this.adapter.costs.idSuffix}`, calculation.costs, true);
@@ -418,11 +419,11 @@ export class History {
                             for (let i = 1; i <= item[interval]; i++) {
                                 const calculation = await this.getCalculation(item, interval, i);
                                 if (calculation) {
-                                    this.adapter.itemDebug(item, `${logPrefix} [${interval}_${helper.zeroPad(i, 2)}] consuption calculation: ${debugFormula} => ${calculation.formula} = ${calculation.consumption}`);
-                                    await this.adapter.setStateChangedAsync(`${item.idChannel}.${this.idChannelHistory}._${interval}.${interval}_${helper.zeroPad(i, 2)}`, calculation.consumption, true);
+                                    this.adapter.itemDebug(item, `${logPrefix} [_${interval}.${helper.zeroPad(i, 2)}${this.idSuffix}] consumption calculation: ${debugFormula} => ${calculation.formula} = ${calculation.consumption}`);
+                                    await this.adapter.setStateChangedAsync(`${item.idChannel}.${this.idChannelHistory}._${interval}.${helper.zeroPad(i, 2)}${this.idSuffix}`, calculation.consumption, true);
                                     if (item.idContractType === 'fromCalculation') {
-                                        this.adapter.itemDebug(item, `${logPrefix} [${interval}_${helper.zeroPad(i, 2)}] cost calculation: ${debugFormula} => ${calculation.formulaCosts} = ${calculation.costs}`);
-                                        await this.adapter.setStateChangedAsync(`${item.idChannel}.${this.idChannelHistory}._${interval}.${interval}_${helper.zeroPad(i, 2)}${this.adapter.costs.idSuffix}`, calculation.costs, true);
+                                        this.adapter.itemDebug(item, `${logPrefix} [_${interval}.${helper.zeroPad(i, 2)}${this.adapter.costs.idSuffix}] cost calculation: ${debugFormula} => ${calculation.formulaCosts} = ${calculation.costs}`);
+                                        await this.adapter.setStateChangedAsync(`${item.idChannel}.${this.idChannelHistory}._${interval}.${helper.zeroPad(i, 2)}${this.adapter.costs.idSuffix}`, calculation.costs, true);
                                     }
                                 }
                             }
@@ -447,21 +448,21 @@ export class History {
             for (const id of item.id) {
                 const datapointItem = this.adapter.datapoints.getByIdTarget(id);
                 if (datapointItem && datapointItem.enable) {
-                    const state = await this.adapter.getStateAsync(`${helper.getIdWithoutLastPart(id)}.${this.idChannelHistory}.${i === null ? interval : `_${interval}.${interval}_${helper.zeroPad(i, 2)}`}`);
+                    const state = await this.adapter.getStateAsync(`${helper.getIdWithoutLastPart(id)}.${this.idChannelHistory}.${i === null ? interval : `_${interval}.${helper.zeroPad(i, 2)}`}${this.idSuffix}`);
                     if (state && (state.val || state.val === 0)) {
                         calcArray.push(state.val);
                     }
                     else {
-                        this.adapter.itemDebug(item, `${logPrefix} [${i === null ? interval : `${interval}_${helper.zeroPad(i, 2)}`}] '${id}' no consuption data available, using 0 instead`);
+                        this.adapter.itemDebug(item, `${logPrefix} [${i === null ? interval : `_${interval}.${helper.zeroPad(i, 2)}${this.idSuffix}`}] '${id}' no consumption data available, using 0 instead`);
                         calcArray.push(0);
                     }
                     if (item.idContractType === 'fromCalculation') {
-                        const state = await this.adapter.getStateAsync(`${helper.getIdWithoutLastPart(id)}.${this.idChannelHistory}.${i === null ? interval : `_${interval}.${interval}_${helper.zeroPad(i, 2)}`}${this.adapter.costs.idSuffix}`);
+                        const state = await this.adapter.getStateAsync(`${helper.getIdWithoutLastPart(id)}.${this.idChannelHistory}.${i === null ? interval : `_${interval}.${helper.zeroPad(i, 2)}`}${this.adapter.costs.idSuffix}`);
                         if (state && (state.val || state.val === 0)) {
                             calcCostsArray.push(state.val);
                         }
                         else {
-                            this.adapter.itemDebug(item, `${logPrefix} [${i === null ? interval : `${interval}_${helper.zeroPad(i, 2)}`}] '${id}' no cost data available, using 0 instead`);
+                            this.adapter.itemDebug(item, `${logPrefix} [${i === null ? interval : `_${interval}.${helper.zeroPad(i, 2)}${this.adapter.costs.idSuffix}`}] '${id}' no cost data available, using 0 instead`);
                             calcCostsArray.push(0);
                         }
                     }
@@ -497,7 +498,7 @@ export class History {
                 this.adapter.clearTimeout(this.adapter.timeoutDebounceList[idChannel]);
                 delete this.adapter.timeoutDebounceList[idChannel];
             }
-            const total = await this.adapter.getStateAsync(`${idChannel}.${this.idChannelHistory}.${Interval.day}`);
+            const total = await this.adapter.getStateAsync(`${idChannel}.${this.idChannelHistory}.${Interval.day}${this.idSuffix}`);
             if ((currentState.lc - total.lc > ((item.debounce || 15)) * 1000) || item.debounce === 0 || force) {
                 if (isCalculation) {
                     await this.updateCalculatedThisYear(item);

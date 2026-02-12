@@ -28,6 +28,7 @@ export declare class Costs {
      * @param rangeStart
      * @param rangeEnd
      * @param interval
+     * @param billingItem
      * @returns
      */
     getCostOfRange(historyItem: ioBroker.AdapterConfigTypes.HistoryItem, datapointItem: ioBroker.AdapterConfigTypes.DatapointsItem, rangeStart: moment.Moment, rangeEnd: moment.Moment, interval?: string, billingItem?: ioBroker.AdapterConfigTypes.BillingItem | null): Promise<CostResult>;

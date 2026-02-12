@@ -74,6 +74,7 @@ export class Costs {
      * @param rangeStart
      * @param rangeEnd
      * @param interval
+     * @param billingItem
      * @returns
      */
     async getCostOfRange(historyItem, datapointItem, rangeStart, rangeEnd, interval = undefined, billingItem = null) {

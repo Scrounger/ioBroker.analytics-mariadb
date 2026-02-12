@@ -108,7 +108,8 @@ export class Costs {
      * @param datapointItem 
      * @param rangeStart 
      * @param rangeEnd 
-     * @param interval 
+     * @param interval
+     * @param billingItem 
      * @returns 
      */
     public async getCostOfRange(historyItem: ioBroker.AdapterConfigTypes.HistoryItem, datapointItem: ioBroker.AdapterConfigTypes.DatapointsItem, rangeStart: moment.Moment, rangeEnd: moment.Moment, interval: string = undefined, billingItem: ioBroker.AdapterConfigTypes.BillingItem | null = null,): Promise<CostResult> {
