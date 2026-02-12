@@ -22,6 +22,7 @@
     "De-bounce time": "Час відбою",
     "De-bounce time of cumulative total value": "Час відскоку сукупного загального значення",
     "Expert": "Експерт",
+    "Faster start-up of the adapter, but higher load due to parallel requests to the database": "Швидший запуск адаптера, але вище навантаження через паралельні запити до бази даних",
     "Formula for calculating variable costs": "Формула розрахунку змінних витрат",
     "General": "Загальний",
     "Got it!": "зрозумів",

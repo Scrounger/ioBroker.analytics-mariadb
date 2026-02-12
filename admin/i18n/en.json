@@ -21,6 +21,7 @@
     "De-bounce time": "Debounce Time",
     "De-bounce time of cumulative total value": "De-bounce time of cumulative total value",
     "Expert": "Expert",
+    "Faster start-up of the adapter, but higher load due to parallel requests to the database": "Faster start-up of the adapter, but higher load due to parallel requests to the database",
     "Formula for calculating variable costs": "Formula for calculating variable costs",
     "General": "General",
     "Got it!": "Got it!",
@@ -56,6 +57,7 @@
     "debug": "Debug",
     "decimals": "decimals",
     "end date": "end date",
+    "fix costs on daily basis": "fix costs on daily basis",
     "from calculation": "from calculation",
     "global settings": "global settings",
     "helper cumulative total value": "helper cumulative total value",
@@ -77,6 +79,7 @@
     "past months": "past months",
     "past weeks": "past weeks",
     "past years": "past years",
+    "period in days": "period in days",
     "pre payment": "pre payment",
     "pre payment of period": "pre payment of period",
     "refund": "refund",
@@ -94,7 +97,5 @@
     "weeks": "weeks",
     "weeksShort": "W",
     "years": "years",
-    "yearsShort": "Y",
-    "period in days": "period in days",
-    "fix costs on daily basis": "fix costs on daily basis"
+    "yearsShort": "Y"
 }

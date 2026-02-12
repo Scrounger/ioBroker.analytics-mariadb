@@ -33,12 +33,6 @@
             sm: 12,
             xs: 12,
         },
-        dividerDatapoints: {
-            newLine: true,
-            type: 'header',
-            text: 'datapoints default settings',
-            size: 2,
-        },
         dividerHistory: {
             newLine: true,
             type: 'header',

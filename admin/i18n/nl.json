@@ -22,6 +22,7 @@
     "De-bounce time": "Debounce-tijd",
     "De-bounce time of cumulative total value": "De-bouncetijd van de cumulatieve totale waarde",
     "Expert": "Deskundige",
+    "Faster start-up of the adapter, but higher load due to parallel requests to the database": "Snellere opstart van de adapter, maar hogere belasting door parallelle verzoeken aan de database",
     "Formula for calculating variable costs": "Formule voor het berekenen van variabele kosten",
     "General": "Algemeen",
     "Got it!": "Begrepen!",

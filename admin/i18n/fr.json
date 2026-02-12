@@ -22,6 +22,7 @@
     "De-bounce time": "Temps anti-rebond",
     "De-bounce time of cumulative total value": "Temps anti-rebond de la valeur totale cumulée",
     "Expert": "Expert",
+    "Faster start-up of the adapter, but higher load due to parallel requests to the database": "Démarrage plus rapide de l'adaptateur, mais charge plus élevée en raison des requêtes parallèles à la base de données",
     "Formula for calculating variable costs": "Formule de calcul des coûts variables",
     "General": "Général",
     "Got it!": "J'ai compris!",

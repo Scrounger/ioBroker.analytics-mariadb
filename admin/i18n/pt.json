@@ -22,6 +22,7 @@
     "De-bounce time": "Tempo de rejeição",
     "De-bounce time of cumulative total value": "Tempo de eliminação do valor total acumulado",
     "Expert": "Especialista",
+    "Faster start-up of the adapter, but higher load due to parallel requests to the database": "Inicialização mais rápida do adaptador, mas maior carga devido a solicitações paralelas ao banco de dados",
     "Formula for calculating variable costs": "Fórmula para cálculo de custos variáveis",
     "General": "Em geral",
     "Got it!": "Entendi!",

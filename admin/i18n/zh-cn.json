@@ -22,6 +22,7 @@
     "De-bounce time": "去抖时间",
     "De-bounce time of cumulative total value": "累计总值去抖时间",
     "Expert": "专家",
+    "Faster start-up of the adapter, but higher load due to parallel requests to the database": "适配器启动速度更快，但由于对数据库的并行请求而导致负载更高",
     "Formula for calculating variable costs": "变动成本计算公式",
     "General": "一般的",
     "Got it!": "知道了！",

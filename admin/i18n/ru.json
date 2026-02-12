@@ -22,6 +22,7 @@
     "De-bounce time": "Время устранения дребезга",
     "De-bounce time of cumulative total value": "Время устранения дребезга совокупного общего значения",
     "Expert": "Эксперт",
+    "Faster start-up of the adapter, but higher load due to parallel requests to the database": "Более быстрый запуск адаптера, но более высокая нагрузка из-за параллельных запросов к базе данных",
     "Formula for calculating variable costs": "Формула расчета переменных затрат",
     "General": "Общий",
     "Got it!": "Понятно!",

@@ -39,7 +39,6 @@ Hier werden Datenpunkte (vom Typ `number`) von Sensoren die euren Verbrauch mess
 | **SQL-Voreinstellung**   | Zu verwendende SQL-Voreinstellungen. Details dazu finden sich unter [SQL-Voreinstellungen für Datenpunkte (Experte)](#SQL-Voreinstellungen-für-Datenpunkte-%28Experte%29).                                                                                |
 | **max. Delta**           | Maximales erlaubtes Delta zwischen dem alten und dem neuen Wert. Überschreitet der Wert dieses Delta, wird er ignoriert. Diese Einstellung hilft, kurzfristige Schwankungen (z. B. durch Skalierungsfaktoren) abzufangen.                                 |
 | **Resets ignorieren**    | Ein Reset des Zählers wird ignoriert, wenn der neue Wert niedriger ist als der alte. Diese Einstellung verhindert, dass kurzzeitige Sprünge (z. B. durch Skalierungsfaktoren oder Verbindungsabbrüche bei Sensoren) fälschlicherweise registriert werden. |
-| **Entprellzeit**         | Wartezeit, bevor ein neuer Wert gespeichert wird. Wenn viele Zähler in kurzen Intervallen (z. B. alle 2–3 Sekunden) Werte senden, empfiehlt es sich, eine Entprellzeit einzurichten, um die Systemressourcen zu schonen.                                  |
 | **SQL „WHERE“ anhängen** | SQL-„WHERE“-Bedingung an Datenbankabfragen anhängen (nur verwenden, wenn man sich mit SQL auskennt!).                                                                                                                                                     |
 | **Debug**                | Aktiviert zusätzliche Debug-Logs für diesen Datenpunkt. Der Adapter muss hierfür auf das Log-Level „Debug“ gesetzt sein.                                                                                                                                  |
 
@@ -49,15 +48,14 @@ Hier werden Datenpunkte (vom Typ `boolean`) hinterlegt, aus denen der Adapter di
 
 ![Logo](doc/de/tab_datapoints_boolean.jpg)
 
-| **Spalte**               | **Beschreibung**                                                                                                                                                                                                         |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Quell-ID**             | Datenpunkt vom Typ `boolean`, der gezählt werden soll.                                                                                                                                                                   |
-| **Kanal Ziel-ID**        | Kanal-ID, unter der alle Daten des Adapters gespeichert werden (z. B. `analytics-mariadb.X.XXX`).                                                                                                                        |
-| **Name**                 | Ein frei wählbarer Name bzw. eine Bezeichnung für den Datenpunkt.                                                                                                                                                        |
-| **SQL-Voreinstellung**   | Zu verwendende SQL-Voreinstellungen. Details dazu finden sich unter [SQL-Voreinstellungen für Datenpunkte (Experte)](#SQL-Voreinstellungen-für-Datenpunkte-%28Experte%29).                                               |
-| **Entprellzeit**         | Wartezeit, bevor ein neuer Wert gespeichert wird. Wenn viele Zähler in kurzen Intervallen (z. B. alle 2–3 Sekunden) Werte senden, empfiehlt es sich, eine Entprellzeit einzurichten, um die Systemressourcen zu schonen. |
-| **SQL „WHERE“ anhängen** | SQL-„WHERE“-Bedingung an Datenbankabfragen anhängen (nur verwenden, wenn man sich mit SQL auskennt!).                                                                                                                    |
-| **Debug**                | Aktiviert zusätzliche Debug-Logs für diesen Datenpunkt. Der Adapter muss hierfür auf das Log-Level „Debug“ gesetzt sein.                                                                                                 |
+| **Spalte**               | **Beschreibung**                                                                                                                                                           |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Quell-ID**             | Datenpunkt vom Typ `boolean`, der gezählt werden soll.                                                                                                                     |
+| **Kanal Ziel-ID**        | Kanal-ID, unter der alle Daten des Adapters gespeichert werden (z. B. `analytics-mariadb.X.XXX`).                                                                          |
+| **Name**                 | Ein frei wählbarer Name bzw. eine Bezeichnung für den Datenpunkt.                                                                                                          |
+| **SQL-Voreinstellung**   | Zu verwendende SQL-Voreinstellungen. Details dazu finden sich unter [SQL-Voreinstellungen für Datenpunkte (Experte)](#SQL-Voreinstellungen-für-Datenpunkte-%28Experte%29). |
+| **SQL „WHERE“ anhängen** | SQL-„WHERE“-Bedingung an Datenbankabfragen anhängen (nur verwenden, wenn man sich mit SQL auskennt!).                                                                      |
+| **Debug**                | Aktiviert zusätzliche Debug-Logs für diesen Datenpunkt. Der Adapter muss hierfür auf das Log-Level „Debug“ gesetzt sein.                                                   |
 
 ### Historie
 
@@ -66,6 +64,7 @@ Hier werden Datenpunkte (vom Typ `boolean`) hinterlegt, aus denen der Adapter di
 | Spalte          | Beschreibung |
 | --------------- | ------------ |
 | Datenpunkte     |              |
+| Entprellzeit    |              |
 | Dezimal-stellen |              |
 | T.              |              |
 | W.              |              |
