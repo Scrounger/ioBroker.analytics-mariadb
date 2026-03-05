@@ -14,6 +14,7 @@ import { History } from './lib/history.js';
 import { Datapoints } from './lib/datapoints.js';
 import { Costs } from './lib/costs.js';
 import { Billing } from './lib/billing.js';
+import * as helper from './lib/helper.js';
 class AnalyticsMariadb extends utils.Adapter {
     sourceToDatapoint = {};
     timeoutDebounceList = {};
@@ -291,7 +292,7 @@ class AnalyticsMariadb extends utils.Adapter {
                 else if (obj.command === 'getBillingList') {
                     const historyList = obj.message.history;
                     const result = historyList.filter(x => x.idContractType).map(item => {
-                        const dpItem = obj.message.datapoints.find(d => item.id.includes(d.idChannelTarget));
+                        const dpItem = obj.message.datapoints.find(d => helper.getIdWithoutLastPart(item.id) === d.idChannelTarget);
                         if (dpItem) {
                             return {
                                 value: `${item.id}`,

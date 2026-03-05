@@ -17,6 +17,7 @@ import { History } from './lib/history.js';
 import { Datapoints } from './lib/datapoints.js';
 import { Costs } from './lib/costs.js';
 import { Billing } from './lib/billing.js';
+import * as helper from './lib/helper.js';
 
 
 class AnalyticsMariadb extends utils.Adapter {
@@ -340,7 +341,7 @@ class AnalyticsMariadb extends utils.Adapter {
                     const historyList = obj.message.history as ioBroker.AdapterConfigTypes.HistoryItem[];
 
                     const result = historyList.filter(x => x.idContractType).map(item => {
-                        const dpItem = (obj.message.datapoints as ioBroker.AdapterConfigTypes.DatapointsItem[]).find(d => item.id.includes(d.idChannelTarget));
+                        const dpItem = (obj.message.datapoints as ioBroker.AdapterConfigTypes.DatapointsItem[]).find(d => helper.getIdWithoutLastPart(item.id as string) === d.idChannelTarget);
                         if (dpItem) {
                             return {
                                 value: `${item.id as string}`,
