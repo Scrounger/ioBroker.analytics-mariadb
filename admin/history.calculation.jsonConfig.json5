@@ -54,6 +54,9 @@
                     validatorNoSaveOnError: true,
                     validatorErrorText: 'mandatory input',
                     multiple: true,
+                    style: {
+                        maxWidth: '250px',
+                    },
                 },
                 {
                     attr: 'idChannel',
@@ -66,6 +69,9 @@
                     validatorNoSaveOnError: true,
                     validatorErrorText: 'mandatory input',
                     width: 350,
+                    style: {
+                        minWidth: '300px',
+                    },
                 },
                 {
                     attr: 'formula',
@@ -75,6 +81,9 @@
                     validatorNoSaveOnError: true,
                     validatorErrorText: 'mandatory input and all ids must be included',
                     width: 240,
+                    style: {
+                        minWidth: '250px',
+                    },
                 },
                 {
                     attr: 'unit',
