@@ -6,6 +6,7 @@
     "include": [
         "./**/*.js",
         "mocha.setup.cjs",
-        "integration.cjs"
+        "integration.cjs",
+        "package.cjs"
     ]
 }
