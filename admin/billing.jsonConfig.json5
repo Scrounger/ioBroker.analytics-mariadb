@@ -49,10 +49,10 @@
                     noMultiEdit: true,
                     jsonData: '{"history": ${JSON.stringify(globalData.historyList)}, "datapoints": ${JSON.stringify(globalData.datapointsNumberList)}}',
                     command: 'getBillingList',
-                    validator: 'data.id && (globalData.datapointsNumberList.some(dp => data.id.includes(dp.idChannelTarget))) && globalData.historyList.find(dp => data.id === dp.id)?.idContractType',
+                    validator: 'data?.id && globalData?.datapointsNumberList?.some(dp => dp?.idChannelTarget && data.id.includes(dp.idChannelTarget)) && globalData?.historyList?.find(dp => dp?.id === data.id)?.idContractType',
                     validatorNoSaveOnError: true,
                     validatorErrorText: 'mandatory input',
-                    disabled: '!globalData.datapointsNumberList.find(dp => data.id.includes(dp.idChannelTarget)).enable',
+                    disabled: '!globalData?.datapointsNumberList?.find(dp => dp?.idChannelTarget && data.id.includes(dp.idChannelTarget))?.enable',
                 },
                 {
                     attr: 'provider',
@@ -60,7 +60,7 @@
                     title: 'name of provider',
                     sort: true,
                     filter: true,
-                    disabled: '!globalData.datapointsNumberList.find(dp => data.id.includes(dp.idChannelTarget)).enable',
+                    disabled: '!globalData?.datapointsNumberList?.find(dp => dp?.idChannelTarget && data.id.includes(dp.idChannelTarget))?.enable',
                 },
                 {
                     attr: 'start',
@@ -71,7 +71,7 @@
                     validatorNoSaveOnError: true,
                     validatorErrorText: 'mandatory input',
                     width: 180,
-                    disabled: '!globalData.datapointsNumberList.find(dp => data.id.includes(dp.idChannelTarget)).enable',
+                    disabled: '!globalData?.datapointsNumberList?.find(dp => dp?.idChannelTarget && data.id.includes(dp.idChannelTarget))?.enable',
                 },
                 {
                     attr: 'end',
@@ -82,7 +82,7 @@
                     validatorNoSaveOnError: true,
                     validatorErrorText: 'mandatory input',
                     width: 180,
-                    disabled: '!globalData.datapointsNumberList.find(dp => data.id.includes(dp.idChannelTarget)).enable',
+                    disabled: '!globalData?.datapointsNumberList?.find(dp => dp?.idChannelTarget && data.id.includes(dp.idChannelTarget))?.enable',
                 },
                 {
                     attr: 'prePayment',
@@ -91,7 +91,7 @@
                     width: 140,
                     min: -99999999,
                     max: 99999999,
-                    disabled: '!globalData.datapointsNumberList.find(dp => data.id.includes(dp.idChannelTarget)).enable',
+                    disabled: '!globalData?.datapointsNumberList?.find(dp => dp?.idChannelTarget && data.id.includes(dp.idChannelTarget))?.enable',
                 },
                 {
                     attr: 'fixCostsDaily',

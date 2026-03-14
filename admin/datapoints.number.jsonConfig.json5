@@ -90,7 +90,7 @@
                     noMultiEdit: true,
                     jsonData: '{"data": ${JSON.stringify(globalData.datapointsSqlPresetsList)}}',
                     command: 'getDatapointsNumberSqlPresetsList',
-                    validator: '!!data.idPreset && !!globalData.datapointsSqlPresetsList.some(preset => preset.idPreset === data.idPreset);',
+                    validator: '!!data?.idPreset && !!globalData?.datapointsSqlPresetsList?.some(preset => preset?.idPreset === data?.idPreset)',
                     validatorNoSaveOnError: true,
                     validatorErrorText: 'mandatory input',
                     width: 280,
