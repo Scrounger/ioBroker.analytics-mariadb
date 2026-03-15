@@ -216,7 +216,7 @@
                     validator: '(data.idContractType && data.costSumOptions && data.costSumOptions.length > 0) || data.idContractType === "fromCalculation"',
                     validatorNoSaveOnError: true,
                     validatorErrorText: 'you have to select minimum one option',
-                    hidden: '(!data.id.length > 0 || !data.idContractType) || (data.id === undefined || data.id === "" || data.id === null || data.idContractType === "fromCalculation")',
+                    hidden: '(!data?.id?.length > 0 || !data?.idContractType) || (data?.id === undefined || data?.id === "" || data?.id === null || data?.idContractType === "fromCalculation")',
                     width: 180,
                     style: {
                         minWidth: '150px',
