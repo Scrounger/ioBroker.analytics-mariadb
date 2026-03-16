@@ -66,6 +66,7 @@ declare global {
                 week: number;
                 month: number;
                 year: number;
+                interpolate: boolean;
                 idContractType: string;
                 costSumOptions: string[];
                 debug: boolean;

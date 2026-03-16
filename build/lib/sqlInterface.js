@@ -155,6 +155,7 @@ export class SqlInterface {
     async getTotal(item, datapointItem, interval, timestampStart, timestampEnd, logPrefixAppend) {
         const logPrefix = `[${this.logPrefix}.getTotal] ${logPrefixAppend}:`;
         try {
+            timestampEnd = moment(timestampEnd).endOf('day').isAfter(moment()) ? moment().valueOf() : timestampEnd;
             const query = `
                             WITH state AS (
                                 SELECT id
@@ -163,40 +164,51 @@ export class SqlInterface {
                                 LIMIT 1
                             )
                             SELECT
-                                DATE_FORMAT(FROM_UNIXTIME(start.ts / 1000), '%d.%m.%Y - %H:%i') AS 'start',
-                                start.val AS 'min',
-                                DATE_FORMAT(FROM_UNIXTIME(end.ts / 1000), '%d.%m.%Y - %H:%i') AS 'end',
-                                end.val AS 'max',
-                                end.val - start.val AS 'delta'
-                            FROM
-                            (
+                                DATE_FORMAT(FROM_UNIXTIME(COALESCE(start.ts / 1000, null)), '%d.%m.%Y - %H:%i') AS 'start', 
+                                COALESCE(start.val, null) AS 'min', 
+                                DATE_FORMAT(FROM_UNIXTIME(COALESCE(end.ts / 1000, null)), '%d.%m.%Y - %H:%i') AS 'end', 
+                                COALESCE(end.val, null) AS 'max', 
+                                COALESCE(end.val - start.val, null) AS 'delta' 
+                            FROM state
+                            LEFT JOIN (
                                 SELECT ts, val
                                 FROM ${this.dbName}.ts_number
                                 WHERE id = (SELECT id FROM state)
-                                AND ts >= ${timestampStart}
+                                AND ts >= ${moment(timestampStart).startOf('day').valueOf()} AND ts <= ${moment(timestampStart).endOf('day').valueOf()}
                                 AND val IS NOT NULL
                                 ${datapointItem.sqlWhereAppend ? datapointItem.sqlWhereAppend : ''}
                                 ORDER BY ts ASC
                                 LIMIT 1
-                            ) start
-                            CROSS JOIN
+                            ) start ON 1 = 1
+                            LEFT JOIN
                             (
                                 SELECT ts, val
                                 FROM ${this.dbName}.ts_number
                                 WHERE id = (SELECT id FROM state)
-                                AND ts <  ${moment(timestampEnd).endOf('day').valueOf()}
+                                AND ts >= ${moment(timestampEnd).startOf('day').valueOf()} AND ts <= ${moment(timestampEnd).endOf('day').valueOf()} 
                                 AND val IS NOT NULL
                                 ${datapointItem.sqlWhereAppend ? datapointItem.sqlWhereAppend : ''}
                                 ORDER BY ts DESC
                                 LIMIT 1
-                            ) end;
+                            ) end ON 1 = 1;
                         `;
             this.adapter.itemDebug(item, `${logPrefix} ${interval === Interval.ALL ? '' : `start: ${moment(timestampStart).format(`${this.adapter.dateFormat} - HH:mm`)}, end: ${moment(timestampEnd).format(`${this.adapter.dateFormat} - HH:mm`)}`}, query: ${query}`);
             const data = await this.retrieve(QueryType.QUERY, query, item, logPrefixAppend);
             if (data) {
                 // can only have one row as result
                 if (data.length === 1) {
-                    return data[0];
+                    const res = data[0];
+                    if (!moment(timestampStart).isSame(moment(res.start, 'DD.MM.YYYY - HH:mm'), 'day') || !moment(timestampEnd).isSame(moment(res.end, 'DD.MM.YYYY - HH:mm'), 'day')) {
+                        if (item.interpolate) {
+                            return await this.getInterpolatedTotal(item, datapointItem, interval, timestampStart, timestampEnd, logPrefixAppend, res);
+                        }
+                        else {
+                            this.log.warn(`${logPrefix} no data for this range available! Add missing data to your database, activate the interpolate option or change the settings for this interval to supress this info (range: ${moment(timestampStart).format(this.adapter.dateFormat)} - ${moment(timestampEnd).format(this.adapter.dateFormat)}, data: ${JSON.stringify(res)})`);
+                        }
+                    }
+                    else {
+                        return res;
+                    }
                 }
                 else {
                     if (data.length === 0) {
@@ -205,7 +217,121 @@ export class SqlInterface {
                     else {
                         this.log.error(`${logPrefix} unexpected number of data rows: ${data.length} (data: ${JSON.stringify(data)})`);
                     }
-                    return null;
+                }
+            }
+        }
+        catch (error) {
+            this.log.error(`${logPrefix} error: ${error}, stack: ${error.stack}`);
+        }
+        return null;
+    }
+    async getInterpolatedTotal(item, datapointItem, interval, timestampStart, timestampEnd, logPrefixAppend, sqlData) {
+        const logPrefix = `[${this.logPrefix}.getInterpolatedTotal] ${logPrefixAppend}:`;
+        try {
+            this.adapter.itemDebug(item, `${logPrefix} interpolation as fallback is enabled (range: ${moment(timestampStart).format(this.adapter.dateFormat)} - ${moment(timestampEnd).format(this.adapter.dateFormat)}, data: ${JSON.stringify(sqlData)})`);
+            let query = `
+                            WITH state AS (
+                                SELECT id
+                                FROM ${this.dbName}.datapoints
+                                WHERE name = '${this.adapter.namespace}.${item.id}'
+                                LIMIT 1
+                            )
+                            SELECT
+                                DATE_FORMAT(FROM_UNIXTIME(COALESCE(start.ts / 1000, null)), '%d.%m.%Y - %H:%i') AS 'start', 
+                                COALESCE(start.val, null) AS 'min', 
+                                DATE_FORMAT(FROM_UNIXTIME(COALESCE(end.ts / 1000, null)), '%d.%m.%Y - %H:%i') AS 'end', 
+                                COALESCE(end.val, null) AS 'max', 
+                                COALESCE(end.val - start.val, null) AS 'delta' 
+                            FROM state`;
+            if (sqlData && sqlData.min !== null && moment(timestampStart).isSame(moment(sqlData.start, 'DD.MM.YYYY - HH:mm'), 'day')) {
+                // Daten für Start Datum vorhanden
+                query = `${query} 
+                            LEFT JOIN (
+                                SELECT ts, val
+                                FROM ${this.dbName}.ts_number
+                                WHERE id = (SELECT id FROM state)
+                                AND ts >= ${moment(timestampStart).startOf('day').valueOf()} AND ts <= ${moment(timestampStart).endOf('day').valueOf()} 
+                                AND val IS NOT NULL
+                                ${datapointItem.sqlWhereAppend ? datapointItem.sqlWhereAppend : ''}
+                                ORDER BY ts ASC
+                                LIMIT 1
+                            ) start ON 1 = 1`;
+            }
+            else {
+                // keine Daten für Start Datum vorhanden, 1. Daten vor Start Datum suchen
+                query = `${query} 
+                            LEFT JOIN (
+                                SELECT ts, val
+                                FROM ${this.dbName}.ts_number
+                                WHERE id = (SELECT id FROM state)
+                                AND ts <= ${moment(timestampStart).startOf('day').valueOf()}
+                                AND val IS NOT NULL
+                                ${datapointItem.sqlWhereAppend ? datapointItem.sqlWhereAppend : ''}
+                                ORDER BY ts DESC
+                                LIMIT 1
+                            ) start ON 1 = 1`;
+            }
+            if (sqlData && sqlData.max !== null && moment(timestampEnd).isSame(moment(sqlData.end, 'DD.MM.YYYY - HH:mm'), 'day')) {
+                // Daten für End Datum vorhanden
+                query = `${query} 
+                            LEFT JOIN (
+                                SELECT ts, val
+                                FROM ${this.dbName}.ts_number
+                                WHERE id = (SELECT id FROM state)
+                                AND ts >= ${moment(timestampEnd).startOf('day').valueOf()} AND ts <= ${moment(timestampEnd).endOf('day').valueOf()} 
+                                AND val IS NOT NULL
+                                ${datapointItem.sqlWhereAppend ? datapointItem.sqlWhereAppend : ''}
+                                ORDER BY ts DESC
+                                LIMIT 1
+                            ) end ON 1 = 1;`;
+            }
+            else {
+                // keine Daten für End Datum vorhanden, 1. Daten nach End Datum suchen
+                query = `${query} 
+                            LEFT JOIN (
+                                SELECT ts, val
+                                FROM ${this.dbName}.ts_number
+                                WHERE id = (SELECT id FROM state)
+                                AND ts >= ${moment(timestampEnd).endOf('day').valueOf()} 
+                                AND val IS NOT NULL
+                                ${datapointItem.sqlWhereAppend ? datapointItem.sqlWhereAppend : ''}
+                                ORDER BY ts ASC
+                                LIMIT 1
+                            ) end ON 1 = 1;`;
+            }
+            const data = await this.retrieve(QueryType.QUERY, query, item, logPrefixAppend);
+            if (data) {
+                // can only have one row as result
+                if (data.length === 1) {
+                    const res = data[0];
+                    if (res.min !== null && res.max !== null && res.delta !== null) {
+                        const daysOfData = moment(res.end, 'DD.MM.YYYY - HH:mm').startOf('day').diff(moment(res.start, 'DD.MM.YYYY - HH:mm').startOf('day'), 'days') + 1;
+                        const daysofRange = moment(timestampEnd).startOf('day').diff(moment(timestampStart).startOf('day'), 'days') + 1;
+                        const deltaOfDay = res.delta / daysOfData;
+                        const daysOfStart = moment(timestampStart).diff(moment(res.start, 'DD.MM.YYYY - HH:mm'), 'days') + 1;
+                        const daysOfEnd = moment(res.end, 'DD.MM.YYYY - HH:mm').diff(moment(timestampEnd), 'days') + 1;
+                        this.adapter.itemDebug(item, `${logPrefix} base for interpolation: ${JSON.stringify(res)}, days: ${daysOfData}`);
+                        const interpolatedData = {
+                            start: sqlData.start || moment(timestampStart).format('DD.MM.YYYY - HH:mm'),
+                            min: sqlData.min !== null ? sqlData.min : sqlData.max !== null ? sqlData.max - deltaOfDay * daysofRange : res.min + daysOfStart * deltaOfDay,
+                            end: sqlData.end || moment(timestampEnd).format('DD.MM.YYYY - HH:mm'),
+                            max: sqlData.max !== null ? sqlData.max : sqlData.min !== null ? sqlData.min + deltaOfDay * daysofRange : res.max - daysOfEnd * deltaOfDay,
+                            delta: deltaOfDay * daysofRange
+                        };
+                        this.adapter.itemDebug(item, `${logPrefix} interpolation result: ${JSON.stringify(interpolatedData)}, days of range: ${daysofRange}, deltaOfDay: ${deltaOfDay}, days of start: ${daysOfStart}, days of end: ${daysOfEnd}`);
+                        return interpolatedData;
+                    }
+                    else {
+                        this.log.info(`${logPrefix} no data for this range available. Change the settings for this interval to supress this info`);
+                    }
+                }
+                else {
+                    if (data.length === 0) {
+                        this.log.info(`${logPrefix} no data for this range available. Change the settings for this interval to supress this info`);
+                    }
+                    else {
+                        this.log.error(`${logPrefix} unexpected number of data rows: ${data.length} (data: ${JSON.stringify(data)})`);
+                    }
                 }
             }
         }

@@ -67,6 +67,7 @@
     "historical values": "历史价值",
     "history default settings": "历史默认设置",
     "ignore reset": "忽略重置",
+    "interpolate": "插",
     "keep forever": "永远保留",
     "log changes interval(s)": "记录相同的值（秒）",
     "log changes minimal delta": "与上次值的最小差异",

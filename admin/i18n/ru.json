@@ -67,6 +67,7 @@
     "historical values": "исторические ценности",
     "history default settings": "настройки истории по умолчанию",
     "ignore reset": "игнорировать сбросы",
+    "interpolate": "интерполировать",
     "keep forever": "хранить вечно",
     "log changes interval(s)": "Запишите одинаковые значения (секунды)",
     "log changes minimal delta": "Минимальная разница с последним значением",

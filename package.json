@@ -1,6 +1,6 @@
 {
   "name": "iobroker.analytics-mariadb",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Analytics adapter for processing data stored in MariaDB",
   "author": {
     "name": "Scrounger",

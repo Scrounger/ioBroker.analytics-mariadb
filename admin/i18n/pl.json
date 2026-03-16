@@ -67,6 +67,7 @@
     "historical values": "wartości historyczne",
     "history default settings": "domyślne ustawienia historii",
     "ignore reset": "ignorować resety",
+    "interpolate": "interpolować",
     "keep forever": "zachować na zawsze",
     "log changes interval(s)": "Zapisz te same wartości (sekundy)",
     "log changes minimal delta": "Minimalna różnica od ostatniej wartości",

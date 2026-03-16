@@ -155,6 +155,14 @@
                     },
                 },
                 {
+                    attr: 'interpolate',
+                    type: 'checkbox',
+                    title: 'interpolate',
+                    default: false,
+                    width: 0,
+                    disabled: '!globalData?.datapointsNumberList?.find(dp => data?.id?.includes(dp?.idChannelTarget))?.enable && !globalData?.datapointsBooleanList?.find(dp => data?.id?.includes(dp?.idChannelTarget))?.enable',
+                },
+                {
                     attr: 'idContractType',
                     type: 'autocompleteSendTo',
                     title: 'Costs',

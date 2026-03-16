@@ -323,7 +323,7 @@ export class History {
                                 await this.updateHistory(id, item, datapointItem, interval, i, null);
                             }
                         } else {
-                            this.adapter.log.debug(`${logPrefix} history for interval '${interval}' is disabled`);
+                            this.log.debug(`${logPrefix} history for interval '${interval}' is disabled`);
                         }
 
                         this.log.debug(`${logPrefix} [_${interval}] history ${item.idContractType ? ' and costs ' : ' '} for interval updated`);
@@ -500,7 +500,7 @@ export class History {
                                 }
                             }
                         } else {
-                            this.adapter.log.debug(`${logPrefix} [${interval}] history for interval '${interval}' is disabled`);
+                            this.log.debug(`${logPrefix} [${interval}] history for interval '${interval}' is disabled`);
                         }
                     }
                 }
