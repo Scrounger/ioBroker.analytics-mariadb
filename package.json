@@ -26,7 +26,7 @@
   "dependencies": {
     "@iobroker/adapter-core": "^3.3.1",
     "lodash": "^4.17.21",
-    "moment": "^2.30.1",
+    "moment": "^2.31.0",
     "mathjs": "^15.1.1",
     "node-schedule": "^2.1.1"
   },
